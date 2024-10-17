@@ -1,10 +1,11 @@
 """
 """
 
+from utils import COMMAND
 from crisprhawk_version import __version__  
 
 from argparse import SUPPRESS, ArgumentParser, HelpFormatter, Action, _MutuallyExclusiveGroup
-from typing import Iterable, Optional, Generic, TypeVar, Tuple, Dict, NoReturn
+from typing import Iterable, Optional, TypeVar, Tuple, Dict, NoReturn
 from colorama import Fore
 
 
@@ -15,9 +16,9 @@ import os
 _D = TypeVar("_D")
 _V = TypeVar("_V")
 
-class CRISPRHAWKArgumentParser(ArgumentParser):
+class CrisprHawkArgumentParser(ArgumentParser):
 
-    class CRISPRHAWKHelpFormatter(HelpFormatter):
+    class CrisprHawkHelpFormatter(HelpFormatter):
 
         def add_usage(self, usage: str, actions: Iterable[Action], groups: Iterable[_MutuallyExclusiveGroup], prefix: Optional[str] = None) -> None:
             # add usage description for help only if the set action is not to
@@ -26,9 +27,9 @@ class CRISPRHAWKArgumentParser(ArgumentParser):
                 args = (usage, actions, groups, "")
                 self._add_item(self._format_usage, args)  # initialize the formatter
         
-    def __init__(self, *args: Tuple[Generic[_D]], **kwargs: Dict[Generic[_D], Generic[_V]]) -> None:
+    def __init__(self, *args: Tuple[_D], **kwargs: Dict[_D, _V]) -> None:
         # set custom help formatter defined as 
-        kwargs["formatter_class"] = self.CRISPRHAWKHelpFormatter   
+        kwargs["formatter_class"] = self.CrisprHawkHelpFormatter   
         # replace the default version display in usage help with a custom 
         # version display formatter
         kwargs["usage"] = kwargs["usage"].replace("{version}", __version__) 
@@ -38,7 +39,13 @@ class CRISPRHAWKArgumentParser(ArgumentParser):
 
     def error(self, error: str) -> NoReturn:
         # display error messages raised by argparse in red 
-        error = Fore.RED + f"\nERROR: {error}." + Fore.RESET
+        errormsg = (
+            f"{Fore.RED}\nERROR: {error}.{Fore.RESET}" +
+            f"\nRun {COMMAND} -h for usage\n\n"
+        )
+        sys.stderr.write(errormsg)  # write error to stderr
+        sys.exit(os.EX_USAGE)  # exit execution -> usage error
+        
 
     def error_noargs(self) -> None:
         self.print_help()  # if no input argument, print help
