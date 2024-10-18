@@ -27,27 +27,61 @@ def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
     group = parser.add_argument_group("Options")  # arguments group
     # input arguments
     group.add_argument("-h", "--help", action="help", help="Show this message and exit")
-    group.add_argument("--version", action="version", help=f"Show {TOOLNAME} version and exit", version=__version__)
-    group.add_argument("-f", "--fasta", type=str, metavar="FASTA-FILE", dest="fasta", required=True, help="Input FASTA file")
-    group.add_argument("-r", "--regions", type=str, metavar="GENOMIC-REGIONS-BED", dest="bedfile", required=True, help="BED file specifying genomic regions to search for guide RNAs")
-    group.add_argument("-v", "--vcf", type=str, metavar="VCF-FILE", dest="vcf", nargs="?", default="", help="VCF file containing genetic variants to account for during guide RNA search")
-    group.add_argument("--debug", action="store_true", default=False, help="Enter debug mode and trace the full error stack")
+    group.add_argument(
+        "--version",
+        action="version",
+        help=f"Show {TOOLNAME} version and exit",
+        version=__version__,
+    )
+    group.add_argument(
+        "-f",
+        "--fasta",
+        type=str,
+        metavar="FASTA-FILE",
+        dest="fasta",
+        required=True,
+        help="Input FASTA file",
+    )
+    group.add_argument(
+        "-r",
+        "--regions",
+        type=str,
+        metavar="GENOMIC-REGIONS-BED",
+        dest="bedfile",
+        required=True,
+        help="BED file specifying genomic regions to search for guide RNAs",
+    )
+    group.add_argument(
+        "-v",
+        "--vcf",
+        type=str,
+        metavar="VCF-FILE",
+        dest="vcf",
+        nargs="?",
+        default="",
+        help="VCF file containing genetic variants to account for during guide RNA search",
+    )
+    group.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Enter debug mode and trace the full error stack",
+    )
     return parser
 
 
 def main():
-    start = time()  # track elapsed time 
+    start = time()  # track elapsed time
     try:
         parser = parseargs_crisprhawk()  # parse input argument using custom parser
         if not sys.argv[1:]:  # no input args -> print help and exit
-            parser.error_noargs() 
+            parser.error_noargs()
         crisprhawk(parser.parse_args(sys.argv[1:]))
     except KeyboardInterrupt as e:
         sigint_handler()  # catch SIGINT and exit gracefully
     sys.stdout.write(f"{TOOLNAME} - Elapsed time {(time() - start):.2f}s\n")
 
+
 # --------------------------------> ENTRY POINT <--------------------------------
 if __name__ == "__main__":
     main()
-
-
