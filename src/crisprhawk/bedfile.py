@@ -10,17 +10,20 @@ import os
 
 
 class Coordinate:
-    def __init__(self, chrom: str, start: int, stop: int) -> None:
+    def __init__(self, contig: str, start: int, stop: int) -> None:
         # initialize a genomic coordinate interval
         # used when a bed file is provided in the input to select the
         # genomic regions to consider when searching gRNAs
-        self._chrom = chrom  # set chromosome
+        self._contig = contig  # set contig name
         self._start = start  # set start coordinate
         self._stop = stop  # set stop coordinate
 
+    def __str__(self):
+        return f"{self._contig}:{self._start}-{self._stop}"
+
     @property
-    def chrom(self) -> str:
-        return self._chrom
+    def contig(self) -> str:
+        return self._contig
 
     @property
     def start(self) -> int:
