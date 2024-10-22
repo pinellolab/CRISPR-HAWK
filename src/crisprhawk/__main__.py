@@ -43,6 +43,16 @@ def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
         help="Input FASTA file",
     )
     group.add_argument(
+        "-i",
+        "--fasta-idx",
+        type=str,
+        metavar="FASTA-IDX",
+        dest="fasta_idx",
+        nargs="?",
+        default="",
+        help="Fasta index (FAI), indexing the input fastafile",
+    )
+    group.add_argument(
         "-r",
         "--regions",
         type=str,
@@ -76,7 +86,7 @@ def main():
         parser = parseargs_crisprhawk()  # parse input argument using custom parser
         if not sys.argv[1:]:  # no input args -> print help and exit
             parser.error_noargs()
-        crisprhawk(parser.parse_args(sys.argv[1:]))
+        crisprhawk(parser.parse_args(sys.argv[1:]), parser)
     except KeyboardInterrupt as e:
         sigint_handler()  # catch SIGINT and exit gracefully
     sys.stdout.write(f"{TOOLNAME} - Elapsed time {(time() - start):.2f}s\n")
