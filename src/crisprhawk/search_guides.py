@@ -51,36 +51,44 @@ def pam_search(pam: PAM, region: Region, debug: bool) -> Tuple[List[int], List[i
     return matches_fwd, matches_rev
 
 
+def extract_guide(
+    region: Region, pos: int, guidelen: int, pamlen: int, right: bool
+) -> str:
+    if right:
+        return region[pos + pamlen : pos + guidelen + pamlen]
+    return region[pos - guidelen : pos]
+
+
+def valid_position(
+    pos: int, guidelen: int, pamlen: int, regionlen: int, right: bool
+) -> bool:
+    if right:
+        return guidelen <= regionlen - pos
+    return guidelen <= pos
+
+
 def retrieve_guides(
     matches_fwd: List[int],
     matches_rev: List[int],
-    pam: PAM,
+    pamlen: int,
     region: Region,
     guidelen: int,
     right: bool,
 ) -> Tuple[List[str], List[str]]:
-    if right:
-        guides_fwd = [
-            "".join(region[pos : pos + guidelen + len(pam)])
-            for pos in matches_fwd
-            if guidelen + len(pam) <= len(region) - pos
-        ]
-        guides_rev = [
-            "".join(region[pos - guidelen - len(pam) : pos])
-            for pos in matches_rev
-            if guidelen + len(pam) <= pos
-        ]
-    else:
-        guides_fwd = [
-            "".join(region[pos - guidelen : pos])
-            for pos in matches_fwd
-            if guidelen <= pos
-        ]
-        guides_rev = [
-            "".join(region[pos + len(pam) : pos + guidelen + len(pam)])
-            for pos in matches_rev
-            if guidelen <= len(region) - pos
-        ]
+
+    regionlen = len(region)  # length of the input region
+    # retrieve guides from the forward strand
+    guides_fwd = [
+        extract_guide(region, pos, guidelen, pamlen, right)
+        for pos in matches_fwd
+        if valid_position(pos, guidelen, pamlen, regionlen, right)
+    ]
+    # retrieve guides from the reverse strand
+    guides_rev = [
+        extract_guide(region, pos, guidelen, pamlen, not right)
+        for pos in matches_rev
+        if valid_position(pos, guidelen, pamlen, regionlen, not right)
+    ]
     return guides_fwd, guides_rev
 
 
