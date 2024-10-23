@@ -1,8 +1,6 @@
 """
 """
 
-from utils import TOOLNAME
-
 from typing import NoReturn, Optional
 from colorama import init, Fore
 
@@ -12,7 +10,7 @@ import os
 
 def sigint_handler() -> None:
     # print message when SIGINT is caught to exit gracefully from the execution
-    sys.stderr.write(f"\nCaught SIGINT. Exit {TOOLNAME}")
+    sys.stderr.write(f"\nCaught SIGINT. Exit CRISPR-HAWK")
     sys.exit(os.EX_OSERR)  # mark as os error code
 
 

@@ -1,13 +1,12 @@
 """
 """
 
-from crisprhawk_error import CrisprHawkFastaError
+from crisprhawk_error import CrisprHawkFastaError, CrisprHawkPamError
 from exception_handlers import exception_handler
-from utils import IUPAC
-from bedfile import Coordinate
+from utils import IUPAC, reverse_complement
 from bitset import Bitset, SIZE
 
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 
 import pysam
 import os
@@ -18,16 +17,18 @@ FAI = "fai"  # fasta index extension format
 class Sequence:
     def __init__(self, sequence: str, debug: bool) -> None:
         self._sequence = sequence.upper()  # force sequence nucleotides to upper cases
-        self._sequence_raw = list(
-            self._sequence
-        )  # cast str to list for fast index access
-        self._debug = debug
+        # cast str to list for fast index access
+        self._sequence_raw = list(self._sequence)  
+        self._debug = debug  # store debug mode flag
 
     def __len__(self) -> int:
         return len(self._sequence)
+    
+    def __str__(self) -> str:
+        return self._sequence
 
     def __getitem__(self, idx: Union[int, slice]) -> str:
-        if not hasattr("_sequence_raw"):  # always trace this error
+        if not hasattr(self, "_sequence_raw"):  # always trace this error
             exception_handler(
                 AttributeError,
                 f"Missing _sequence_raw attribute on {self.__class__.__name__}",
@@ -48,7 +49,7 @@ class Sequence:
     def encode(self) -> None:
         # encode sequence in bits for efficient matching
         self._sequence_bits = [
-            _encoder(nt, i) for i, nt in enumerate(self._sequence_raw)
+            _encoder(nt, i, self._debug) for i, nt in enumerate(self._sequence_raw)
         ]
         assert len(self._sequence_bits) == len(self)
 
@@ -59,28 +60,52 @@ class Sequence:
     @property
     def bits(self) -> List[Bitset]:
         return self._sequence_bits
+    
+class SequenceIterator:
+    def __init__(self, sequence: Sequence) -> None:
+        if not hasattr(self, "_sequence_raw"):  # always trace this error
+            exception_handler(
+                AttributeError,
+                f"Missing _sequence_raw attribute on {self.__class__.__name__}",
+                os.EX_DATAERR,
+                True,
+            )
+        self._sequence = sequence  # sequence object to iterate over
+        self._index = 0  # iterator index used over the sequence
 
+    def __next__(self) -> str:
+        if self._index < len(self._sequence):
+            self._index += 1  # go to next position in the sequence
+            return self._sequence[self._index - 1]
+        raise StopIteration  # stop iteration over sequence object
+    
+class PAM:
+    def __init__(self, pamseq: str, debug: bool):
+        self._sequence = Sequence(pamseq, debug)  # initialize forward pam 
+        self._sequence_rc = Sequence(reverse_complement(pamseq, debug), debug)  # initialize pam rc
+        self._debug = debug  # store debug mode flag
 
-class Region(Sequence):
-    def __init__(self, sequence: str, coord: Coordinate):
-        super().__init__(sequence)
-        self._contig = (
-            coord.contig
-        )  # store contig name from which the sequence was extracted
-        self._start = coord.start  # store start position of sequence
-        self._stop = coord.stop  # store stop position of sequence
+    def __len__(self) -> int:
+        return len(self._sequence)
+    
+    def __str__(self) -> str:
+        return f"{self._sequence}"
+    
+    def encode(self) -> None:
+        try:  # encode in bit fwd and rev pam sequence
+            self._sequence_rc.encode()  # reverse strand
+            self._sequence.encode()  # forward strand
+        except ValueError as e:
+            exception_handler(CrisprHawkPamError, f"PAM bit encoding failed", os.EX_DATAERR, self._debug, e)
 
     @property
-    def contig(self) -> str:
-        return self._contig
-
+    def pam(self) -> str: return self._sequence
     @property
-    def start(self) -> int:
-        return self._start
+    def bits(self) -> Tuple[str]: 
+        if not hasattr(self.pam, "_sequence_bits"):  # always trace this erro
+            exception_handler(AttributeError, f"Missing _sequence_bits attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
+        return (self._sequence.bits, self._sequence_rc.bits)  # return arrays of bits
 
-    @property
-    def stop(self) -> int:
-        return self._stop
 
 
 class Fasta:
@@ -112,30 +137,25 @@ class Fasta:
                 )
         assert _find_fai(self._fname)
         return f"{self._fname}.{FAI}"
-
-    def extract(self, coord: Coordinate) -> Region:
-        if (
-            coord.contig not in self._contigs
-        ):  # conting not available in fasta -> raise error
+    
+    def fetch(self, contig: str, start: int, stop: int) -> str:
+        if contig not in self._contigs:  # conting not available in fasta 
             exception_handler(
                 CrisprHawkFastaError,
-                f"Input contig ({coord.contig}) not available in {self._fname}",
+                f"Input contig ({contig}) not available in {self._fname}",
                 os.EX_DATAERR,
                 self._debug,
             )
         try:  # extract sequence in the input range from fasta file
-            return Region(
-                self._fasta.fetch(coord.contig, coord.start, coord.stop).strip(), coord
-            )
-        except CrisprHawkFastaError as e:  # failed extraction
+            return self._fasta.fetch(contig, start, stop).strip()
+        except ValueError as e:  # failed extraction
             exception_handler(
                 CrisprHawkFastaError,
-                f"Sequence extraction failed for coordinates ({coord})",
+                f"Sequence extraction failed for coordinates ({contig}:{start}-{stop})",
                 os.EX_DATAERR,
                 self._debug,
                 e,
             )
-
 
 def _find_fai(fastafile: str) -> bool:
     # search index for the input fasta file, assumes that the index is located
@@ -146,8 +166,8 @@ def _find_fai(fastafile: str) -> bool:
     return False
 
 
-def _encoder(nt: str, position: int) -> Bitset:
-    bitset = Bitset(SIZE)  # 4 - bits encoder
+def _encoder(nt: str, position: int, debug: bool) -> Bitset:
+    bitset = Bitset(SIZE, debug)  # 4 - bits encoder
     if nt == IUPAC[0]:  # A - 0001
         bitset.set(0)
     elif nt == IUPAC[1]:  # C - 0010

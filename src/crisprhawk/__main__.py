@@ -72,6 +72,30 @@ def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
         help="VCF file containing genetic variants to account for during guide RNA search",
     )
     group.add_argument(
+        "-p",
+        "--pam",
+        type=str,
+        metavar="PAM",
+        dest="pam",
+        required=True,
+        help="PAM sequence used during candidate guide nomination",
+    )
+    group.add_argument(
+        "-g",
+        "--guide-len",
+        type=int,
+        metavar="GUIDE-LENGTH",
+        dest="guidelen",
+        required=True,
+        help="Length of guides to nominate",
+    )
+    group.add_argument(
+        "--right",
+        action="store_true",
+        default=False,
+        help="If selected, extract guides downstream PAM matching positions"
+    )
+    group.add_argument(
         "--debug",
         action="store_true",
         default=False,

@@ -42,7 +42,7 @@ class Bitset(object):
                 os.EX_DATAERR,
                 self._debug,
             )
-        result = Bitset(self._size)  # allocate bits for AND result
+        result = Bitset(self._size, self._debug)  # allocate bits for AND result
         result._bits = self._bits & bitset.bits  # perform AND between bitsets
         return result
 

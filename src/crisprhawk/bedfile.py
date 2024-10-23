@@ -3,6 +3,7 @@
 
 from crisprhawk_error import CrisprHawkBedError
 from exception_handlers import exception_handler
+from sequences import Sequence, Fasta
 
 from typing import List, Union
 
@@ -63,20 +64,40 @@ def _parse_bed_line(bedline: str, linenum: int, debug: bool) -> Coordinate:
         )
     return Coordinate(chrom, start, stop)  # initialize coordinate object
 
+class Region(Sequence):
+    def __init__(self, sequence: str, coord: Coordinate, debug: bool):
+        super().__init__(sequence, debug)  # init parent sequence object
+        # store contig name, start and stop coordinates of the extracted region
+        self._coordinates = coord
+
+    def __str__(self):
+        return f">{self._coordinates}\n{super().__str__()}"
+
+    @property
+    def contig(self) -> str:
+        return self._coordinates.contig
+
+    @property
+    def start(self) -> int:
+        return self._coordinates.start
+
+    @property
+    def stop(self) -> int:
+        return self._coordinates.stop
+
 
 class Bed:
     def __init__(self, bedfile: str, debug: bool) -> None:
         self._fname = bedfile  # store input file name
         self._debug = debug  # store debug mode flag
-        self._coordinates = (
-            self._read()
-        )  # read input bed file content and store a list of coordinates
-
+        # read input bed file content and store a list of coordinates
+        self._coordinates = self._read()
+    
     def __len__(self) -> int:
         if not hasattr(self, "_coordinates"):  # always trace this error
             exception_handler(
                 AttributeError,
-                f"Missing _ccordinates attribute on {self.__class__.__name__}",
+                f"Missing _coordinates attribute on {self.__class__.__name__}",
                 os.EX_DATAERR,
                 True,
             )
@@ -152,6 +173,14 @@ class Bed:
                 e,
             )
         return coordinates
+    
+    def extract(self, fasta: Fasta) -> List[Region]:
+        if not hasattr(self, "_coordinates"):
+            exception_handler(CrisprHawkBedError, "Missing coordinates list, cannot extract sequences", os.EX_DATAERR, self._debug)
+        return [
+            Region(fasta.fetch(c.contig, c.start, c.stop), c, self._debug)
+            for c in self._coordinates
+        ]
 
 
 class BedIterator:
@@ -171,3 +200,4 @@ class BedIterator:
             self._index += 1  # go to next position in the list
             return self._bed[self._index - 1]
         raise StopIteration  # stop iteration over bed object
+    
