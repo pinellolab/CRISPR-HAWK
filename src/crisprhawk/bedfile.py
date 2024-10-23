@@ -64,6 +64,7 @@ def _parse_bed_line(bedline: str, linenum: int, debug: bool) -> Coordinate:
         )
     return Coordinate(chrom, start, stop)  # initialize coordinate object
 
+
 class Region(Sequence):
     def __init__(self, sequence: str, coord: Coordinate, debug: bool):
         super().__init__(sequence, debug)  # init parent sequence object
@@ -92,7 +93,7 @@ class Bed:
         self._debug = debug  # store debug mode flag
         # read input bed file content and store a list of coordinates
         self._coordinates = self._read()
-    
+
     def __len__(self) -> int:
         if not hasattr(self, "_coordinates"):  # always trace this error
             exception_handler(
@@ -173,10 +174,15 @@ class Bed:
                 e,
             )
         return coordinates
-    
+
     def extract(self, fasta: Fasta) -> List[Region]:
         if not hasattr(self, "_coordinates"):
-            exception_handler(CrisprHawkBedError, "Missing coordinates list, cannot extract sequences", os.EX_DATAERR, self._debug)
+            exception_handler(
+                CrisprHawkBedError,
+                "Missing coordinates list, cannot extract sequences",
+                os.EX_DATAERR,
+                self._debug,
+            )
         return [
             Region(fasta.fetch(c.contig, c.start, c.stop), c, self._debug)
             for c in self._coordinates
@@ -200,4 +206,3 @@ class BedIterator:
             self._index += 1  # go to next position in the list
             return self._bed[self._index - 1]
         raise StopIteration  # stop iteration over bed object
-    

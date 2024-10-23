@@ -27,7 +27,8 @@ class CrisprHawkFastaError(CrisprHawkError):
 
     def __str__(self):
         return super().__str__()  # string representation for the exception
-    
+
+
 class CrisprHawkPamError(CrisprHawkError):
     def __init__(self, value):
         # initialize exception object when raised

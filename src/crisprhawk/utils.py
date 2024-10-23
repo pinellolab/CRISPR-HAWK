@@ -48,9 +48,16 @@ IUPACTABLE = {
     "N": "ACGT",
 }
 
+
 # define utils functions
 def reverse_complement(sequence: str, debug: bool) -> str:
     try:
         return "".join([RC[nt] for nt in sequence[::-1]])
     except KeyError as e:
-        exception_handler(ValueError, f"Failed reverse complement on {sequence}", os.EX_DATAERR, debug, e)
+        exception_handler(
+            ValueError,
+            f"Failed reverse complement on {sequence}",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )

@@ -93,7 +93,7 @@ def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
         "--right",
         action="store_true",
         default=False,
-        help="If selected, extract guides downstream PAM matching positions"
+        help="If selected, extract guides downstream PAM matching positions",
     )
     group.add_argument(
         "--debug",

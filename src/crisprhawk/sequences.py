@@ -18,12 +18,12 @@ class Sequence:
     def __init__(self, sequence: str, debug: bool) -> None:
         self._sequence = sequence.upper()  # force sequence nucleotides to upper cases
         # cast str to list for fast index access
-        self._sequence_raw = list(self._sequence)  
+        self._sequence_raw = list(self._sequence)
         self._debug = debug  # store debug mode flag
 
     def __len__(self) -> int:
         return len(self._sequence)
-    
+
     def __str__(self) -> str:
         return self._sequence
 
@@ -60,7 +60,8 @@ class Sequence:
     @property
     def bits(self) -> List[Bitset]:
         return self._sequence_bits
-    
+
+
 class SequenceIterator:
     def __init__(self, sequence: Sequence) -> None:
         if not hasattr(self, "_sequence_raw"):  # always trace this error
@@ -78,34 +79,49 @@ class SequenceIterator:
             self._index += 1  # go to next position in the sequence
             return self._sequence[self._index - 1]
         raise StopIteration  # stop iteration over sequence object
-    
+
+
 class PAM:
     def __init__(self, pamseq: str, debug: bool):
-        self._sequence = Sequence(pamseq, debug)  # initialize forward pam 
-        self._sequence_rc = Sequence(reverse_complement(pamseq, debug), debug)  # initialize pam rc
+        self._sequence = Sequence(pamseq, debug)  # initialize forward pam
+        self._sequence_rc = Sequence(
+            reverse_complement(pamseq, debug), debug
+        )  # initialize pam rc
         self._debug = debug  # store debug mode flag
 
     def __len__(self) -> int:
         return len(self._sequence)
-    
+
     def __str__(self) -> str:
         return f"{self._sequence}"
-    
+
     def encode(self) -> None:
         try:  # encode in bit fwd and rev pam sequence
             self._sequence_rc.encode()  # reverse strand
             self._sequence.encode()  # forward strand
         except ValueError as e:
-            exception_handler(CrisprHawkPamError, f"PAM bit encoding failed", os.EX_DATAERR, self._debug, e)
+            exception_handler(
+                CrisprHawkPamError,
+                f"PAM bit encoding failed",
+                os.EX_DATAERR,
+                self._debug,
+                e,
+            )
 
     @property
-    def pam(self) -> str: return self._sequence
+    def pam(self) -> str:
+        return self._sequence
+
     @property
-    def bits(self) -> Tuple[str]: 
+    def bits(self) -> Tuple[str]:
         if not hasattr(self.pam, "_sequence_bits"):  # always trace this erro
-            exception_handler(AttributeError, f"Missing _sequence_bits attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
+            exception_handler(
+                AttributeError,
+                f"Missing _sequence_bits attribute on {self.__class__.__name__}",
+                os.EX_DATAERR,
+                True,
+            )
         return (self._sequence.bits, self._sequence_rc.bits)  # return arrays of bits
-
 
 
 class Fasta:
@@ -137,9 +153,9 @@ class Fasta:
                 )
         assert _find_fai(self._fname)
         return f"{self._fname}.{FAI}"
-    
+
     def fetch(self, contig: str, start: int, stop: int) -> str:
-        if contig not in self._contigs:  # conting not available in fasta 
+        if contig not in self._contigs:  # conting not available in fasta
             exception_handler(
                 CrisprHawkFastaError,
                 f"Input contig ({contig}) not available in {self._fname}",
@@ -156,6 +172,7 @@ class Fasta:
                 self._debug,
                 e,
             )
+
 
 def _find_fai(fastafile: str) -> bool:
     # search index for the input fasta file, assumes that the index is located
