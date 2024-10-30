@@ -55,13 +55,11 @@ def extract_guide(
     region: Region, pos: int, guidelen: int, pamlen: int, right: bool
 ) -> str:
     if right:
-        return region[pos + pamlen : pos + guidelen + pamlen]
-    return region[pos - guidelen : pos]
+        return region[pos : pos + guidelen + pamlen]
+    return region[pos - guidelen : pos + pamlen]
 
 
-def valid_position(
-    pos: int, guidelen: int, pamlen: int, regionlen: int, right: bool
-) -> bool:
+def valid_position(pos: int, guidelen: int, regionlen: int, right: bool) -> bool:
     if right:
         return guidelen <= regionlen - pos
     return guidelen <= pos
@@ -74,29 +72,31 @@ def retrieve_guides(
     region: Region,
     guidelen: int,
     right: bool,
-) -> Tuple[List[str], List[str]]:
+) -> Tuple[List[List[str]], List[List[str]]]:
 
     regionlen = len(region)  # length of the input region
     # retrieve guides from the forward strand
     guides_fwd = [
         extract_guide(region, pos, guidelen, pamlen, right)
         for pos in matches_fwd
-        if valid_position(pos, guidelen, pamlen, regionlen, right)
+        if valid_position(pos, guidelen, regionlen, right)
     ]
     # retrieve guides from the reverse strand
     guides_rev = [
         extract_guide(region, pos, guidelen, pamlen, not right)
         for pos in matches_rev
-        if valid_position(pos, guidelen, pamlen, regionlen, not right)
+        if valid_position(pos, guidelen, regionlen, not right)
     ]
     return guides_fwd, guides_rev
 
 
-def search(pam: PAM, region: Region, guidelen: int, right: bool, debug: bool):
+def search(
+    pam: PAM, region: Region, guidelen: int, right: bool, debug: bool
+) -> Tuple[Tuple[List[int], List[int]], Tuple[List[List[str]], List[List[str]]]]:
     # search pam occurrences on forward and reverse strand of the input sequence
     matches_fwd, matches_rev = pam_search(pam, region, debug)
     # recover guide candidates found on forward and reverse strands
     guides_fwd, guides_rev = retrieve_guides(
-        matches_fwd, matches_rev, pam, region, guidelen, right
+        matches_fwd, matches_rev, len(pam), region, guidelen, right
     )
-    print(len(guides_fwd), len(guides_rev))
+    return (matches_fwd, matches_rev), (guides_fwd, guides_rev)

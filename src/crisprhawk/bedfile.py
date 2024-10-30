@@ -19,8 +19,11 @@ class Coordinate:
         self._start = start  # set start coordinate
         self._stop = stop  # set stop coordinate
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self._contig}:{self._start}-{self._stop}"
+
+    def format(self) -> str:
+        return "_".join(list(map(str, [self._contig, self._start, self._stop])))
 
     @property
     def contig(self) -> str:
@@ -73,6 +76,9 @@ class Region(Sequence):
 
     def __str__(self):
         return f">{self._coordinates}\n{super().__str__()}"
+
+    def format(self) -> str:
+        return self._coordinates.format()
 
     @property
     def contig(self) -> str:

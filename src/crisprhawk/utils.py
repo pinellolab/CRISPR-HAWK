@@ -47,6 +47,7 @@ IUPACTABLE = {
     "D": "AGT",
     "N": "ACGT",
 }
+GUIDESREPORTPREFIX = "crisprhawk_guides"
 
 
 # define utils functions

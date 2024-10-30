@@ -7,8 +7,9 @@ from crisprhawk_error import CrisprHawkError
 from search_guides import search
 from bedfile import Bed, Region
 from sequences import Fasta, PAM
+from reports import report_guides
 
-from typing import List
+from typing import List, Dict, Tuple
 from argparse import Namespace
 
 import os
@@ -47,11 +48,11 @@ def encoding(regions: List[Region]) -> List[Region]:
 
 
 def guide_search(
-    pamseq: str, regions: List[Region], guidelen: int, right: bool, debug: bool
-):
-    pam = PAM(pamseq, debug)
-    for region in regions:
-        search(pam, region, guidelen, right, debug)
+    pam: PAM, regions: List[Region], guidelen: int, right: bool, debug: bool
+) -> Dict[
+    Region, Tuple[Tuple[List[int], List[int]], Tuple[List[List[str]], List[List[str]]]]
+]:
+    return {region: search(pam, region, guidelen, right, debug) for region in regions}
 
 
 def crisprhawk(args: Namespace, parser: CrisprHawkArgumentParser) -> None:
@@ -63,4 +64,17 @@ def crisprhawk(args: Namespace, parser: CrisprHawkArgumentParser) -> None:
     # encode sequences in bit for efficient candidate guide search
     regions = encoding(regions)
     # search guides in the input regions
-    guide_search(args.pam, regions, args.guidelen, args.right, args.debug)
+    pam = PAM(args.pam, args.debug)  # initialize pam
+    guides = guide_search(pam, regions, args.guidelen, args.right, args.debug)
+    # report guides in output directory
+    for region, (positions, guides) in guides.items():
+        report_guides(
+            args.outdir,
+            region,
+            guides,
+            positions,
+            pam,
+            args.right,
+            args.guidelen,
+            args.debug,
+        )

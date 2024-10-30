@@ -1,12 +1,17 @@
 """
 """
 
-from crisprhawk_error import CrisprHawkFastaError, CrisprHawkPamError
+from crisprhawk_error import (
+    CrisprHawkFastaError,
+    CrisprHawkPamError,
+    CrisprHawkIupacTableError,
+)
 from exception_handlers import exception_handler
-from utils import IUPAC, reverse_complement
+from utils import IUPAC, IUPACTABLE, reverse_complement
 from bitset import Bitset, SIZE
 
 from typing import Optional, Union, List, Tuple
+from itertools import product
 
 import pysam
 import os
@@ -221,3 +226,18 @@ def _encoder(nt: str, position: int, debug: bool) -> Bitset:
             f"The nucleotide {nt} at {position} is not a IUPAC character",
         )
     return bitset
+
+
+def explode_iupac_sequence(iupac_sequence: List[str], debug) -> List[str]:
+    try:  # decode iupac nucleotides using iupac table
+        sequence_combinations = [IUPACTABLE[nt] for nt in iupac_sequence]
+        # explode the input iupac sequence in all their combinations
+        return ["".join(s) for s in product(*sequence_combinations)]
+    except ValueError as e:
+        exception_handler(
+            CrisprHawkIupacTableError,
+            "IUPAC sequence decoding failed",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )

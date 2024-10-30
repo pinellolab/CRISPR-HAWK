@@ -18,6 +18,7 @@ from utils import TOOLNAME
 from time import time
 
 import sys
+import os
 
 
 def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
@@ -94,6 +95,17 @@ def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
         action="store_true",
         default=False,
         help="If selected, extract guides downstream PAM matching positions",
+    )
+    group.add_argument(
+        "-o",
+        "--outdir",
+        type=str,
+        metavar="OUTDIR",
+        dest="outdir",
+        nargs="?",
+        default=os.getcwd(),
+        help="Path to output directory, by default the reports are stored in the "
+        "current working directory",
     )
     group.add_argument(
         "--debug",
