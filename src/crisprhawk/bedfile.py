@@ -80,20 +80,24 @@ class Region(Sequence):
 
     def format(self) -> str:
         return self._coordinates.format()
-    
+
     def enrich(self, variant: List[str], no_filter: bool) -> None:
         # this check ids made by default, however the user may decide to skip it
         # by using --no-filter option
         if not no_filter and variant[6] != "PASS":  # skip variant if not pass
-            return 
+            return
         vpos = int(variant[1])  # variant position (1-based)
-        vposrel = vpos - 1 - self.start  # compute relative variant position (bed coords 0-based)
+        vposrel = (
+            vpos - 1 - self.start
+        )  # compute relative variant position (bed coords 0-based)
         ref, alt = variant[3], variant[4]  # retrieve ref and alt alleles
         # compute iupac nt to represent current variant
-        iupac_nt = _encode_snp_iupac(self._sequence_raw[vposrel], ref, alt, vpos, self._debug)
+        iupac_nt = _encode_snp_iupac(
+            self._sequence_raw[vposrel], ref, alt, vpos, self._debug
+        )
         if iupac_nt is None:  # indel
             return
-        self._sequence_raw[vposrel] = iupac_nt  # replace ref allele with iupac 
+        self._sequence_raw[vposrel] = iupac_nt  # replace ref allele with iupac
 
     @property
     def contig(self) -> str:
@@ -228,14 +232,24 @@ class BedIterator:
             return self._bed[self._index - 1]
         raise StopIteration  # stop iteration over bed object
 
-def _encode_snp_iupac(refnt: str, ref: str, alt: str, pos: int, debug: bool) -> Union[str, None]:
+
+def _encode_snp_iupac(
+    refnt: str, ref: str, alt: str, pos: int, debug: bool
+) -> Union[str, None]:
     if len(ref) != 1:  # deletion, skip
-        return 
+        return
     alleles_alt = alt.split(",")  # retrieve multiallelic alt alleles
     if len(alleles_alt) == 1 and len(alleles_alt[0]) > 1:  # insertion, skip
-        return 
+        return
     if refnt != ref:  # ref alleles must match between vcf and fasta
-        exception_handler(CrisprHawkEnrichmentError, f"Reference allele mismatch between FASTA and VCF file ({refnt} - {ref}) at position {pos}", os.EX_DATAERR, debug)
-    # create iupac string to use for the iupac char encoding 
-    iupac_string = {allele for allele in alleles_alt + [refnt] if len(allele) == 1}  # skip indels and focus on just snps
+        exception_handler(
+            CrisprHawkEnrichmentError,
+            f"Reference allele mismatch between FASTA and VCF file ({refnt} - {ref}) at position {pos}",
+            os.EX_DATAERR,
+            debug,
+        )
+    # create iupac string to use for the iupac char encoding
+    iupac_string = {
+        allele for allele in alleles_alt + [refnt] if len(allele) == 1
+    }  # skip indels and focus on just snps
     return IUPAC_ENCODER[iupac_string]

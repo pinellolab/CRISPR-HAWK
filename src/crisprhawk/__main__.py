@@ -109,10 +109,10 @@ def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
         "current working directory",
     )
     group.add_argument(
-        "--no-filter", 
-        action="store_true", 
+        "--no-filter",
+        action="store_true",
         dest="no_filter",
-        default=False, 
+        default=False,
         help="When enabled, all variants in the input VCF files will be "
         "considered. By default, only variants marked with 'PASS' in the FILTER "
         "field are processed, while others are skipped",

@@ -56,7 +56,7 @@ class Sequence:
         self._sequence_bits = [
             _encoder(nt, i, self._debug) for i, nt in enumerate(self._sequence_raw)
         ]
-        assert len(self._sequence_bits) == len(self)      
+        assert len(self._sequence_bits) == len(self)
 
     @property
     def sequence(self) -> str:
@@ -135,7 +135,7 @@ class Fasta:
         self._debug = debug  # store debug mode flag
         self._faidx = self._search_index(faidx)  # initialize fasta index
         # initialize FastaFile object with the previously computed index
-        self._fasta = pysam.FastaFile(self._fname, filepath_index=self._faidx)  
+        self._fasta = pysam.FastaFile(self._fname, filepath_index=self._faidx)
         self._contigs = self._fasta.references  # add contig names
 
     def _search_index(self, faidx: Optional[str] = "") -> str:
@@ -159,9 +159,13 @@ class Fasta:
             return f"{self._fname}.{FAI}"
         # precomputed fasta index index must be a non empty file
         if not (os.path.isfile(faidx) and os.stat(faidx).st_size > 0):
-            exception_handler(CrisprHawkFastaError, f"Not existing or empty FASTA index {faidx}", os.EX_DATAERR, self._debug)
+            exception_handler(
+                CrisprHawkFastaError,
+                f"Not existing or empty FASTA index {faidx}",
+                os.EX_DATAERR,
+                self._debug,
+            )
         return faidx
-        
 
     def fetch(self, contig: str, start: int, stop: int) -> str:
         if contig not in self._contigs:  # conting not available in fasta
@@ -230,7 +234,6 @@ def _encoder(nt: str, position: int, debug: bool) -> Bitset:
             f"The nucleotide {nt} at {position} is not a IUPAC character",
         )
     return bitset
-    
 
 
 def explode_iupac_sequence(iupac_sequence: List[str], debug) -> List[str]:
