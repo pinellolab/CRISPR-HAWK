@@ -7,7 +7,7 @@ from crisprhawk_error import (
     CrisprHawkIupacTableError,
 )
 from exception_handlers import exception_handler
-from utils import IUPAC, IUPACTABLE, reverse_complement
+from utils import IUPAC, IUPACTABLE, IUPAC_ENCODER, reverse_complement
 from bitset import Bitset, SIZE
 
 from typing import Optional, Union, List, Tuple
@@ -56,7 +56,7 @@ class Sequence:
         self._sequence_bits = [
             _encoder(nt, i, self._debug) for i, nt in enumerate(self._sequence_raw)
         ]
-        assert len(self._sequence_bits) == len(self)
+        assert len(self._sequence_bits) == len(self)      
 
     @property
     def sequence(self) -> str:
@@ -134,10 +134,9 @@ class Fasta:
         self._fname = fname  # store input file name
         self._debug = debug  # store debug mode flag
         self._faidx = self._search_index(faidx)  # initialize fasta index
-        self._fasta = pysam.FastaFile(
-            self._fname, filepath_index=self._faidx
-        )  # initialize FastaFile object with the previously computed index
-        self._contigs = self._fasta.references
+        # initialize FastaFile object with the previously computed index
+        self._fasta = pysam.FastaFile(self._fname, filepath_index=self._faidx)  
+        self._contigs = self._fasta.references  # add contig names
 
     def _search_index(self, faidx: Optional[str] = "") -> str:
         # look for index file for the current fasta file, if not found compute it
@@ -156,8 +155,13 @@ class Fasta:
                     self._debug,
                     e,
                 )
-        assert _find_fai(self._fname)
-        return f"{self._fname}.{FAI}"
+            assert _find_fai(self._fname)
+            return f"{self._fname}.{FAI}"
+        # precomputed fasta index index must be a non empty file
+        if not (os.path.isfile(faidx) and os.stat(faidx).st_size > 0):
+            exception_handler(CrisprHawkFastaError, f"Not existing or empty FASTA index {faidx}", os.EX_DATAERR, self._debug)
+        return faidx
+        
 
     def fetch(self, contig: str, start: int, stop: int) -> str:
         if contig not in self._contigs:  # conting not available in fasta
@@ -172,7 +176,7 @@ class Fasta:
         except ValueError as e:  # failed extraction
             exception_handler(
                 CrisprHawkFastaError,
-                f"Sequence extraction failed for coordinates ({contig}:{start}-{stop})",
+                f"Sequence extraction failed for coordinates {contig}:{start}-{stop}",
                 os.EX_DATAERR,
                 self._debug,
                 e,
@@ -226,6 +230,7 @@ def _encoder(nt: str, position: int, debug: bool) -> Bitset:
             f"The nucleotide {nt} at {position} is not a IUPAC character",
         )
     return bitset
+    
 
 
 def explode_iupac_sequence(iupac_sequence: List[str], debug) -> List[str]:

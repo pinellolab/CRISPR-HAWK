@@ -93,6 +93,7 @@ def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
     group.add_argument(
         "--right",
         action="store_true",
+        dest="right",
         default=False,
         help="If selected, extract guides downstream PAM matching positions",
     )
@@ -106,6 +107,15 @@ def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
         default=os.getcwd(),
         help="Path to output directory, by default the reports are stored in the "
         "current working directory",
+    )
+    group.add_argument(
+        "--no-filter", 
+        action="store_true", 
+        dest="no_filter",
+        default=False, 
+        help="When enabled, all variants in the input VCF files will be "
+        "considered. By default, only variants marked with 'PASS' in the FILTER "
+        "field are processed, while others are skipped",
     )
     group.add_argument(
         "--debug",
