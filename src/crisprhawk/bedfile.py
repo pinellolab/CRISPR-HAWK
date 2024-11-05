@@ -128,6 +128,9 @@ class Bed:
                 True,
             )
         return len(self._coordinates)
+    
+    def __iter__(self) -> "BedIterator":
+        return BedIterator(self)
 
     def __getitem__(self, idx: Union[int, slice]) -> Coordinate:
         if not hasattr(self, "_coordinates"):  # always trace this error
@@ -228,8 +231,9 @@ class BedIterator:
 
     def __next__(self) -> Coordinate:
         if self._index < len(self._bed):  # not reached end of bed coordinates
+            result = self._bed[self._index]
             self._index += 1  # go to next position in the list
-            return self._bed[self._index - 1]
+            return result
         raise StopIteration  # stop iteration over bed object
 
 

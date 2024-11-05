@@ -31,6 +31,9 @@ class Sequence:
 
     def __str__(self) -> str:
         return self._sequence
+    
+    def __iter__(self) -> "SequenceIterator":
+        return SequenceIterator(self)
 
     def __getitem__(self, idx: Union[int, slice]) -> str:
         if not hasattr(self, "_sequence_raw"):  # always trace this error
@@ -69,7 +72,7 @@ class Sequence:
 
 class SequenceIterator:
     def __init__(self, sequence: Sequence) -> None:
-        if not hasattr(self, "_sequence_raw"):  # always trace this error
+        if not hasattr(sequence, "_sequence_raw"):  # always trace this error
             exception_handler(
                 AttributeError,
                 f"Missing _sequence_raw attribute on {self.__class__.__name__}",
@@ -81,8 +84,9 @@ class SequenceIterator:
 
     def __next__(self) -> str:
         if self._index < len(self._sequence):
+            result = self._sequence[self._index]
             self._index += 1  # go to next position in the sequence
-            return self._sequence[self._index - 1]
+            return result
         raise StopIteration  # stop iteration over sequence object
 
 

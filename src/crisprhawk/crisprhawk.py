@@ -3,7 +3,6 @@
 
 from crisprhawk_argparse import CrisprHawkArgumentParser
 from exception_handlers import exception_handler
-from crisprhawk_error import CrisprHawkError
 from search_guides import search
 from bedfile import Bed, Region
 from sequences import Fasta, PAM

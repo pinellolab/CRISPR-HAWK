@@ -6,7 +6,7 @@ from search_guides import match
 from crisprhawk_error import CrisprHawkBitsetError, CrisprHawkGuidesReportError
 from exception_handlers import exception_handler
 from sequences import PAM, explode_iupac_sequence
-from utils import GUIDESREPORTPREFIX, reverse_complement
+from utils import GUIDESREPORTPREFIX, IUPACTABLE, IUPAC, reverse_complement
 
 from typing import Tuple, List
 
@@ -14,16 +14,17 @@ import pandas as pd
 
 import os
 
-REPORTCOLS = [
-    "Chr",
-    "PAM_hit",
-    "PAM_seq",
-    "sgRNA_sequence",
-    "Strand",
-    "sgRNA_start",
-    "sgRNA_stop",
-]
 
+REPORTCOLS = [
+    "chr",
+    "start",
+    "stop",
+    "sgRNA_sequence",
+    "pam",
+    "pam_class",
+    "strand",
+    "target",
+]
 
 def keepguide(pam_query: PAM, pamseq: str, debug: bool) -> bool:
     assert hasattr(pam_query.pam, "_sequence_bits")  # should already be encoded
@@ -43,6 +44,11 @@ def keepguide(pam_query: PAM, pamseq: str, debug: bool) -> bool:
             e,
         )
 
+def compute_pam_class(pam: PAM) -> str:
+    # retrieve a string representing the input pam class
+    # e.g. NGG -> [ACGT]GG
+    return "".join([nt if nt in IUPAC[:4] else f"[{IUPACTABLE[nt]}]" for nt in pam.pam])
+
 
 def construct_report(
     region: Region,
@@ -60,18 +66,20 @@ def construct_report(
         for g in explode_iupac_sequence(guide, debug):
             g = reverse_complement(g, debug) if strand == "-" else g
             pamguide = g[:pamlen] if right else g[-pamlen:]
-            guide = g[pamlen:] if right else g[:-pamlen]
+            guideseq = g[pamlen:] if right else g[:-pamlen]
             if keepguide(pam, pamguide, debug):
                 report[REPORTCOLS[0]].append(region.contig)  # chromosome
-                report[REPORTCOLS[1]].append(pamguide)  # pam hit
-                report[REPORTCOLS[2]].append(pam.pam)  # query pam
-                report[REPORTCOLS[3]].append(g)  # query pam
-                report[REPORTCOLS[4]].append(strand)  # strand orientation
                 # compute start and stop positions wrt region
-                start = (matches[i] - guidelen) + region.start
+                start = (matches[i] - guidelen) + region.start if strand == "+" else matches[i] + region.start
                 stop = start + guidelen + pamlen
-                report[REPORTCOLS[5]].append(start)  # start position
-                report[REPORTCOLS[6]].append(stop)  # stop position
+                report[REPORTCOLS[1]].append(start)  # start position
+                report[REPORTCOLS[2]].append(stop)  # stop position
+                report[REPORTCOLS[3]].append(guideseq)  # guide
+                report[REPORTCOLS[4]].append(pamguide)  # pam guide
+                # compute extended pam class for the input pam
+                report[REPORTCOLS[5]].append(compute_pam_class(pam))
+                report[REPORTCOLS[6]].append(strand)  # strand orientation
+                report[REPORTCOLS[7]].append(region.format())  # target region
     return pd.DataFrame(report)
 
 
