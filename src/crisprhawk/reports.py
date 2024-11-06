@@ -26,6 +26,7 @@ REPORTCOLS = [
     "target",
 ]
 
+
 def keepguide(pam_query: PAM, pamseq: str, debug: bool) -> bool:
     assert hasattr(pam_query.pam, "_sequence_bits")  # should already be encoded
     try:
@@ -43,6 +44,7 @@ def keepguide(pam_query: PAM, pamseq: str, debug: bool) -> bool:
             debug,
             e,
         )
+
 
 def compute_pam_class(pam: PAM) -> str:
     # retrieve a string representing the input pam class
@@ -70,7 +72,11 @@ def construct_report(
             if keepguide(pam, pamguide, debug):
                 report[REPORTCOLS[0]].append(region.contig)  # chromosome
                 # compute start and stop positions wrt region
-                start = (matches[i] - guidelen) + region.start if strand == "+" else matches[i] + region.start
+                start = (
+                    (matches[i] - guidelen) + region.start
+                    if strand == "+"
+                    else matches[i] + region.start
+                )
                 stop = start + guidelen + pamlen
                 report[REPORTCOLS[1]].append(start)  # start position
                 report[REPORTCOLS[2]].append(stop)  # stop position
@@ -95,7 +101,7 @@ def report_guides(
 ) -> None:
     # define report fname -> example: crisprhawk_guides__chr2_1_10_NGG_20.tsv
     guidesreport = os.path.join(
-        outdir, f"{GUIDESREPORTPREFIX}__{region.format()}_{pam}_{guidelen}.tsv"
+        outdir, f"{GUIDESREPORTPREFIX}__{region.format(guidelen)}_{pam}_{guidelen}.tsv"
     )
     try:
         # compute single reports on forward strand guides and reverse strand guides
@@ -110,7 +116,7 @@ def report_guides(
             ]
         )
         # sort report by contig and position
-        report = report.sort_values([REPORTCOLS[0], REPORTCOLS[5]], ascending=True)
+        report = report.sort_values([REPORTCOLS[0], REPORTCOLS[1]], ascending=True)
         report.to_csv(guidesreport, sep="\t", index=False)  # save report
     except FileNotFoundError as e:
         exception_handler(

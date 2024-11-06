@@ -2,7 +2,6 @@
 """
 
 from crisprhawk_argparse import CrisprHawkArgumentParser
-from exception_handlers import exception_handler
 from search_guides import search
 from bedfile import Bed, Region
 from sequences import Fasta, PAM
@@ -19,6 +18,7 @@ def enrichment(
     bedfile: str,
     fasta_idx: str,
     vcf: str,
+    guidelen: int,
     debug: bool,
     parser: CrisprHawkArgumentParser,
 ):
@@ -31,11 +31,10 @@ def enrichment(
         parser.error(f"Unable to find {bedfile}")
     if os.stat(bedfile).st_size <= 0:
         parser.error(f"The input BED file {bedfile} seems empty")
-    bedfile = Bed(bedfile, debug)  # read regions from input bedfile
+    bedfile = Bed(bedfile, guidelen, debug)  # read regions from input bedfile
     regions = bedfile.extract(Fasta(fasta, debug, fasta_idx))  # extract regions
     if not vcf:  # no variants in input, skip enrichment and go to encoding
         return regions
-
     # TODO: enrichment
     print("enrichment")
 
@@ -58,7 +57,13 @@ def crisprhawk(args: Namespace, parser: CrisprHawkArgumentParser) -> None:
     # sequence enrichment -> add genetic variants to input sequences if input
     # vcf is given, return reference sequences otherwise
     regions = enrichment(
-        args.fasta, args.bedfile, args.fasta_idx, args.vcf, args.debug, parser
+        args.fasta,
+        args.bedfile,
+        args.fasta_idx,
+        args.vcf,
+        args.guidelen,
+        args.debug,
+        parser,
     )
     # encode sequences in bit for efficient candidate guide search
     regions = encoding(regions)

@@ -31,7 +31,7 @@ class Sequence:
 
     def __str__(self) -> str:
         return self._sequence
-    
+
     def __iter__(self) -> "SequenceIterator":
         return SequenceIterator(self)
 

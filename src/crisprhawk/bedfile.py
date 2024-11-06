@@ -6,7 +6,7 @@ from exception_handlers import exception_handler
 from sequences import Sequence, Fasta
 from utils import IUPAC_ENCODER
 
-from typing import List, Union
+from typing import List, Union, Optional
 
 import os
 
@@ -23,8 +23,10 @@ class Coordinate:
     def __str__(self) -> str:
         return f"{self._contig}:{self._start}-{self._stop}"
 
-    def format(self) -> str:
-        return "_".join(list(map(str, [self._contig, self._start, self._stop])))
+    def format(self, pad: Optional[int] = 0) -> str:
+        return "_".join(
+            list(map(str, [self._contig, self._start + pad, self._stop - pad]))
+        )
 
     @property
     def contig(self) -> str:
@@ -39,7 +41,9 @@ class Coordinate:
         return self._stop
 
 
-def _parse_bed_line(bedline: str, linenum: int, debug: bool) -> Coordinate:
+def _parse_bed_line(
+    bedline: str, linenum: int, guidelen: int, debug: bool
+) -> Coordinate:
     columns = bedline.strip().split()  # recover bed fields for current line
     # minimum fields required: chrom, start, stop
     # (see https://genome.ucsc.edu/FAQ/FAQformat.html#format1)
@@ -66,7 +70,9 @@ def _parse_bed_line(bedline: str, linenum: int, debug: bool) -> Coordinate:
             os.EX_DATAERR,
             debug,
         )
-    return Coordinate(chrom, start, stop)  # initialize coordinate object
+    # handle pam occurrences on the edges of the region by padding up and downstream
+    # the input region by |g| nts, where g is the guide
+    return Coordinate(chrom, start - guidelen, stop + guidelen)
 
 
 class Region(Sequence):
@@ -78,8 +84,8 @@ class Region(Sequence):
     def __str__(self):
         return f">{self._coordinates}\n{super().__str__()}"
 
-    def format(self) -> str:
-        return self._coordinates.format()
+    def format(self, pad: Optional[int] = 0) -> str:
+        return self._coordinates.format(pad)
 
     def enrich(self, variant: List[str], no_filter: bool) -> None:
         # this check ids made by default, however the user may decide to skip it
@@ -113,11 +119,11 @@ class Region(Sequence):
 
 
 class Bed:
-    def __init__(self, bedfile: str, debug: bool) -> None:
+    def __init__(self, bedfile: str, guidelen: int, debug: bool) -> None:
         self._fname = bedfile  # store input file name
         self._debug = debug  # store debug mode flag
         # read input bed file content and store a list of coordinates
-        self._coordinates = self._read()
+        self._coordinates = self._read(guidelen)
 
     def __len__(self) -> int:
         if not hasattr(self, "_coordinates"):  # always trace this error
@@ -128,7 +134,7 @@ class Bed:
                 True,
             )
         return len(self._coordinates)
-    
+
     def __iter__(self) -> "BedIterator":
         return BedIterator(self)
 
@@ -156,7 +162,7 @@ class Bed:
                 f"Invalid index type ({type(idx).__name__}), expected {int.__name__} or {slice.__name__}",
             )
 
-    def _read(self) -> List[Coordinate]:
+    def _read(self, guidelen: int) -> List[Coordinate]:
         coordinates = []  # list of coordinates from the input bed (Coordinate objs)
         try:
             with open(self._fname, mode="r") as infile:  # begin Bedfile parsing
@@ -168,7 +174,9 @@ class Bed:
                     ):  # skip comments and empy lines
                         continue
                     # add coordinate to coordinates list
-                    coordinates.append(_parse_bed_line(line, i + 1, self._debug))
+                    coordinates.append(
+                        _parse_bed_line(line, i + 1, guidelen, self._debug)
+                    )
         except FileNotFoundError as e:  # bed file not found
             exception_handler(
                 CrisprHawkBedError,
