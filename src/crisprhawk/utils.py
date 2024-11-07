@@ -3,6 +3,8 @@
 
 from exception_handlers import exception_handler
 
+from colorama import Fore
+
 import sys
 import os
 
@@ -132,6 +134,11 @@ def reverse_complement(sequence: str, debug: bool) -> str:
             debug,
             e,
         )
+
+def warning(message: str, verbosity: int) -> None:
+    if verbosity >= VERBOSITYLVL[1]:
+        sys.stderr.write(f"{Fore.YELLOW}WARNING: {message}.{Fore.RESET}\n")
+    return
 
 
 def print_verbosity(message: str, verbosity: int, verbosity_threshold: int) -> None:

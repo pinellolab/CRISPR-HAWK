@@ -7,7 +7,7 @@ from crisprhawk_error import (
     CrisprHawkIupacTableError,
 )
 from exception_handlers import exception_handler
-from utils import IUPAC, IUPACTABLE, IUPAC_ENCODER, reverse_complement
+from utils import IUPAC, IUPACTABLE, IUPAC_ENCODER, VERBOSITYLVL, reverse_complement, print_verbosity
 from bitset import Bitset, SIZE
 
 from typing import Optional, Union, List, Tuple
@@ -134,9 +134,10 @@ class PAM:
 
 
 class Fasta:
-    def __init__(self, fname: str, debug: bool, faidx: Optional[str] = "") -> None:
+    def __init__(self, fname: str, verbosity: int, debug: bool, faidx: Optional[str] = "") -> None:
         self._fname = fname  # store input file name
         self._debug = debug  # store debug mode flag
+        self._verbosity = verbosity  # store verbosity level
         self._faidx = self._search_index(faidx)  # initialize fasta index
         # initialize FastaFile object with the previously computed index
         self._fasta = pysam.FastaFile(self._fname, filepath_index=self._faidx)
@@ -146,9 +147,11 @@ class Fasta:
         # look for index file for the current fasta file, if not found compute it
         if not faidx:  # index not provided from input arguments -> search it
             if _find_fai(self._fname):  # index found, return it
+                print_verbosity(f"FASTA index found for {self._fname}", self._verbosity, VERBOSITYLVL[3])
                 return f"{self._fname}.{FAI}"
             # not found the index -> compute it de nove and store it in the same
             # folder of the indexed fasta
+            print_verbosity(f"FASTA index not found. Computing index for {self._fname}", self._verbosity, VERBOSITYLVL[2])
             try:
                 pysam.faidx(self._fname)  # index fasta using samtools
             except OSError as e:
@@ -160,6 +163,7 @@ class Fasta:
                     e,
                 )
             assert _find_fai(self._fname)
+            print_verbosity(f"FASTA index computed for {self._fname}", self._verbosity, VERBOSITYLVL[3])
             return f"{self._fname}.{FAI}"
         # precomputed fasta index index must be a non empty file
         if not (os.path.isfile(faidx) and os.stat(faidx).st_size > 0):

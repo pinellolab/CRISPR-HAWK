@@ -9,7 +9,7 @@ Usage:
 Run 'crisprhawk -h/--help' to display the complete help
 """
 
-from crisprhawk_argparse import CrisprHawkArgumentParser
+from crisprhawk_argparse import CrisprHawkArgumentParser, CisprHawkInputArgs
 from exception_handlers import sigint_handler
 from crisprhawk_version import __version__
 from crisprhawk import crisprhawk
@@ -21,7 +21,7 @@ import sys
 import os
 
 
-def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
+def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
     # force displaying docstring at each usage display and force
     # the default help to not being shown
     parser = CrisprHawkArgumentParser(usage=__doc__, add_help=False)
@@ -139,10 +139,10 @@ def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
 def main():
     start = time()  # track elapsed time
     try:
-        parser = parseargs_crisprhawk()  # parse input argument using custom parser
+        parser = create_parser_crisprhawk()  # parse input argument using custom parser
         if not sys.argv[1:]:  # no input args -> print help and exit
             parser.error_noargs()
-        crisprhawk(parser.parse_args(sys.argv[1:]), parser)
+        crisprhawk(CisprHawkInputArgs(parser.parse_args(sys.argv[1:]), parser))
     except KeyboardInterrupt as e:
         sigint_handler()  # catch SIGINT and exit gracefully
     sys.stdout.write(f"{TOOLNAME} - Elapsed time {(time() - start):.2f}s\n")
