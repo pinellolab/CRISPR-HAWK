@@ -14,7 +14,9 @@ TBI = "tbi"
 
 
 class VCF:
-    def __init__(self, fname: str, verbosity: int, debug: bool, vcfidx: Optional[str] = "") -> None:
+    def __init__(
+        self, fname: str, verbosity: int, debug: bool, vcfidx: Optional[str] = ""
+    ) -> None:
         self._fname = fname  # store input filename
         self._debug = debug  # store debug mode flag
         self._verbosity = verbosity  # store verbosity level
@@ -28,11 +30,19 @@ class VCF:
         # look for index for the current vcf, if not found compute it
         if not vcfidx:
             if _find_tbi(self._fname):  # index found, store it
-                print_verbosity(f"Tabix index found for {self._fname}", self._verbosity, VERBOSITYLVL[3])
+                print_verbosity(
+                    f"Tabix index found for {self._fname}",
+                    self._verbosity,
+                    VERBOSITYLVL[3],
+                )
                 return f"{self._fname}.{TBI}"
             # index not found -> compute it de novo and store it in the same folder
             # as the input vcf
-            print_verbosity(f"Tabix index not found. Computing index for {self._fname}", self._verbosity, VERBOSITYLVL[2])
+            print_verbosity(
+                f"Tabix index not found. Computing index for {self._fname}",
+                self._verbosity,
+                VERBOSITYLVL[2],
+            )
             try:
                 tabix_index(self._fname, preset="vcf", force=True)
             except OSError as e:
@@ -44,7 +54,11 @@ class VCF:
                     e,
                 )
             assert _find_tbi(self._fname)
-            print_verbosity(f"Tabix index computed for {self._fname}", self._verbosity, VERBOSITYLVL[3])
+            print_verbosity(
+                f"Tabix index computed for {self._fname}",
+                self._verbosity,
+                VERBOSITYLVL[3],
+            )
             return f"{self._fname}.{TBI}"
         # precomputed vcf index index must be a non empty file
         if not (os.path.isfile(vcfidx) and os.stat(vcfidx).st_size > 0):
@@ -58,7 +72,9 @@ class VCF:
     def fetch(self, start: int, stop: int) -> List[List[str]]:
         try:  # extract variants in the input range from vcf file
             # return a list of variants data as list of fields
-            return [v.strip().split() for v in self._vcf.fetch(self._contig, start, stop)]
+            return [
+                v.strip().split() for v in self._vcf.fetch(self._contig, start, stop)
+            ]
         except ValueError as e:
             exception_handler(
                 CrisprHawkVCFError,

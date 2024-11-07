@@ -4,7 +4,6 @@
 from crisprhawk_error import CrisprHawkBedError, CrisprHawkEnrichmentError
 from exception_handlers import exception_handler
 from sequences import Sequence, Fasta
-from utils import IUPAC_ENCODER
 
 from typing import List, Union, Optional
 
@@ -88,10 +87,16 @@ class Region(Sequence):
         return self._coordinates.format(pad)
 
     def enrich(self, pos: int, iupac_nt: str) -> None:
-        try: 
+        try:
             self._sequence_raw[pos] = iupac_nt
         except IndexError as e:
-            exception_handler(f"Enrichment failed for region {self.format()}", CrisprHawkEnrichmentError, os.EX_DATAERR, self._debug, e)
+            exception_handler(
+                f"Enrichment failed for region {self.format()}",
+                CrisprHawkEnrichmentError,
+                os.EX_DATAERR,
+                self._debug,
+                e,
+            )
 
     @property
     def contig(self) -> str:
@@ -281,4 +286,3 @@ class BedIterator:
             self._index += 1  # go to next position in the list
             return result
         raise StopIteration  # stop iteration over bed object
-

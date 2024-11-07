@@ -135,6 +135,7 @@ def reverse_complement(sequence: str, debug: bool) -> str:
             e,
         )
 
+
 def warning(message: str, verbosity: int) -> None:
     if verbosity >= VERBOSITYLVL[1]:
         sys.stderr.write(f"{Fore.YELLOW}WARNING: {message}.{Fore.RESET}\n")

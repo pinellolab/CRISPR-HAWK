@@ -9,7 +9,7 @@ Usage:
 Run 'crisprhawk -h/--help' to display the complete help
 """
 
-from crisprhawk_argparse import CrisprHawkArgumentParser, CisprHawkInputArgs
+from crisprhawk_argparse import CrisprHawkArgumentParser, CrisprHawkInputArgs
 from exception_handlers import sigint_handler
 from crisprhawk_version import __version__
 from crisprhawk import crisprhawk
@@ -142,7 +142,7 @@ def main():
         parser = create_parser_crisprhawk()  # parse input argument using custom parser
         if not sys.argv[1:]:  # no input args -> print help and exit
             parser.error_noargs()
-        crisprhawk(CisprHawkInputArgs(parser.parse_args(sys.argv[1:]), parser))
+        crisprhawk(CrisprHawkInputArgs(parser.parse_args(sys.argv[1:]), parser))
     except KeyboardInterrupt as e:
         sigint_handler()  # catch SIGINT and exit gracefully
     sys.stdout.write(f"{TOOLNAME} - Elapsed time {(time() - start):.2f}s\n")

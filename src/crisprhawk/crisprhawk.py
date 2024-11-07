@@ -1,7 +1,7 @@
 """
 """
 
-from crisprhawk_argparse import CrisprHawkArgumentParser, CisprHawkInputArgs
+from crisprhawk_argparse import CrisprHawkInputArgs
 from utils import print_verbosity, warning, VERBOSITYLVL
 from search_guides import search
 from bedfile import Bed, Region, RegionList
@@ -10,9 +10,6 @@ from reports import report_guides
 from enrichment import enricher
 
 from typing import List, Dict, Tuple
-from argparse import Namespace
-
-import os
 
 
 def enrichment(
@@ -40,8 +37,6 @@ def enrichment(
         return regions
     # TODO: enrichment - haplotype tracking + indels
     return enricher(regions, vcfs, guidelen, no_filter, verbosity, debug)
-    
-
 
 
 def encoding(regions: RegionList) -> RegionList:
@@ -58,7 +53,7 @@ def guide_search(
     return {region: search(pam, region, guidelen, right, debug) for region in regions}
 
 
-def crisprhawk(args: CisprHawkInputArgs) -> None:
+def crisprhawk(args: CrisprHawkInputArgs) -> None:
     # sequence enrichment -> add genetic variants to input sequences if input
     # vcf is given, return reference sequences otherwise
     regions = enrichment(
