@@ -118,6 +118,53 @@ class Region(Sequence):
         return self._coordinates.stop
 
 
+class RegionList:
+    def __init__(self, regions: List[Region], debug: bool) -> None:
+        self._regions = regions
+        self._debug = debug
+
+    def __len__(self) -> int:
+        return len(self._regions)
+
+    def __iter__(self) -> "RegionListIterator":
+        return RegionListIterator(self)
+
+    def __getitem__(self, idx: Union[int, slice]) -> Region:
+        if not hasattr(self, "_regions"):  # always trace this error
+            exception_handler(
+                AttributeError,
+                f"Missing _regions attribute on {self.__class__.__name__}",
+                os.EX_DATAERR,
+                True,
+            )
+        try:
+            return self._regions[idx]
+        except IndexError as e:
+            exception_handler(
+                CrisprHawkBedError,
+                f"Index {idx} out of range",
+                os.EX_DATAERR,
+                self._debug,
+                e,
+            )
+
+    def format(self, sep: Optional[str] = "\n", pad: Optional[int] = 0) -> str:
+        return sep.join([r.format(pad) for r in self._regions])
+
+
+class RegionListIterator:
+    def __init__(self, regions: RegionList) -> None:
+        self._regions = regions  # region list object to iterate over
+        self._index = 0  # iterator index used over the list
+
+    def __next__(self) -> Region:
+        if self._index < len(self._regions):
+            result = self._regions[self._index]
+            self._index += 1  # go to next position in list
+            return result
+        raise StopIteration  # stop iteration over regions list
+
+
 class Bed:
     def __init__(self, bedfile: str, guidelen: int, debug: bool) -> None:
         self._fname = bedfile  # store input file name
@@ -211,7 +258,7 @@ class Bed:
             )
         return coordinates
 
-    def extract(self, fasta: Fasta) -> List[Region]:
+    def extract(self, fasta: Fasta) -> RegionList:
         if not hasattr(self, "_coordinates"):
             exception_handler(
                 CrisprHawkBedError,
@@ -219,10 +266,13 @@ class Bed:
                 os.EX_DATAERR,
                 self._debug,
             )
-        return [
-            Region(fasta.fetch(c.contig, c.start, c.stop), c, self._debug)
-            for c in self._coordinates
-        ]
+        return RegionList(
+            [
+                Region(fasta.fetch(c.contig, c.start, c.stop), c, self._debug)
+                for c in self._coordinates
+            ],
+            self._debug,
+        )
 
 
 class BedIterator:

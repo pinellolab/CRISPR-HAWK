@@ -2,8 +2,9 @@
 """
 
 from crisprhawk_argparse import CrisprHawkArgumentParser
+from utils import print_verbosity, VERBOSITYLVL
 from search_guides import search
-from bedfile import Bed, Region
+from bedfile import Bed, Region, RegionList
 from sequences import Fasta, PAM
 from reports import report_guides
 
@@ -19,6 +20,7 @@ def enrichment(
     fasta_idx: str,
     vcf: str,
     guidelen: int,
+    verbosity: int,
     debug: bool,
     parser: CrisprHawkArgumentParser,
 ):
@@ -31,15 +33,23 @@ def enrichment(
         parser.error(f"Unable to find {bedfile}")
     if os.stat(bedfile).st_size <= 0:
         parser.error(f"The input BED file {bedfile} seems empty")
-    bedfile = Bed(bedfile, guidelen, debug)  # read regions from input bedfile
-    regions = bedfile.extract(Fasta(fasta, debug, fasta_idx))  # extract regions
+    print_verbosity(f"Parsing input BED file {bedfile}", verbosity, VERBOSITYLVL[2])
+    bed = Bed(bedfile, guidelen, debug)  # read regions from input bedfile
+    print_verbosity(f"Parsed regions number: {len(bed)}", verbosity, VERBOSITYLVL[3])
+    print_verbosity(f"Extracting regions from {fasta}", verbosity, VERBOSITYLVL[2])
+    regions = bed.extract(Fasta(fasta, debug, fasta_idx))  # extract regions
+    print_verbosity(
+        f"Extracted regions:\n{regions.format(pad=guidelen)}",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
     if not vcf:  # no variants in input, skip enrichment and go to encoding
         return regions
     # TODO: enrichment
     print("enrichment")
 
 
-def encoding(regions: List[Region]) -> List[Region]:
+def encoding(regions: RegionList) -> RegionList:
     for region in regions:
         region.encode()  # encode input regions as sequences of bits
     return regions
@@ -62,6 +72,7 @@ def crisprhawk(args: Namespace, parser: CrisprHawkArgumentParser) -> None:
         args.fasta_idx,
         args.vcf,
         args.guidelen,
+        args.verbosity,
         args.debug,
         parser,
     )

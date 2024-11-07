@@ -118,6 +118,16 @@ def parseargs_crisprhawk() -> CrisprHawkArgumentParser:
         "field are processed, while others are skipped",
     )
     group.add_argument(
+        "--verbosity",
+        type=int,
+        metavar="VERBOSITY",
+        dest="verbosity",
+        nargs="?",
+        default=1,  # minimal output
+        help="Sets the level of detail in the output messages. Available levels "
+        "are: 0 (Silent), 1 (Default), 2 (Verbose), 3 (Debug)",
+    )
+    group.add_argument(
         "--debug",
         action="store_true",
         default=False,

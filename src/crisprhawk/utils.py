@@ -9,6 +9,8 @@ import os
 # define static variables shared across software modules
 TOOLNAME = "CRISPR-HAWK"  # tool name
 COMMAND = "crisprhawk"  # command line call
+# define verbosity levels
+VERBOSITYLVL = [0, 1, 2, 3]
 # complete iupac alphabet
 IUPAC = ["A", "C", "G", "T", "R", "Y", "S", "W", "K", "M", "B", "D", "H", "V", "N"]
 # reverse complement dictionary
@@ -114,8 +116,6 @@ IUPAC_ENCODER = {
     "ATCG": "N",
     "TACG": "N",
 }
-
-
 # report prefix name
 GUIDESREPORTPREFIX = "crisprhawk_guides"
 
@@ -132,3 +132,9 @@ def reverse_complement(sequence: str, debug: bool) -> str:
             debug,
             e,
         )
+
+
+def print_verbosity(message: str, verbosity: int, verbosity_threshold: int) -> None:
+    if verbosity >= verbosity_threshold:
+        sys.stdout.write(f"{message}\n")
+    return
