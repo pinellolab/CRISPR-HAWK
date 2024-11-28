@@ -62,6 +62,7 @@ def construct_report(
     guidelen: int,
     debug: bool,
 ) -> pd.DataFrame:
+    
     report = {cname: [] for cname in REPORTCOLS}  # initialize report dictionary
     pamlen = len(pam)  # pam length used to extract pam sequence
     for i, guide in enumerate(guides):  # add guides data to report
@@ -73,9 +74,9 @@ def construct_report(
                 report[REPORTCOLS[0]].append(region.contig)  # chromosome
                 # compute start and stop positions wrt region
                 start = (
-                    (matches[i] - guidelen) + region.start
+                    (matches[i] - guidelen) + region.start + 1
                     if strand == "+"
-                    else matches[i] + region.start
+                    else matches[i] + region.start + 1
                 )
                 stop = start + guidelen + pamlen
                 report[REPORTCOLS[1]].append(start)  # start position
@@ -85,7 +86,7 @@ def construct_report(
                 # compute extended pam class for the input pam
                 report[REPORTCOLS[5]].append(compute_pam_class(pam))
                 report[REPORTCOLS[6]].append(strand)  # strand orientation
-                report[REPORTCOLS[7]].append(region.format())  # target region
+                report[REPORTCOLS[7]].append(region.format(pad=guidelen))  # target region
     return pd.DataFrame(report)
 
 

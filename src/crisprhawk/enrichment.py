@@ -41,19 +41,26 @@ def enricher(
             f"Fetching variants in {r.format(pad=guidelen)}", verbosity, VERBOSITYLVL[3]
         )
         variants = vcfs[r.contig].fetch(*adjust_region_coords(r, guidelen))
+        for v in variants:
+            print(v._chrom, v._position, v._ref, v._alt)
+            print(v._samples)
+            print()
+        exit()
         print_verbosity(
             f"Fetched {len(variants)} variants in {r.format(pad=guidelen)}",
             verbosity,
             VERBOSITYLVL[3],
         )
         # insert variants within region sequence
-        insert_variants(r, variants, no_filter, verbosity, debug)
+        insert_variants(r, variants, vcfs[r.contig]._samples, vcfs[r.contig].phased, no_filter, verbosity, debug)
     return regions  # return enriched regions
 
 
 def insert_variants(
     region: Region,
     variants: List[List[str]],
+    samples: List[str],
+    phased: bool,
     no_filter: bool,
     verbosity: int,
     debug: bool,
@@ -84,8 +91,6 @@ def encode_snp_iupac(
     if len(ref) > 1:  # deletion, skip
         return
     alleles_alt = alt.split(",")  # retrieve multiallelic sites
-    if len(alleles_alt) == 1 and len(alleles_alt[0]) > 1:  # insertion skip
-        return
     if refnt != ref:  # ref alleles must match between vcf and fasta
         exception_handler(
             CrisprHawkEnrichmentError,
@@ -96,4 +101,6 @@ def encode_snp_iupac(
         )
     # create iupac string for iupac char encoding - skip indels
     iupac_string = {allele for allele in alleles_alt + [refnt] if len(allele) == 1}
+    if not iupac_string:  # only insertions seen 
+        return
     return IUPAC_ENCODER["".join(iupac_string)]
