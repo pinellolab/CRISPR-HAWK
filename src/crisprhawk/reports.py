@@ -5,7 +5,7 @@ from bedfile import Region
 from search_guides import match
 from crisprhawk_error import CrisprHawkBitsetError, CrisprHawkGuidesReportError
 from exception_handlers import exception_handler
-from sequences import PAM, explode_iupac_sequence
+from sequences import PAM
 from utils import GUIDESREPORTPREFIX, IUPACTABLE, IUPAC, reverse_complement
 
 from typing import Tuple, List
@@ -23,6 +23,8 @@ REPORTCOLS = [
     "pam",
     "pam_class",
     "strand",
+    "origin",
+    "samples",
     "target",
 ]
 
@@ -56,6 +58,7 @@ def construct_report(
     region: Region,
     guides: List[List[str]],
     matches: List[int],
+    samples: List[str],
     pam: PAM,
     strand: str,
     right: bool,
@@ -66,27 +69,32 @@ def construct_report(
     report = {cname: [] for cname in REPORTCOLS}  # initialize report dictionary
     pamlen = len(pam)  # pam length used to extract pam sequence
     for i, guide in enumerate(guides):  # add guides data to report
-        for g in explode_iupac_sequence(guide, debug):
-            g = reverse_complement(g, debug) if strand == "-" else g
-            pamguide = g[:pamlen] if right else g[-pamlen:]
-            guideseq = g[pamlen:] if right else g[:-pamlen]
-            if keepguide(pam, pamguide, debug):
-                report[REPORTCOLS[0]].append(region.contig)  # chromosome
-                # compute start and stop positions wrt region
-                start = (
-                    (matches[i] - guidelen) + region.start + 1
-                    if strand == "+"
-                    else matches[i] + region.start + 1
-                )
-                stop = start + guidelen + pamlen
-                report[REPORTCOLS[1]].append(start)  # start position
-                report[REPORTCOLS[2]].append(stop)  # stop position
-                report[REPORTCOLS[3]].append(guideseq)  # guide
-                report[REPORTCOLS[4]].append(pamguide)  # pam guide
-                # compute extended pam class for the input pam
-                report[REPORTCOLS[5]].append(compute_pam_class(pam))
-                report[REPORTCOLS[6]].append(strand)  # strand orientation
-                report[REPORTCOLS[7]].append(region.format(pad=guidelen))  # target region
+        g = guide
+        # for g in explode_iupac_sequence(guide, debug):
+        g = reverse_complement(g, debug) if strand == "-" else g
+        pamguide = g[:pamlen] if right else g[-pamlen:]
+        guideseq = g[pamlen:] if right else g[:-pamlen]
+        if keepguide(pam, pamguide, debug):
+            report[REPORTCOLS[0]].append(region.contig)  # chromosome
+            # compute start and stop positions wrt region
+            start = (
+                (matches[i] - guidelen) + region.start + 1
+                if strand == "+"
+                else matches[i] + region.start + 1
+            )
+            stop = start + guidelen + pamlen
+            origin = "alt" if samples[i] else "ref"  # genome of origin
+            samples_str = samples[i] if origin == "alt" else "NA"
+            report[REPORTCOLS[1]].append(start)  # start position
+            report[REPORTCOLS[2]].append(stop)  # stop position
+            report[REPORTCOLS[3]].append(guideseq)  # guide
+            report[REPORTCOLS[4]].append(pamguide)  # pam guide
+            # compute extended pam class for the input pam
+            report[REPORTCOLS[5]].append(compute_pam_class(pam))
+            report[REPORTCOLS[6]].append(strand)  # strand orientation
+            report[REPORTCOLS[7]].append(origin)  # geneome of origin
+            report[REPORTCOLS[8]].append(samples_str)  # samples list
+            report[REPORTCOLS[9]].append(region.format(pad=guidelen))  # target region
     return pd.DataFrame(report)
 
 
@@ -95,6 +103,7 @@ def report_guides(
     region: Region,
     guides: Tuple[List[List[str]], List[List[str]]],
     matches: Tuple[List[int], List[int]],
+    samples: Tuple[List[str], List[str]],
     pam: PAM,
     right: bool,
     guidelen: int,
@@ -109,10 +118,10 @@ def report_guides(
         report = pd.concat(
             [
                 construct_report(
-                    region, guides[0], matches[0], pam, "+", right, guidelen, debug
+                    region, guides[0], matches[0], samples[0], pam, "+", right, guidelen, debug
                 ),
                 construct_report(
-                    region, guides[1], matches[1], pam, "-", right, guidelen, debug
+                    region, guides[1], matches[1], samples[1], pam, "-", right, guidelen, debug
                 ),
             ]
         )

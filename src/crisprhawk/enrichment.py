@@ -1,13 +1,13 @@
 """
 """
 
-from variants import VCF
+from variants import VCF, VariantRecord, VTYPES
 from bedfile import RegionList, Region
 from utils import print_verbosity, warning, VERBOSITYLVL, IUPAC_ENCODER
 from exception_handlers import exception_handler
 from crisprhawk_error import CrisprHawkEnrichmentError
 
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict
 
 import os
 
@@ -25,11 +25,13 @@ def enricher(
     no_filter: bool,
     verbosity: int,
     debug: bool,
-) -> RegionList:
+) -> Tuple[RegionList, Dict[Region, Dict[int, VariantRecord]], bool]:
     # load vcf files and map each vcf to its contig (assume on vcf per contig)
     print_verbosity("Loading VCF files", verbosity, VERBOSITYLVL[2])
+    # TODO: check phasing consistency
     vcfs = {vcf.contig: vcf for vcf in [VCF(f, verbosity, debug) for f in vcflist]}
     print_verbosity(f"Loaded VCF number: {len(vcfs)}", verbosity, VERBOSITYLVL[3])
+    variant_maps = {}  # dictionary to map variants in each region
     # retrieve variants in each region
     for r in regions:
         print_verbosity(
@@ -41,66 +43,52 @@ def enricher(
             f"Fetching variants in {r.format(pad=guidelen)}", verbosity, VERBOSITYLVL[3]
         )
         variants = vcfs[r.contig].fetch(*adjust_region_coords(r, guidelen))
-        for v in variants:
-            print(v._chrom, v._position, v._ref, v._alt)
-            print(v._samples)
-            print()
-        exit()
         print_verbosity(
             f"Fetched {len(variants)} variants in {r.format(pad=guidelen)}",
             verbosity,
             VERBOSITYLVL[3],
         )
         # insert variants within region sequence
-        insert_variants(r, variants, vcfs[r.contig]._samples, vcfs[r.contig].phased, no_filter, verbosity, debug)
-    return regions  # return enriched regions
+        variant_maps[r] = insert_variants(r, variants, no_filter, verbosity, debug)
+    return regions, variant_maps, vcfs[r.contig].phased  # return enriched regions, variant maps, and phasing
 
 
 def insert_variants(
     region: Region,
-    variants: List[List[str]],
-    samples: List[str],
-    phased: bool,
+    variants: List[VariantRecord],
     no_filter: bool,
     verbosity: int,
     debug: bool,
-) -> Region:
-    # iterate over veriants falling in the input region and add variants
+) -> Dict[int, VariantRecord]:
+    # dictionary to map variants to their relative position within the sequence
+    variant_map = {}  
+    # iterate over variants falling in the input region and add variants
     for variant in variants:
         # by default, crispr-hawk discards variants that are not flagged as PASS
         # on filter, however the user may want to consider tem as well
-        if not no_filter and variant[6] != "PASS":
-            warning(
-                f"Skipping variant {variant[0]}\t{variant[1]}\t{variant[3]}\t{variant[4]}",
-                verbosity,
-            )
+        if not no_filter and variant.filter != "PASS":
+            warning(variant.format(), verbosity)
             continue
         # compute relative variant position (1-based)
-        posrel = int(variant[1]) - 1 - region.start
-        ref, alt = variant[3:5]  # retrieve reference and alternative allele
+        posrel = variant.position - 1 - region.start
+        variant_map[posrel] = variant  # map variant to its relative position
         # compute iupac char, representing the snp
-        iupac_nt = encode_snp_iupac(region[posrel], ref, alt, int(variant[1]), debug)
+        iupac_nt = encode_snp_iupac(region[posrel], variant, debug)
         if iupac_nt is not None:  # if none, indels -> skip
             region.enrich(posrel, iupac_nt)  # assign iupac char at position
-    return region
+    return variant_map
 
 
-def encode_snp_iupac(
-    refnt: str, ref: str, alt: str, pos: int, debug: bool
-) -> Union[str, None]:
-    if len(ref) > 1:  # deletion, skip
-        return
-    alleles_alt = alt.split(",")  # retrieve multiallelic sites
-    if refnt != ref:  # ref alleles must match between vcf and fasta
+def encode_snp_iupac(refnt: str, variant: VariantRecord, debug: bool) -> Union[str, None]:
+    if variant.vtype == VTYPES[1]:  # variant is indel
+        return None
+    if refnt != variant.ref:  # ref alleles must match between vcf and fasta
         exception_handler(
             CrisprHawkEnrichmentError,
             f"Reference allele mismatch between FASTA and VCF file ({refnt} - "
-            f"{ref}) at position {pos}",
+            f"{variant.ref}) at position {variant.position}",
             os.EX_DATAERR,
             debug,
         )
-    # create iupac string for iupac char encoding - skip indels
-    iupac_string = {allele for allele in alleles_alt + [refnt] if len(allele) == 1}
-    if not iupac_string:  # only insertions seen 
-        return
-    return IUPAC_ENCODER["".join(iupac_string)]
+    # encode ref and alt as iupac characters
+    return IUPAC_ENCODER["".join([variant.ref, variant.alt])] 

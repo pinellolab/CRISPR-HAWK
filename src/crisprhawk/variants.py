@@ -10,7 +10,8 @@ from pysam import TabixFile, tabix_index
 
 import os
 
-TBI = "tbi"
+TBI = "tbi"  # tabix index file extnsion
+VTYPES = ["snp", "indel"]  # variant types 
 
 class VariantRecord:
     def __init__(self, variant: List[str], samples: List[str], phased: bool, debug: bool) -> None:
@@ -19,15 +20,48 @@ class VariantRecord:
         self._position = int(variant[1])  # store variant position
         self._ref = variant[3]  # store reference allele
         self._alt = variant[4]  # store alternative allele
+        self._vtype = self._assign_type()  # establish whether is a snp or indel
+        self._filter = variant[6]  # store filter value
         self._vid = self._assign_id(variant[2], self._chrom, self._ref, self._alt, self._position)  # assign variant id
-        self._samples = _genotypes_to_samples(variant[9:], samples, phased)
+        self._samples = _genotypes_to_samples(variant[9:], samples, phased) 
 
+    def _assign_type(self) -> str:
+        assert hasattr(self, "_ref")
+        assert hasattr(self, "_alt")
+        if (len(self._ref) != 1 or len(self._alt) != 1) and (len(self._ref) != len(self._alt)):
+            return VTYPES[1]  # indel
+        return VTYPES[0]  # snp
+    
     def _assign_id(self, vid: str, chrom: str, ref: str, alt: str, pos: int) -> str:
         if vid != ".":  # variant id available, return it
             return vid
         # variant id not available, construct the id using chrom, position, ref,
         # and alt (e.g. chrx_100_A_G)
         return f"{chrom}_{pos}_{ref}_{alt}"
+    
+    def format(self) -> str:
+        return f"{self._chrom}\t{self._position}\t{self._ref}\t{self._alt}"
+    
+    @property
+    def filter(self) -> str: return self._filter
+
+    @property
+    def position(self) -> int: return self._position
+
+    @property
+    def ref(self) -> str: return self._ref
+
+    @property
+    def alt(self) -> str: return self._alt
+
+    @property
+    def vtype(self) -> str: return self._vtype
+
+    @property
+    def samples(self) -> Tuple[Set[str], Set[str]]: return self._samples
+
+    @property
+    def id(self) -> str: return self._vid
     
     
 def _genotypes_to_samples(genotypes: List[str], samples: List[str], phased: bool) -> Tuple[Set[str], Set[str]]:
@@ -38,7 +72,7 @@ def _genotypes_to_samples(genotypes: List[str], samples: List[str], phased: bool
     for i, gt in enumerate(genotypes):
         if gt[0] != "0":  # left copy
             sampleshap[0].add(samples[i])
-        if gt[2] != "0" and phased:
+        if phased and gt[2] != "0":
             sampleshap[1].add(samples[i])
         elif gt[2] != "0":
             sampleshap[0].add(samples[i])

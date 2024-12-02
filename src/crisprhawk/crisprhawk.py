@@ -8,6 +8,8 @@ from bedfile import Bed, Region, RegionList
 from sequences import Fasta, PAM
 from reports import report_guides
 from enrichment import enricher
+from variants import VariantRecord
+from haplotypes import track_haplotypes
 
 from typing import List, Dict, Tuple
 
@@ -21,7 +23,7 @@ def enrichment(
     no_filter: bool,
     verbosity: int,
     debug: bool,
-) -> RegionList:
+) -> Tuple[RegionList, Dict[Region, Dict[int, VariantRecord]], bool]:
     print_verbosity(f"Parsing input BED file {bedfile}", verbosity, VERBOSITYLVL[2])
     bed = Bed(bedfile, guidelen, debug)  # read regions from input bedfile
     print_verbosity(f"Parsed regions number: {len(bed)}", verbosity, VERBOSITYLVL[3])
@@ -56,7 +58,7 @@ def guide_search(
 def crisprhawk(args: CrisprHawkInputArgs) -> None:
     # sequence enrichment -> add genetic variants to input sequences if input
     # vcf is given, return reference sequences otherwise
-    regions = enrichment(
+    regions, variants_maps, phased = enrichment(
         args.fasta,
         args.bedfile,
         args.fasta_idx,
@@ -71,13 +73,17 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
     # search guides in the input regions
     pam = PAM(args.pam, args.debug)  # initialize pam
     guides = guide_search(pam, regions, args.guidelen, args.right, args.debug)
+    # track haplotypes on guides
+    for r in guides:  # update current region guides data
+        guides[r] = track_haplotypes(guides[regions[0]], variants_maps[regions[0]], args.guidelen, phased)
     # report guides in output directory
-    for region, (positions, guides) in guides.items():
+    for region, (positions, guides, samples) in guides.items():
         report_guides(
             args.outdir,
             region,
             guides,
             positions,
+            samples,
             pam,
             args.right,
             args.guidelen,
