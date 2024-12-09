@@ -18,29 +18,50 @@ class VariantRecord:
         self._debug = debug  # set debug mode flag
         self._chrom = variant[0]  # store chromosome
         self._position = int(variant[1])  # store variant position
-        self._ref = variant[3]  # store reference allele
-        self._alt = variant[4]  # store alternative allele
-        self._vtype = self._assign_type()  # establish whether is a snp or indel
+        self._ref = variant[3]  # store ref allele
+        self._alt = self._retrieve_alt_alleles(variant[4])  # store alt alleles
+        self._allelesnum = len(self._alt)  # number of alt alleles
+        self._vtype = self._assess_vtype()  # establish whether is a snp or indel
         self._filter = variant[6]  # store filter value
-        self._vid = self._assign_id(variant[2], self._chrom, self._ref, self._alt, self._position)  # assign variant id
-        self._samples = _genotypes_to_samples(variant[9:], samples, phased) 
+        self._vid = self._assign_id(variant[2])  # assign variant id
+        self._samples = _genotypes_to_samples(variant[9:], samples, self._allelesnum, phased, self._debug) 
 
-    def _assign_type(self) -> str:
+    def _retrieve_alt_alleles(self, altalleles: str) -> List[str]:
+        # alternative alleles in multiallelic sites are separated by a comma
+        try:
+            return altalleles.split(",")  
+        except AttributeError as e:
+            exception_handler(AttributeError, "Alternative alleles must be encoded in a string", os.EX_DATAERR, self._debug, e)
+        except Exception as e:
+            exception_handler(Exception, "Unexpected error while parsing alternative alleles", os.EX_DATAERR, self._debug, e)
+
+    def _assess_vtype(self) -> List[str]:
         assert hasattr(self, "_ref")
         assert hasattr(self, "_alt")
-        if (len(self._ref) != 1 or len(self._alt) != 1) and (len(self._ref) != len(self._alt)):
-            return VTYPES[1]  # indel
-        return VTYPES[0]  # snp
+        return [_assign_vtype(self._ref, altallele) for altallele in self._alt]
+        
     
-    def _assign_id(self, vid: str, chrom: str, ref: str, alt: str, pos: int) -> str:
-        if vid != ".":  # variant id available, return it
-            return vid
-        # variant id not available, construct the id using chrom, position, ref,
-        # and alt (e.g. chrx_100_A_G)
-        return f"{chrom}_{pos}_{ref}_{alt}"
+    def _assign_id(self, vid: str) -> str:
+        if self._allelesnum == 1:
+            if vid != ".": # variant id available, return it
+                return [vid]
+            # variant id not available, construct the id using chrom, position, ref,
+            # and alt (e.g. chrx_100_A_G)
+            return [_compute_id(self._chrom, self._position, self._ref, self._alt[0])]
+        # if multiallelic site compute the id for each alternative allele
+        # avoid potential confusion due to alternative alleles at same position
+        # labeled with the same id
+        return [_compute_id(self._chrom, self._position, self._ref, altallele) for altallele in self._alt]
     
     def format(self) -> str:
-        return f"{self._chrom}\t{self._position}\t{self._ref}\t{self._alt}"
+        altalleles = ",".join(self.alt)
+        return f"{self._chrom}\t{self._position}\t{self._ref}\t{altalleles}"
+    
+    def get_altalleles(self, vtype: str) -> List[str]:
+        assert vtype in VTYPES
+        # return the alternative alleles representing snps or indels
+        return [altallele for i, altallele in enumerate(self._alt) if self._vtype[i] == vtype]
+    
     
     @property
     def filter(self) -> str: return self._filter
@@ -52,30 +73,45 @@ class VariantRecord:
     def ref(self) -> str: return self._ref
 
     @property
-    def alt(self) -> str: return self._alt
+    def alt(self) -> List[str]: return self._alt
 
     @property
-    def vtype(self) -> str: return self._vtype
+    def vtype(self) -> List[str]: return self._vtype
 
     @property
     def samples(self) -> Tuple[Set[str], Set[str]]: return self._samples
 
     @property
     def id(self) -> str: return self._vid
+
+
+def _assign_vtype(ref: str, alt: str) -> bool:
+    if (len(ref) != 1 or len(alt) != 1):
+        return VTYPES[1]  # indel
+    return VTYPES[0]  # snp
+
+def _compute_id(chrom: str, pos: int, ref: str, alt: str) -> str:
+    # compute variant id for variants without id, or multiallelic sites
+    return f"{chrom}_{pos}_{ref}_{alt}"
     
     
-def _genotypes_to_samples(genotypes: List[str], samples: List[str], phased: bool) -> Tuple[Set[str], Set[str]]:
+def _genotypes_to_samples(genotypes: List[str], samples: List[str], allelesnum: int, phased: bool, debug: bool) -> Tuple[Set[str], Set[str]]:
     # define two sets storing samples with variant occurrence on left and right
     # copy respectively
     # if unphased vcf is used only the left set
-    sampleshap = (set(), set())  # set avoid repeated values
+    sampleshap = [(set(), set()) for _ in range(allelesnum)]  # pairs for each alt allele
+    gtsep = "|" if phased else "/"  # define genotype separator char
     for i, gt in enumerate(genotypes):
-        if gt[0] != "0":  # left copy
-            sampleshap[0].add(samples[i])
-        if phased and gt[2] != "0":
-            sampleshap[1].add(samples[i])
-        elif gt[2] != "0":
-            sampleshap[0].add(samples[i])
+        try:
+            gt1, gt2 = gt.split(":")[0].split(gtsep)
+        except ValueError as e:
+            exception_handler(ValueError, f"Non diploid genotype detected", os.EX_DATAERR, debug, e)
+        if gt1 != "0" and gt1 != ".":  # left copy
+            sampleshap[int(gt1) - 1][0].add(samples[i])
+        if phased and (gt2 != "0" and gt2 != "."):  # right copy
+            sampleshap[int(gt2) - 1][1].add(samples[i])
+        elif gt2 != "0" and gt2 != ".":
+            sampleshap[int(gt2) - 1][0].add(samples[i])
     return sampleshap
 
 

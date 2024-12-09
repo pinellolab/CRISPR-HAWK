@@ -125,6 +125,10 @@ def report_guides(
                 ),
             ]
         )
+        # force start and stop to int values - they may be treated as float if 
+        # concatenated with empty dataframe (e.g. no guide found on + or - strand)
+        report[REPORTCOLS[1]] = report[REPORTCOLS[1]].astype(int)
+        report[REPORTCOLS[2]] = report[REPORTCOLS[2]].astype(int)
         # sort report by contig and position
         report = report.sort_values([REPORTCOLS[0], REPORTCOLS[1]], ascending=True)
         report.to_csv(guidesreport, sep="\t", index=False)  # save report

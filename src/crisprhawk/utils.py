@@ -3,6 +3,7 @@
 
 from exception_handlers import exception_handler
 
+from itertools import permutations
 from colorama import Fore
 
 import sys
@@ -32,6 +33,21 @@ RC = {
     "N": "N",
     "S": "S",
     "W": "W",
+    "a": "t",
+    "c": "g",
+    "g": "c",
+    "t": "a",
+    "r": "y",
+    "y": "r",
+    "m": "k",
+    "k": "m",
+    "h": "d",
+    "d": "h",
+    "b": "v",
+    "v": "b",
+    "n": "n",
+    "s": "s",
+    "w": "w",
 }
 # dictionary to encode nucleotides combinations as iupac characters
 IUPACTABLE = {
@@ -52,72 +68,7 @@ IUPACTABLE = {
     "N": "ACGT",
 }
 # dictionary to encode nucleotide strings as iupac characters
-IUPAC_ENCODER = {
-    "A": "A",
-    "T": "T",
-    "C": "C",
-    "G": "G",
-    "AG": "R",
-    "GA": "R",
-    "CT": "Y",
-    "TC": "Y",
-    "GC": "S",
-    "CG": "S",
-    "AT": "W",
-    "TA": "W",
-    "GT": "K",
-    "TG": "K",
-    "AC": "M",
-    "CA": "M",
-    "CGT": "B",
-    "GCT": "B",
-    "TGC": "B",
-    "GTC": "B",
-    "CTG": "B",
-    "TCG": "B",
-    "AGT": "D",
-    "GAT": "D",
-    "TAG": "D",
-    "ATG": "D",
-    "GTA": "D",
-    "TGA": "D",
-    "ACT": "H",
-    "CAT": "H",
-    "TCA": "H",
-    "ATC": "H",
-    "CTA": "H",
-    "TAC": "H",
-    "ACG": "V",
-    "CAG": "V",
-    "GAC": "V",
-    "AGC": "V",
-    "CGA": "V",
-    "GCA": "V",
-    "ACGT": "N",
-    "CAGT": "N",
-    "GACT": "N",
-    "AGCT": "N",
-    "CGAT": "N",
-    "GCAT": "N",
-    "GCTA": "N",
-    "CGTA": "N",
-    "TGCA": "N",
-    "GTCA": "N",
-    "CTGA": "N",
-    "TCGA": "N",
-    "TAGC": "N",
-    "ATGC": "N",
-    "GTAC": "N",
-    "TGAC": "N",
-    "AGTC": "N",
-    "GATC": "N",
-    "CATG": "N",
-    "ACTG": "N",
-    "TCAG": "N",
-    "CTAG": "N",
-    "ATCG": "N",
-    "TACG": "N",
-}
+IUPAC_ENCODER = {perm: k for k, v in IUPACTABLE.items() for perm in {"".join(p) for p in permutations(v)}}
 # report prefix name
 GUIDESREPORTPREFIX = "crisprhawk_guides"
 

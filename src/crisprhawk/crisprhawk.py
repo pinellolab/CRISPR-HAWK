@@ -75,7 +75,7 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
     guides = guide_search(pam, regions, args.guidelen, args.right, args.debug)
     # track haplotypes on guides
     for r in guides:  # update current region guides data
-        guides[r] = track_haplotypes(guides[regions[0]], variants_maps[regions[0]], args.guidelen, phased)
+        guides[r] = track_haplotypes(guides[r], variants_maps[r], args.guidelen, phased)
     # report guides in output directory
     for region, (positions, guides, samples) in guides.items():
         report_guides(

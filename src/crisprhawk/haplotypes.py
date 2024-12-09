@@ -2,7 +2,7 @@
 """
 
 from exception_handlers import exception_handler
-from variants import VariantRecord
+from variants import VariantRecord, VTYPES
 
 from typing import Tuple, List, Dict, Set
 
@@ -25,7 +25,7 @@ def map_sample_to_guide(refseq: str, variants: Dict[int, VariantRecord], phased:
     sample_guides = {i: {} for i in range(chromcopies)}
     for chromcopy in range(chromcopies): 
         # retrieve samples carrying variants within input guide
-        samples = [s for v in variants.values() for s in v.samples[chromcopy]]
+        samples = [s for v in variants.values() for aa in v.samples for s in aa[chromcopy]]
         if not samples:  # skip if no samples carries variant on current copy
             continue 
         # initialize the sample-guide map with reference sequence for each sample
@@ -33,10 +33,15 @@ def map_sample_to_guide(refseq: str, variants: Dict[int, VariantRecord], phased:
         # by each sample
         sample_guides_chromcopy = {sample: list(refseq) for sample in samples}  
         for pos, variant in variants.items():  # iterate over variant positions 
-            for sample in variant.samples[chromcopy]:  # look for sample-specific variants
-                sample_seq = sample_guides_chromcopy[sample]
-                sample_seq[pos] = variant.alt  # insert variant in sample's guide
-                sample_guides_chromcopy[sample] = sample_seq  # update sample's guide
+            for i, aa in enumerate(variant.samples):  # iterate over alternative alleles
+                if variant.vtype[i] == VTYPES[1]:  # indel -> skip
+                    continue
+                for sample in aa[chromcopy]:  # look for sample-specific variants
+                    sample_seq = sample_guides_chromcopy[sample]
+                    # insert variant in sample's guide - denote variants with
+                    # lower case nucs
+                    sample_seq[pos] = variant.alt[i].lower()  
+                    sample_guides_chromcopy[sample] = sample_seq  # update sample's guide
         sample_guides[chromcopy] = sample_guides_chromcopy
     return sample_guides
 

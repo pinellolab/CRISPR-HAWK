@@ -67,20 +67,21 @@ def insert_variants(
         # by default, crispr-hawk discards variants that are not flagged as PASS
         # on filter, however the user may want to consider tem as well
         if not no_filter and variant.filter != "PASS":
-            warning(variant.format(), verbosity)
+            warning(f"Skipping {variant.format()}", verbosity)
             continue
         # compute relative variant position (1-based)
         posrel = variant.position - 1 - region.start
-        variant_map[posrel] = variant  # map variant to its relative position
         # compute iupac char, representing the snp
         iupac_nt = encode_snp_iupac(region[posrel], variant, debug)
         if iupac_nt is not None:  # if none, indels -> skip
             region.enrich(posrel, iupac_nt)  # assign iupac char at position
+            variant_map[posrel] = variant  # map variant to its relative position
     return variant_map
 
 
 def encode_snp_iupac(refnt: str, variant: VariantRecord, debug: bool) -> Union[str, None]:
-    if variant.vtype == VTYPES[1]:  # variant is indel
+    altalleles = "".join(variant.get_altalleles(VTYPES[0]))  # retrieve snps
+    if not altalleles:  # variants are all indels
         return None
     if refnt != variant.ref:  # ref alleles must match between vcf and fasta
         exception_handler(
@@ -91,4 +92,4 @@ def encode_snp_iupac(refnt: str, variant: VariantRecord, debug: bool) -> Union[s
             debug,
         )
     # encode ref and alt as iupac characters
-    return IUPAC_ENCODER["".join([variant.ref, variant.alt])] 
+    return IUPAC_ENCODER["".join([variant.ref, altalleles])] 
