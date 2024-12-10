@@ -77,13 +77,14 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
     for r in guides:  # update current region guides data
         guides[r] = track_haplotypes(guides[r], variants_maps[r], args.guidelen, phased)
     # report guides in output directory
-    for region, (positions, guides, samples) in guides.items():
+    for region, (positions, guides, samples, variants) in guides.items():
         report_guides(
             args.outdir,
             region,
             guides,
             positions,
             samples,
+            variants,
             pam,
             args.right,
             args.guidelen,

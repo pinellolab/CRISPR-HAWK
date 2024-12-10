@@ -41,7 +41,7 @@ class VariantRecord:
         return [_assign_vtype(self._ref, altallele) for altallele in self._alt]
         
     
-    def _assign_id(self, vid: str) -> str:
+    def _assign_id(self, vid: str) -> List[str]:
         if self._allelesnum == 1:
             if vid != ".": # variant id available, return it
                 return [vid]
@@ -82,7 +82,7 @@ class VariantRecord:
     def samples(self) -> Tuple[Set[str], Set[str]]: return self._samples
 
     @property
-    def id(self) -> str: return self._vid
+    def id(self) -> List[str]: return self._vid
 
 
 def _assign_vtype(ref: str, alt: str) -> bool:

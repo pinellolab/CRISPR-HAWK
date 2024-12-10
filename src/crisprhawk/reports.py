@@ -25,6 +25,7 @@ REPORTCOLS = [
     "strand",
     "origin",
     "samples",
+    "variant_id",
     "target",
 ]
 
@@ -59,6 +60,7 @@ def construct_report(
     guides: List[List[str]],
     matches: List[int],
     samples: List[str],
+    variants: List[str],
     pam: PAM,
     strand: str,
     right: bool,
@@ -83,8 +85,7 @@ def construct_report(
                 else matches[i] + region.start + 1
             )
             stop = start + guidelen + pamlen
-            origin = "alt" if samples[i] else "ref"  # genome of origin
-            samples_str = samples[i] if origin == "alt" else "NA"
+            origin = "ref" if samples[i] == "NA" else "alt"  # genome of origin
             report[REPORTCOLS[1]].append(start)  # start position
             report[REPORTCOLS[2]].append(stop)  # stop position
             report[REPORTCOLS[3]].append(guideseq)  # guide
@@ -93,8 +94,9 @@ def construct_report(
             report[REPORTCOLS[5]].append(compute_pam_class(pam))
             report[REPORTCOLS[6]].append(strand)  # strand orientation
             report[REPORTCOLS[7]].append(origin)  # geneome of origin
-            report[REPORTCOLS[8]].append(samples_str)  # samples list
-            report[REPORTCOLS[9]].append(region.format(pad=guidelen))  # target region
+            report[REPORTCOLS[8]].append(samples[i])  # samples list
+            report[REPORTCOLS[9]].append(variants[i])  # variant ids
+            report[REPORTCOLS[10]].append(region.format(pad=guidelen))  # target region
     return pd.DataFrame(report)
 
 
@@ -104,6 +106,7 @@ def report_guides(
     guides: Tuple[List[List[str]], List[List[str]]],
     matches: Tuple[List[int], List[int]],
     samples: Tuple[List[str], List[str]],
+    variants: Tuple[List[str], List[str]],
     pam: PAM,
     right: bool,
     guidelen: int,
@@ -118,10 +121,10 @@ def report_guides(
         report = pd.concat(
             [
                 construct_report(
-                    region, guides[0], matches[0], samples[0], pam, "+", right, guidelen, debug
+                    region, guides[0], matches[0], samples[0], variants[0], pam, "+", right, guidelen, debug
                 ),
                 construct_report(
-                    region, guides[1], matches[1], samples[1], pam, "-", right, guidelen, debug
+                    region, guides[1], matches[1], samples[1], variants[1], pam, "-", right, guidelen, debug
                 ),
             ]
         )

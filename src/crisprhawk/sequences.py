@@ -7,7 +7,7 @@ from crisprhawk_error import (
     CrisprHawkIupacTableError,
 )
 from exception_handlers import exception_handler
-from utils import IUPAC, IUPACTABLE, VERBOSITYLVL, reverse_complement, print_verbosity
+from utils import IUPAC, VERBOSITYLVL, reverse_complement, print_verbosity
 from bitset import Bitset, SIZE
 
 from typing import Optional, Union, List, Tuple
@@ -252,7 +252,7 @@ def _encoder(nt: str, position: int, debug: bool) -> Bitset:
         bitset.set_bits("1111")
     else:  # default case
         exception_handler(
-            CrisprHawkFastaError,
+            CrisprHawkIupacTableError,
             f"The nucleotide {nt} at {position} is not a IUPAC character",
         )
     return bitset
