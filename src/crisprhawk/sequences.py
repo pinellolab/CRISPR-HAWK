@@ -256,4 +256,3 @@ def _encoder(nt: str, position: int, debug: bool) -> Bitset:
             f"The nucleotide {nt} at {position} is not a IUPAC character",
         )
     return bitset
-

@@ -68,7 +68,11 @@ IUPACTABLE = {
     "N": "ACGT",
 }
 # dictionary to encode nucleotide strings as iupac characters
-IUPAC_ENCODER = {perm: k for k, v in IUPACTABLE.items() for perm in {"".join(p) for p in permutations(v)}}
+IUPAC_ENCODER = {
+    perm: k
+    for k, v in IUPACTABLE.items()
+    for perm in {"".join(p) for p in permutations(v)}
+}
 # report prefix name
 GUIDESREPORTPREFIX = "crisprhawk_guides"
 

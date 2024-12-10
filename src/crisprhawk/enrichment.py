@@ -50,7 +50,11 @@ def enricher(
         )
         # insert variants within region sequence
         variant_maps[r] = insert_variants(r, variants, no_filter, verbosity, debug)
-    return regions, variant_maps, vcfs[r.contig].phased  # return enriched regions, variant maps, and phasing
+    return (
+        regions,
+        variant_maps,
+        vcfs[r.contig].phased,
+    )  # return enriched regions, variant maps, and phasing
 
 
 def insert_variants(
@@ -61,7 +65,7 @@ def insert_variants(
     debug: bool,
 ) -> Dict[int, VariantRecord]:
     # dictionary to map variants to their relative position within the sequence
-    variant_map = {}  
+    variant_map = {}
     # iterate over variants falling in the input region and add variants
     for variant in variants:
         # by default, crispr-hawk discards variants that are not flagged as PASS
@@ -79,7 +83,9 @@ def insert_variants(
     return variant_map
 
 
-def encode_snp_iupac(refnt: str, variant: VariantRecord, debug: bool) -> Union[str, None]:
+def encode_snp_iupac(
+    refnt: str, variant: VariantRecord, debug: bool
+) -> Union[str, None]:
     altalleles = "".join(variant.get_altalleles(VTYPES[0]))  # retrieve snps
     if not altalleles:  # variants are all indels
         return None
@@ -92,4 +98,4 @@ def encode_snp_iupac(refnt: str, variant: VariantRecord, debug: bool) -> Union[s
             debug,
         )
     # encode ref and alt as iupac characters
-    return IUPAC_ENCODER["".join([variant.ref, altalleles])] 
+    return IUPAC_ENCODER["".join([variant.ref, altalleles])]

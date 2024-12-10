@@ -67,7 +67,7 @@ def construct_report(
     guidelen: int,
     debug: bool,
 ) -> pd.DataFrame:
-    
+
     report = {cname: [] for cname in REPORTCOLS}  # initialize report dictionary
     pamlen = len(pam)  # pam length used to extract pam sequence
     for i, guide in enumerate(guides):  # add guides data to report
@@ -121,14 +121,32 @@ def report_guides(
         report = pd.concat(
             [
                 construct_report(
-                    region, guides[0], matches[0], samples[0], variants[0], pam, "+", right, guidelen, debug
+                    region,
+                    guides[0],
+                    matches[0],
+                    samples[0],
+                    variants[0],
+                    pam,
+                    "+",
+                    right,
+                    guidelen,
+                    debug,
                 ),
                 construct_report(
-                    region, guides[1], matches[1], samples[1], variants[1], pam, "-", right, guidelen, debug
+                    region,
+                    guides[1],
+                    matches[1],
+                    samples[1],
+                    variants[1],
+                    pam,
+                    "-",
+                    right,
+                    guidelen,
+                    debug,
                 ),
             ]
         )
-        # force start and stop to int values - they may be treated as float if 
+        # force start and stop to int values - they may be treated as float if
         # concatenated with empty dataframe (e.g. no guide found on + or - strand)
         report[REPORTCOLS[1]] = report[REPORTCOLS[1]].astype(int)
         report[REPORTCOLS[2]] = report[REPORTCOLS[2]].astype(int)
