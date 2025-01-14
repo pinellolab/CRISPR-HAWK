@@ -1,9 +1,11 @@
 """
 """
 
-from crisprhawk_error import CrisprHawkVCFError
+from crisprhawk_error import CrisprHawkVCFError, CrisprHawkEnrichmentError
 from exception_handlers import exception_handler
 from utils import print_verbosity, VERBOSITYLVL
+from bedfile import Region
+from sequences import _encoder
 
 from typing import Optional, List, Tuple, Set
 from pysam import TabixFile, tabix_index
@@ -12,6 +14,7 @@ import os
 
 TBI = "tbi"  # tabix index file extnsion
 VTYPES = ["snp", "indel"]  # variant types
+INDELTYPES = [0, 1]  # indel types -> 0 for insertion, 1 for deletion
 
 
 class VariantRecord:
@@ -226,9 +229,6 @@ class VCF:
                 )
                 for v in self._vcf.fetch(self._contig, start, stop)
             ]
-            # variants = [
-            #     v.strip().split() for v in self._vcf.fetch(self._contig, start, stop)
-            # ]  # return a list of variants data as list of fields
             return variants
         except ValueError as e:
             exception_handler(
@@ -256,3 +256,57 @@ def _find_tbi(vcf: str) -> bool:
     if os.path.exists(vcfindex):  # index must be a non empty file
         return os.path.isfile(vcfindex) and os.stat(vcfindex).st_size > 0
     return False
+
+
+class Indel:
+    def __init__(self, region: Region, ref: str, alt: str, position: int, guidelen: int, pamlen: int, debug: bool):
+        self._debug = debug  # store debug mode flag
+        self._ref = ref  # indel reference allele
+        self._alt = alt  # indel alternative allele
+        self._type = self._guess_indel_type()  # guess wether is insertion or deletion
+        # recover indel reference sequence
+        self._refsequence = self._retrieve_indel_sequence(region, position, guidelen, pamlen)
+        self._position = guidelen  # indel positioned in the middle 
+        self._compute_indel()  # compute indel sequence
+
+    def _guess_indel_type(self) -> int:
+        # guess from ref and alt alleles if the input indel is an insertion 
+        # (|ref| < |alt|) deletion (|ref| > |alt|)
+        if len(self._ref) == len(self._alt):  # edge case that should never happen
+            exception_handler(CrisprHawkEnrichmentError, f"Reference and alternative indel alleles at position {self._position} have the same length ({len(self._ref)})", os.EX_DATAERR, self._debug)
+        return INDELTYPES[0] if len(self._ref) < len(self._alt) else INDELTYPES[1]
+    
+    def _retrieve_indel_sequence(self, region: Region, position: int, guidelen: int, pamlen: int) -> str:
+        assert hasattr(self, "_type")  # indel type must be available
+        start = position - guidelen  # indel subregion start
+        # compute indel subregion stop, adjust the range according to the indel type
+        stop = position + guidelen + pamlen - 1 
+        indel_length = abs(len(self._ref) - len(self._alt))  # compute indel length
+        stop = stop - indel_length if self._type == INDELTYPES[0] else stop + indel_length
+        # retrieve the indel reference sequence from input region
+        return "".join(region[start:stop])
+
+    def _compute_indel(self) -> None:
+        assert hasattr(self, "_refsequence")  # reference sequence must be available
+        indel_length = abs(len(self._ref) - len(self._alt))  # compute indel length
+        # offset to adjust reference sequence to accomodate nt insertion or deletion
+        offset = 0 if self._type == INDELTYPES[0] else indel_length
+        # compute indel sequence
+        self._indelsequence = self._refsequence[:self._position] + self._alt + self._refsequence[self._position + 1 + offset:]
+        # cast str to list for fast index access
+        self._indelsequence_raw = list(self._indelsequence)
+
+    def encode(self) -> None:
+        # encode sequence in bits for efficient matching
+        self._sequence_bits = [
+            _encoder(nt, i, self._debug) for i, nt in enumerate(self._indelsequence_raw)
+        ]
+        assert len(self._sequence_bits) == len(self)
+
+    @property
+    def refsequence(self) -> str:
+        return self._refsequence
+    
+    @property
+    def indelsequence(self) -> str:
+        return self._indelsequence

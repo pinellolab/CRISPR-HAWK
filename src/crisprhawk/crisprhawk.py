@@ -20,6 +20,7 @@ def enrichment(
     fasta_idx: str,
     vcfs: List[str],
     guidelen: int,
+    pamlen: int,
     no_filter: bool,
     verbosity: int,
     debug: bool,
@@ -38,7 +39,7 @@ def enrichment(
         warning("Skipping enrichment (no input VCF)", verbosity)
         return regions
     # TODO: enrichment - haplotype tracking + indels
-    return enricher(regions, vcfs, guidelen, no_filter, verbosity, debug)
+    return enricher(regions, vcfs, guidelen, pamlen, no_filter, verbosity, debug)
 
 
 def encoding(regions: RegionList) -> RegionList:
@@ -64,6 +65,7 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         args.fasta_idx,
         args.vcfs,
         args.guidelen,
+        len(args.pam),
         args.no_filter,
         args.verbosity,
         args.debug,
