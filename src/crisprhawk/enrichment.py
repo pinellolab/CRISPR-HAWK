@@ -1,7 +1,7 @@
 """
 """
 
-from variants import VCF, VariantRecord, Indel, VTYPES
+from variants import VCF, VariantRecord, VTYPES
 from bedfile import RegionList, Region, Coordinate
 from utils import print_verbosity, warning, VERBOSITYLVL, IUPAC_ENCODER
 from exception_handlers import exception_handler
@@ -47,7 +47,7 @@ def enricher(
     vcfs = {vcf.contig: vcf for vcf in [VCF(f, verbosity, debug) for f in vcflist]}
     print_verbosity(f"Loaded VCF number: {len(vcfs)}", verbosity, VERBOSITYLVL[3])
     variant_maps = {}  # dictionary to map variants in each region
-    variants_indels = {}  # dictionary to store indels in each region 
+    indels_map = {}  # dictionary to store indels in each region 
     # retrieve variants in each region
     for r in regions:
         print_verbosity(
@@ -64,13 +64,12 @@ def enricher(
             verbosity,
             VERBOSITYLVL[3],
         )
+        indels_map[r] = indels   # record indels found in the query region
         # insert variants within region sequence
         variant_maps[r] = insert_snps(r, snps, no_filter, verbosity, debug)
-        # record indels found in the query region
-        variants_indels[r] = indels
-    process_indels(variants_indels, guidelen, pamlen, debug)    # insert_indels(r, indels, guidelen, pamlen, no_filter, verbosity, debug)
-    
-    exit()
+    # insert indels within region sequence
+    indelregions, variant_maps = insert_indels(indels_map, variant_maps, guidelen, pamlen, debug)
+    regions.extend(indelregions)  # extend region list to consider indel regions
     return (
         regions,
         variant_maps,
@@ -92,32 +91,58 @@ def create_indel_region(sequence: str, startrel: int, stoprel: int, region_start
     # create region object for each indel
     return Region(sequence, Coordinate(chrom, start, stop), debug)
 
-
-def retrieve_indel_subregion(region: Region, indel: VariantRecord, alt: str, guidelen: int, pamlen: int, debug: bool) -> Region:
+def adjust_indel_position(indel_position: int, region_start: int, guidelen: int, pamlen: int, ref: str, alt: str, debug: bool) -> Tuple[int, int, int]:
     # compute indel location in the current region
-    posrel = indel.position - 1 - region.start
+    posrel = indel_position - 1 - region_start
+    indel_length = abs(len(ref) - len(alt))  # compute indel length    
     # compute start and stop coordinate for indel subregion
-    start, stop = posrel - guidelen, posrel + guidelen + pamlen - 1
-    indel_length = abs(len(indel.ref) - len(alt))  # compute indel length    
+    start, stop = posrel - guidelen - pamlen + 1, posrel + guidelen + pamlen + indel_length - 1
     # adjust indel stop position according to the indel type
-    if guess_indel_type(indel.ref, indel.alt, indel.position, debug) == INDELTYPES[0]:  # insertion
+    if guess_indel_type(ref, alt, indel_position, debug) == INDELTYPES[0]:  # insertion
         stop -= indel_length - 1
     else:  # deletion
         stop += indel_length + 1
-    return create_indel_region("".join(region[start:stop]), start, stop, region.start, indel.contig, debug)  # retrieve str from list
+    return start, stop, posrel
 
 
-def process_indels(variant_indels: Dict[Region, List[VariantRecord]], guidelen: int, pamlen: int, debug: bool):
-    indelregions = [
-        retrieve_indel_subregion(r, indel, altallele, guidelen, pamlen, debug)
-        for r, indels in variant_indels.items()
-        for indel in indels
-        for altallele in indel.get_altalleles(VTYPES[1])
-    ]
-    for i in indelregions:
-        print(i.format())
-        print(i._sequence)
-            
+def compute_indel_region(region: Region, indel: VariantRecord, alt: str, guidelen: int, pamlen: int, debug: bool) -> Region:
+    # compute start, stop and indel position within the query region
+    start, stop, _ = adjust_indel_position(indel.position, region.start, guidelen, pamlen, indel.ref, alt, debug)
+    indelregion = create_indel_region("".join(region[start:stop]), start, stop, region.start, indel.contig, debug)  # retrieve str from list
+    indelregion.enrich_indel(guidelen + pamlen - 1, indel.ref, alt)  # insert indel 
+    return indelregion
+
+
+def annotate_indel_variants(variant_map_snps: Dict[int, VariantRecord], indel: VariantRecord, region: Region, alt: str, guidelen: int, pamlen: int, debug: bool) -> Dict[int, VariantRecord]:
+    # dictionary to map variants to their relative position within the sequence
+    variant_map = {}
+    # compute start, stop and indel position within the query region
+    start, stop, posrel = adjust_indel_position(indel.position, region.start, guidelen, pamlen, indel.ref, alt, debug)
+    # compute region 
+    indel_length = abs(len(indel.ref) - len(alt))  # compute indel length
+    indel_start, indel_stop = posrel, posrel  # compute indel range offset
+    if guess_indel_type(indel.ref, alt, indel.position, debug) == INDELTYPES[1]:
+        indel_stop += indel_length
+    for pos, snp in variant_map_snps.items():  # recover snp data within indel region
+        if (start <= pos <= stop) and (pos < indel_start or pos > indel_stop):
+            variant_map[pos - start + indel_length] = snp  # snp flanks indel
+    variant_map[indel_start - start] = indel  # insert indel data 
+    return variant_map
+
+
+def insert_indels(indels_map: Dict[Region, List[VariantRecord]], variant_maps: Dict[Region, Dict[int, VariantRecord]], guidelen: int, pamlen: int, debug: bool) -> Tuple[RegionList, Dict[Region, Dict[int, VariantRecord]]]:
+    indelregions = []  # list of indel regions
+    for r, indels in indels_map.items():
+        for indel in indels:
+            for altallele in indel.get_altalleles(VTYPES[1]):  
+                # create a region for each alternative allele in indel
+                indelregion = compute_indel_region(r, indel, altallele, guidelen, pamlen, debug)
+                indelregions.append(indelregion)
+                variant_maps[indelregion] = annotate_indel_variants(variant_maps[r], indel, r, altallele, guidelen, pamlen, debug)
+                print(indelregion.format())
+                print(indelregion.sequence)
+                print(variant_maps[indelregion])
+    return RegionList(indelregions, debug), variant_maps
 
 
 def insert_snps(
@@ -144,16 +169,6 @@ def insert_snps(
             region.enrich(posrel, iupac_nt)  # assign iupac char at position
             variant_map[posrel] = snp  # map variant to its relative position
     return variant_map
-
-def insert_indels(region: Region, indels: List[VariantRecord], guidelen: int, pamlen: int, no_filter: bool, verbosity: int, debug: bool):
-    for indel in indels:
-        posrel = indel.position - 1 - region.start
-        print(indel.format())
-        for alt in indel.get_altalleles(VTYPES[1]):
-            x = Indel(region, indel.ref, alt, posrel, guidelen, pamlen, debug)
-            print(x.refsequence)
-            print(x.indelsequence)
-            print()
 
 
 def encode_snp_iupac(

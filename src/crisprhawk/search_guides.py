@@ -25,7 +25,7 @@ def pam_search(
     assert hasattr(region, "_sequence_bits")
     pam.encode()  # encode pam linear time search
     # matching limit on the right - ignore pad nts
-    stop_position = len(region) - guidelen - len(pam) + 1
+    stop_position = len(region) - len(pam) + 1
     # lists storing hits for input pam on forward and reverse strands
     matches_fwd, matches_rev = [], []
     # start pam search from real region start - ignore pad nts

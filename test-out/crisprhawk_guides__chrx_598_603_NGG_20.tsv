@@ -1,0 +1,2 @@
+chr	start	stop	sgRNA_sequence	pam	pam_class	strand	origin	samples	variant_id	target
+chrx	581	604	TGATGATGGTGATGATGATG	AGG	[ACGT]GG	+	ref	NA	NA	chrx_598_603

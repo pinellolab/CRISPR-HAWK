@@ -98,6 +98,21 @@ class Region(Sequence):
                 e,
             )
 
+    def enrich_indel(self, pos: int, ref: str, alt: str) -> None:
+        try:
+            # enrich sequence replacing reference allele with indel allele
+            self._sequence_raw = self._sequence_raw[:pos] + list(alt) + self._sequence_raw[pos + len(ref):]        
+            self._sequence = "".join(self._sequence_raw)  # adjust pointed sequence
+        except IndexError as e:
+            exception_handler(
+                f"Indel enrichement failed for region {self.format()}",
+                CrisprHawkEnrichmentError,
+                os.EX_DATAERR,
+                self._debug,
+                e,
+            )
+        
+
     @property
     def contig(self) -> str:
         return self._coordinates.contig
@@ -141,8 +156,11 @@ class RegionList:
                 e,
             )
 
-    def add(self, region: Region) -> None:
-        self._regions.append(region)  # append new region to region list
+    def extend(self, regions: "RegionList") -> None:
+        if not isinstance(regions, self.__class__):
+            exception_handler(TypeError, f"Cannot append to {self.__class__.__name__} objects of type {type(regions).__name__}", os.EX_DATAERR, self._debug)
+        for r in regions:  # extend regions list
+            self._regions.append(r)  
 
     def format(self, sep: Optional[str] = "\n", pad: Optional[int] = 0) -> str:
         return sep.join([r.format(pad) for r in self._regions])
