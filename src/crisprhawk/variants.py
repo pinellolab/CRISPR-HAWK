@@ -14,7 +14,6 @@ import os
 
 TBI = "tbi"  # tabix index file extnsion
 VTYPES = ["snp", "indel"]  # variant types
-INDELTYPES = [0, 1]  # indel types -> 0 for insertion, 1 for deletion
 
 
 class VariantRecord:
@@ -91,6 +90,10 @@ class VariantRecord:
     @property
     def filter(self) -> str:
         return self._filter
+    
+    @property
+    def contig(self) -> str:
+        return self._chrom
 
     @property
     def position(self) -> int:

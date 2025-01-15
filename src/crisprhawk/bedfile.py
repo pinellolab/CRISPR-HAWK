@@ -141,6 +141,9 @@ class RegionList:
                 e,
             )
 
+    def add(self, region: Region) -> None:
+        self._regions.append(region)  # append new region to region list
+
     def format(self, sep: Optional[str] = "\n", pad: Optional[int] = 0) -> str:
         return sep.join([r.format(pad) for r in self._regions])
 
