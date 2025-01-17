@@ -98,21 +98,6 @@ class Region(Sequence):
                 e,
             )
 
-    def enrich_indel(self, pos: int, ref: str, alt: str) -> None:
-        try:
-            # enrich sequence replacing reference allele with indel allele
-            self._sequence_raw = self._sequence_raw[:pos] + list(alt) + self._sequence_raw[pos + len(ref):]        
-            self._sequence = "".join(self._sequence_raw)  # adjust pointed sequence
-        except IndexError as e:
-            exception_handler(
-                f"Indel enrichement failed for region {self.format()}",
-                CrisprHawkEnrichmentError,
-                os.EX_DATAERR,
-                self._debug,
-                e,
-            )
-        
-
     @property
     def contig(self) -> str:
         return self._coordinates.contig
@@ -124,6 +109,54 @@ class Region(Sequence):
     @property
     def stop(self) -> int:
         return self._coordinates.stop
+
+
+class IndelRegion(Region):
+    def __init__(
+        self,
+        indelpos: int,
+        sequence: str,
+        coord: Coordinate,
+        ref: str,
+        alt: str,
+        debug: bool,
+    ) -> None:
+        super().__init__(sequence, coord, debug)  # initialize indel region
+        self._indelpos = indelpos  # store indel position
+        self._ref = ref  # indel reference allele
+        self._alt = alt  # indel alt allele
+        self._indel_len = abs(len(alt) - len(ref))  # compute indel length
+
+    def _update_sequence(self) -> None:
+        assert hasattr(self, "_sequence_raw")
+        # update pointed sequence after changes on raw sequence data
+        self._sequence = "".join(self._sequence_raw)
+
+    def enrich(self) -> None:
+        try:
+            # enrich sequence replacing reference allele with indel allele
+            self._sequence_raw = (
+                self._sequence_raw[: self._indelpos]
+                + list(self._alt)
+                + self._sequence_raw[self._indelpos + len(self._ref) :]
+            )
+            self._sequence = "".join(self._sequence_raw)  # adjust pointed sequence
+        except IndexError as e:
+            exception_handler(
+                f"Indel enrichement failed for region {self.format()}",
+                CrisprHawkEnrichmentError,
+                os.EX_DATAERR,
+                self._debug,
+                e,
+            )
+
+    @property
+    def indelpos(self) -> int:
+        return self._indelpos
+
+    @property
+    def indel_len(self) -> int:
+        return self._indel_len
 
 
 class RegionList:
@@ -158,9 +191,14 @@ class RegionList:
 
     def extend(self, regions: "RegionList") -> None:
         if not isinstance(regions, self.__class__):
-            exception_handler(TypeError, f"Cannot append to {self.__class__.__name__} objects of type {type(regions).__name__}", os.EX_DATAERR, self._debug)
+            exception_handler(
+                TypeError,
+                f"Cannot append to {self.__class__.__name__} objects of type {type(regions).__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
         for r in regions:  # extend regions list
-            self._regions.append(r)  
+            self._regions.append(r)
 
     def format(self, sep: Optional[str] = "\n", pad: Optional[int] = 0) -> str:
         return sep.join([r.format(pad) for r in self._regions])

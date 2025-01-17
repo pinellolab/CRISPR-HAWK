@@ -61,7 +61,10 @@ class VariantRecord:
 
     def _assign_id(self, vid: str) -> List[str]:
         if self._allelesnum == 1:
-            if vid != ".":  # variant id available, return it
+            # for indels always compute the identifier to avoid confusion
+            if (
+                vid != "." and self.vtype[0] != VTYPES[1]
+            ):  # variant id available, return it
                 return [vid]
             # variant id not available, construct the id using chrom, position, ref,
             # and alt (e.g. chrx_100_A_G)
@@ -90,7 +93,7 @@ class VariantRecord:
     @property
     def filter(self) -> str:
         return self._filter
-    
+
     @property
     def contig(self) -> str:
         return self._chrom

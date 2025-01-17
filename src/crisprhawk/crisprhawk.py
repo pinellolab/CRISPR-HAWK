@@ -4,7 +4,7 @@
 from crisprhawk_argparse import CrisprHawkInputArgs
 from utils import print_verbosity, warning, VERBOSITYLVL
 from search_guides import search
-from bedfile import Bed, Region, RegionList
+from bedfile import Bed, Region, IndelRegion, RegionList
 from sequences import Fasta, PAM
 from reports import report_guides
 from enrichment import enricher
@@ -75,12 +75,14 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
     # search guides in the input regions
     pam = PAM(args.pam, args.debug)  # initialize pam
     guides = guide_search(pam, regions, args.guidelen, args.right, args.debug)
-    print(guides)
     # track haplotypes on guides
     for r in guides:  # update current region guides data
-        guides[r] = track_haplotypes(guides[r], variants_maps[r], args.guidelen, phased)
-    print()
+        guides[r] = track_haplotypes(
+            guides[r], variants_maps[r], args.guidelen, len(pam), phased, r, args.debug
+        )
+    print("haplotype tracking done")
     print(guides)
+    exit()
     # report guides in output directory
     for region, (positions, guides, samples, variants) in guides.items():
         report_guides(
