@@ -5,7 +5,7 @@ from crisprhawk_error import CrisprHawkBedError, CrisprHawkEnrichmentError
 from exception_handlers import exception_handler
 from sequences import Sequence, Fasta
 
-from typing import List, Union, Optional
+from typing import List, Union, Optional, final
 
 import os
 
@@ -98,6 +98,22 @@ class Region(Sequence):
                 e,
             )
 
+    @final
+    def contains(self, indelregion: "IndelRegion") -> bool:
+        if not isinstance(indelregion, IndelRegion):
+            exception_handler(
+                TypeError,
+                f"Full overlap check on input regiin can only be done on {IndelRegion.__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
+        # check whether the test region is contained in the current region
+        return (
+            self.contig == indelregion.contig
+            and self.start <= indelregion.start
+            and self.stop >= indelregion.stop
+        )
+
     @property
     def contig(self) -> str:
         return self._coordinates.contig
@@ -119,12 +135,14 @@ class IndelRegion(Region):
         coord: Coordinate,
         ref: str,
         alt: str,
+        indel_type: str,
         debug: bool,
     ) -> None:
         super().__init__(sequence, coord, debug)  # initialize indel region
         self._indelpos = indelpos  # store indel position
         self._ref = ref  # indel reference allele
         self._alt = alt  # indel alt allele
+        self._indel_type = indel_type  # insertion or deletion
         self._indel_len = abs(len(alt) - len(ref))  # compute indel length
 
     def _update_sequence(self) -> None:
@@ -157,6 +175,10 @@ class IndelRegion(Region):
     @property
     def indel_len(self) -> int:
         return self._indel_len
+
+    @property
+    def indel_type(self) -> int:
+        return self._indel_type
 
 
 class RegionList:

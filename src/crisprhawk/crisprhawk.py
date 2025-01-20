@@ -80,20 +80,5 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         guides[r] = track_haplotypes(
             guides[r], variants_maps[r], args.guidelen, len(pam), phased, r, args.debug
         )
-    print("haplotype tracking done")
-    print(guides)
-    exit()
     # report guides in output directory
-    for region, (positions, guides, samples, variants) in guides.items():
-        report_guides(
-            args.outdir,
-            region,
-            guides,
-            positions,
-            samples,
-            variants,
-            pam,
-            args.right,
-            args.guidelen,
-            args.debug,
-        )
+    report_guides(guides, args.outdir, pam, args.right, args.guidelen, args.debug)

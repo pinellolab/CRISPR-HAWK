@@ -27,7 +27,6 @@ def fetch_variants(
     # each region is padded by |guide| nts to avoid missing guides mapped on
     # region's border
     variants = vcf.fetch(*adjust_region_coords(region, guidelen))
-    fetched_vars = len(variants)  # number of fetched variants
     # split variants between snps and indels -> they follow different
     # enrichment workflows
     snps = [v for v in variants if VTYPES[0] in v.vtype]  # SNPs
@@ -104,13 +103,16 @@ def create_indel_region(
     alt: str,
     guidelen: int,
     pamlen: int,
+    indel_type: str,
     debug: bool,
 ) -> IndelRegion:
     # recover original start and stop coordinates for indel subregion and create
     # coordinate object
     coord = Coordinate(chrom, startrel + region_start, stoprel + region_start)
     # create indel region object for each indel
-    return IndelRegion(guidelen + pamlen - 1, sequence, coord, ref, alt, debug)
+    return IndelRegion(
+        guidelen + pamlen - 1, sequence, coord, ref, alt, indel_type, debug
+    )
 
 
 def adjust_indel_position(
@@ -160,6 +162,7 @@ def compute_indel_region(
         alt,
         guidelen,
         pamlen,
+        guess_indel_type(indel.ref, alt, indel.position, debug),
         debug,
     )  # retrieve str from list
     indelregion.enrich()  # insert indel in region
