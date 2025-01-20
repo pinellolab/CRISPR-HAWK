@@ -147,7 +147,7 @@ def compute_indel_region(
     guidelen: int,
     pamlen: int,
     debug: bool,
-) -> Region:
+) -> IndelRegion:
     # compute start, stop and indel position within the query region
     start, stop, _ = adjust_indel_position(
         indel.position, region.start, guidelen, pamlen, indel.ref, alt, debug
@@ -176,6 +176,7 @@ def annotate_indel_variants(
     alt: str,
     guidelen: int,
     pamlen: int,
+    indel_type: int,
     debug: bool,
 ) -> Dict[int, VariantRecord]:
     # dictionary to map variants to their relative position within the sequence
@@ -188,10 +189,16 @@ def annotate_indel_variants(
     indel_length = abs(len(indel.ref) - len(alt))  # compute indel length
     indel_start, indel_stop = posrel, posrel  # compute indel range offset
     if guess_indel_type(indel.ref, alt, indel.position, debug) == INDELTYPES[1]:
-        indel_stop += indel_length
+        indel_stop += indel_length  # deletion
     for pos, snp in variant_map_snps.items():  # recover snp data within indel region
         if (start <= pos <= stop) and (pos < indel_start or pos > indel_stop):
-            vpos = pos - start if pos < indel_start else pos - start + indel_length
+            vpos = pos - start  # always if vpos < indel_start
+            if pos >= indel_start:  # adjust position of variants occurring after indel
+                vpos = (
+                    vpos + indel_length
+                    if indel_type == INDELTYPES[0]
+                    else vpos - indel_length
+                )
             variant_map[vpos] = snp  # snp flanks indel
     variant_map[indel_start - start] = indel  # insert indel data
     return variant_map
@@ -214,7 +221,14 @@ def insert_indels(
                 )
                 indelregions.append(indelregion)
                 variant_maps[indelregion] = annotate_indel_variants(
-                    variant_maps[r], indel, r, altallele, guidelen, pamlen, debug
+                    variant_maps[r],
+                    indel,
+                    r,
+                    altallele,
+                    guidelen,
+                    pamlen,
+                    indelregion.indel_type,
+                    debug,
                 )
     return RegionList(indelregions, debug), variant_maps
 

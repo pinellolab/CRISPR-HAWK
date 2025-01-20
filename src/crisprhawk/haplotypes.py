@@ -5,6 +5,7 @@ from exception_handlers import exception_handler
 from crisprhawk_error import CrisprHawkHaplotypeError
 from variants import VariantRecord, VTYPES
 from bedfile import IndelRegion, Region
+from enrichment import INDELTYPES
 
 from typing import Tuple, List, Dict, Set, Union, Optional
 
@@ -87,6 +88,7 @@ def update_sample_seq(
     sample_seq: List[str],
     position: int,
     indel_len: int,
+    indel_type: int,
     alt: str,
     indel: bool,
     debug: bool,
@@ -102,7 +104,9 @@ def update_sample_seq(
         sample_seq_updated = (
             sample_seq[:position] + [alt.lower()] + sample_seq[(position + 1) :]
         )
-    if len(sample_seq) != len(sample_seq_updated):
+    # adjust length mismatch for deletions
+    offset = indel_len if indel and indel_type == INDELTYPES[1] else 0
+    if (len(sample_seq) - offset) != len(sample_seq_updated):
         exception_handler(
             CrisprHawkHaplotypeError,
             f"Mismatching length after candidate guide sequence update ({sample_seq} - {sample_seq_updated})",
@@ -115,6 +119,7 @@ def update_sample_seq(
 def update_sample_guide(
     position: int,
     indel_len: int,
+    indel_type: int,
     alt: str,
     indel: bool,
     variant_id: str,
@@ -125,7 +130,9 @@ def update_sample_guide(
     occ_vtypes: Optional[List[str]] = None,
 ) -> Union[Tuple[str, List[str], List[str]], Tuple[str, List[str]]]:
     # update guide candidate sequence
-    sample_seq = update_sample_seq(sample_seq, position, indel_len, alt, indel, debug)
+    sample_seq = update_sample_seq(
+        sample_seq, position, indel_len, indel_type, alt, indel, debug
+    )
     occ_variants.append(variant_id)  # variant id
     if occ_vtypes is not None:  # indel, so variant types are requested
         occ_vtypes.append(variant_type)
@@ -142,6 +149,7 @@ def map_sample_to_guide_indel(
     pamlen: int,
     indelpos: int,
     indel_len: int,
+    indel_type: int,
     debug: bool,
 ) -> Dict[str, Tuple[List[List[str]], List[Set[str]]]]:
     # if vcf is phased check variant occurrence on each chromosome copy
@@ -180,6 +188,7 @@ def map_sample_to_guide_indel(
                     sample_guides_chromcopy[sample] = update_sample_guide(
                         pos,
                         indel_len,
+                        indel_type,
                         variant.alt[i],
                         pos == posrel,
                         variant.id[i],
@@ -217,6 +226,7 @@ def map_sample_to_guide(
                     # update sample's guide
                     sample_guides_chromcopy[sample] = update_sample_guide(
                         pos,
+                        0,
                         0,
                         variant.alt[i],
                         False,
@@ -305,6 +315,7 @@ def reconstruct_guide_haps(
                 pamlen,
                 region.indelpos,
                 region.indel_len,
+                region.indel_type,
                 debug,
             )
         else:
