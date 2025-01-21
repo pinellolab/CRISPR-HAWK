@@ -51,17 +51,18 @@ def enricher(
     indels_map = {}  # dictionary to store indels in each region
     # retrieve variants in each region
     for r in regions:
+        region_name = r.format(pad=guidelen).replace("_", " ")  # verbosity option
         print_verbosity(
-            f"Adding variants to region: {r.format(pad=guidelen)}",
+            f"Adding variants to region: {region_name}",
             verbosity,
             VERBOSITYLVL[2],
         )
         print_verbosity(
-            f"Fetching variants in {r.format(pad=guidelen)}", verbosity, VERBOSITYLVL[3]
+            f"Fetching variants in {region_name}", verbosity, VERBOSITYLVL[3]
         )
         snps, indels = fetch_variants(vcfs[r.contig], r, guidelen)
         print_verbosity(
-            f"Fetched {len(snps) + len(indels)} (snps: {len(snps)} - indels: {len(indels)}) variants in {r.format(pad=guidelen)}",
+            f"Fetched {len(snps) + len(indels)} (snps: {len(snps)} - indels: {len(indels)}) variants in {region_name}",
             verbosity,
             VERBOSITYLVL[3],
         )
@@ -130,11 +131,11 @@ def adjust_indel_position(
     # compute start and stop coordinate for indel subregion
     start, stop = (
         posrel - guidelen - pamlen + 1,
-        posrel + guidelen + pamlen + indel_length - 1,
+        posrel + guidelen + pamlen - 1,
     )
     # adjust indel stop position according to the indel type
     if guess_indel_type(ref, alt, indel_position, debug) == INDELTYPES[0]:  # insertion
-        stop -= indel_length - 1
+        stop += 1
     else:  # deletion
         stop += indel_length + 1
     return start, stop, posrel
@@ -200,7 +201,8 @@ def annotate_indel_variants(
                     else vpos - indel_length
                 )
             variant_map[vpos] = snp  # snp flanks indel
-    variant_map[indel_start - start] = indel  # insert indel data
+    for i in range(len(alt)):
+        variant_map[(indel_start - start) + i] = indel  # insert indel data
     return variant_map
 
 
@@ -211,7 +213,7 @@ def insert_indels(
     pamlen: int,
     debug: bool,
 ) -> Tuple[RegionList, Dict[Region, Dict[int, VariantRecord]]]:
-    indelregions = []  # list of indel regions
+    indelregions = RegionList([], debug)  # list of indel regions
     for r, indels in indels_map.items():
         for indel in indels:
             for altallele in indel.get_altalleles(VTYPES[1]):
@@ -230,7 +232,7 @@ def insert_indels(
                     indelregion.indel_type,
                     debug,
                 )
-    return RegionList(indelregions, debug), variant_maps
+    return indelregions, variant_maps
 
 
 def insert_snps(

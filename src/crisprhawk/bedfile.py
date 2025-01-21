@@ -139,6 +139,7 @@ class IndelRegion(Region):
         debug: bool,
     ) -> None:
         super().__init__(sequence, coord, debug)  # initialize indel region
+        self._refseq = sequence  # keep ref seq to simplify haplotype tracking
         self._indelpos = indelpos  # store indel position
         self._ref = ref  # indel reference allele
         self._alt = alt  # indel alt allele
@@ -167,6 +168,10 @@ class IndelRegion(Region):
                 self._debug,
                 e,
             )
+
+    @property
+    def refseq(self) -> str:
+        return self._refseq
 
     @property
     def indelpos(self) -> int:
@@ -215,12 +220,22 @@ class RegionList:
         if not isinstance(regions, self.__class__):
             exception_handler(
                 TypeError,
-                f"Cannot append to {self.__class__.__name__} objects of type {type(regions).__name__}",
+                f"Cannot extend {self.__class__.__name__} with objects of type {type(regions).__name__}",
                 os.EX_DATAERR,
                 self._debug,
             )
         for r in regions:  # extend regions list
             self._regions.append(r)
+
+    def append(self, region: Union[Region, IndelRegion]) -> None:
+        if not isinstance(region, Region) and not isinstance(region, IndelRegion):
+            exception_handler(
+                TypeError,
+                f"Cannot append to {self.__class__.__name__} objects of type {type(region).__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
+        self._regions.append(region)
 
     def format(self, sep: Optional[str] = "\n", pad: Optional[int] = 0) -> str:
         return sep.join([r.format(pad) for r in self._regions])

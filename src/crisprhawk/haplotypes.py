@@ -31,6 +31,47 @@ def find_variant_pos(
     )
     return refseq, variants
 
+def find_variant_pos_indel(
+    guide: str, position: int, variants_maps: Dict[int, VariantRecord], indelregion: IndelRegion, guidelen: int, pamlen: int
+) -> Tuple[str, Dict[int, VariantRecord]]:
+    # store variants found within the guide; variants are denoted by iupac chars
+    # different from the canonical nucleotides
+    variants = {
+        i: variants_maps[position + i]
+        for i, _ in enumerate(guide)
+        if position + i in variants_maps
+    }
+    guidepamlen = guidelen + pamlen  # total guide + pam length
+    # compute guide reference sequence
+    offset = position if position <= len(indelregion) - guidepamlen else position - guidelen
+    indelposrel = indelregion.indelpos - offset
+    indelposrel = 0 if indelposrel < 0 else indelposrel
+
+    refseq = []
+    i = 0
+    while i < len(guide):
+        if i in variants:
+            if i == indelposrel:
+                refseq.append(indelregion._ref)
+                if indelregion.indel_type == INDELTYPES[0]:
+                    i += len(indelregion._alt)
+                    continue
+            else:
+                refseq.append(variants[i].ref)
+        else:
+            refseq.append(guide[i])
+        i += 1
+    refseq = "".join(refseq)
+
+    # if indelregion.indel_type == INDELTYPES[0]:  # insertion
+    #     refseq = indelregion.refseq[position:(position + guidepamlen + indelregion.indel_len)]
+    # else:  # deletion
+    #     refseq = "".join(
+    #         [variants[i].ref if i in variants else nt for i, nt in enumerate(guide)]
+    #     )
+    return refseq, variants
+
+
 
 def filter_guides(
     sample_guides_chromcopy: Dict[str, Tuple[List[str], Set[str]]]
@@ -55,12 +96,19 @@ def filter_guides_indel(
 
 
 def _compute_indel_posrel(
-    indelpos: int, guidelen: int, pamlen: int, guidepos: int
+    indelpos: int, region_len: int, guidelen: int, pamlen: int, guidepos: int
 ) -> int:
+    guidepamlen = guidelen + pamlen  # total guide + pam length
+    # adjust subtraction term to identify indel position, based on the occurrence
+    # position of the guide: if upstream wrt indel position, guide position 
+    # correspond to pam start (easy adjustment), otherwise need to first remove
+    # guide length (pam not considered) 
+    offset = guidepos if guidepos < guidepamlen else guidepos - (guidelen + pamlen - 1)
     # compute indel position within current guide candidate
-    offset = indelpos - guidelen
-    guidepamlen = guidelen + pamlen  # total length of guide + pam
-    return indelpos - offset - (guidepos - guidepamlen + 1)
+    indelpos_rel = indelpos - offset
+    if indelpos_rel < 0:  # overlapping insertion -> indel starts at position 0
+        return 0
+    return indelpos_rel
 
 
 def filter_samples(
@@ -68,6 +116,7 @@ def filter_samples(
     variants: Dict[int, VariantRecord],
     position: int,
     indelpos: int,
+    region_len: int,
     guidelen: int,
     pamlen: int,
     guidepos: int,
@@ -75,12 +124,14 @@ def filter_samples(
     chromcopy: int,
 ) -> Tuple[Set[str], int]:
     # compute indel position within current guide
-    posrel = _compute_indel_posrel(indelpos, guidelen, pamlen, guidepos)
-    if (
-        not samples or position == posrel
-    ):  # empty samples set or indel position -> do nothing
+    posrel = _compute_indel_posrel(indelpos, region_len, guidelen, pamlen, guidepos)
+    # empty samples set or indel position -> do nothing
+    if not samples or position == posrel:  
         return samples, posrel
-    samples_indel = variants[posrel].samples[i][chromcopy]  # samples carrying indel
+    try:
+        samples_indel = variants[posrel].samples[i][chromcopy]  # samples carrying indel
+    except KeyError:
+        raise Exception
     return samples.intersection(samples_indel), posrel
 
 
@@ -95,17 +146,18 @@ def update_sample_seq(
 ) -> List[str]:
     # variants (mismatching position) denoted by lower case nts
     if indel:  # insert indel in guide candidate sequence
+        offset = position + indel_len + 1 if indel_type == INDELTYPES[1] else position + 1
         sample_seq_updated = (
-            sample_seq[:position]
-            + list(alt.lower())
-            + sample_seq[(position + indel_len + 1) :]
+            sample_seq[:position] + list(alt.lower()) + sample_seq[offset:]
         )
     else:  # insert variant in guide candidate sequence
         sample_seq_updated = (
             sample_seq[:position] + [alt.lower()] + sample_seq[(position + 1) :]
         )
-    # adjust length mismatch for deletions
-    offset = indel_len if indel and indel_type == INDELTYPES[1] else 0
+    offset = 0  # adjust length mismatch for deletions
+    if indel:
+        offset = indel_len if indel_type == INDELTYPES[1] else -indel_len
+    # offset = indel_len if indel and indel_type == INDELTYPES[1] else 0
     if (len(sample_seq) - offset) != len(sample_seq_updated):
         exception_handler(
             CrisprHawkHaplotypeError,
@@ -143,6 +195,7 @@ def update_sample_guide(
 def map_sample_to_guide_indel(
     refseq: str,
     variants: Dict[int, VariantRecord],
+    region_len: int,
     phased: bool,
     guidepos: int,
     guidelen: int,
@@ -158,7 +211,7 @@ def map_sample_to_guide_indel(
     for chromcopy in range(chromcopies):
         # retrieve samples carrying variants within input guide
         samples = [
-            s for v in variants.values() for aa in v.samples for s in aa[chromcopy]
+            s for v in variants.values() for aa_samples in v.samples for s in aa_samples[chromcopy]
         ]
         if not samples:  # skip if no samples carries variant on current copy
             continue
@@ -177,6 +230,7 @@ def map_sample_to_guide_indel(
                     variants,
                     pos,
                     indelpos,
+                    region_len,
                     guidelen,
                     pamlen,
                     guidepos,
@@ -298,19 +352,22 @@ def reconstruct_guide_haps(
 ) -> Tuple[List[int], List[str], List[str]]:
     # report fields: position, guide, samples, variants
     positions_rep, guides_rep, samples_rep, variants_rep = [], [], [], []
+    indel = isinstance(region, IndelRegion)  # assess if indel region
     # reconstruct haps for each guide and retrieve associated samples
     for i, guide in enumerate(guides):
-        # recover guide start position
+        # recover guide start position within region
         pos = positions[i] - guidelen if strand == 0 else positions[i]
-        # compute reference guide sequence and positions with variants
-        refseq, variants = find_variant_pos(guide, pos, variants_maps)
-        # map samples to their personal guide following haps if input vcf is phased
-        if isinstance(region, IndelRegion):
+        if indel:
+            # compute reference guide sequence and positions with variants
+            refseq, variants = find_variant_pos_indel(guide, pos, variants_maps, region, guidelen, pamlen)
+            guidepos = positions[i] + pamlen - 1 if strand == 0 else positions[i]
+            # map samples to their personal guide following haps if input vcf is phased
             samples_guides = map_sample_to_guide_indel(
                 refseq,
                 variants,
+                len(region),
                 phased,
-                positions[i],
+                guidepos,
                 guidelen,
                 pamlen,
                 region.indelpos,
@@ -319,6 +376,9 @@ def reconstruct_guide_haps(
                 debug,
             )
         else:
+            # compute reference guide sequence and positions with variants
+            refseq, variants = find_variant_pos(guide, pos, variants_maps)
+            # map samples to their personal guide following haps if input vcf is phased
             samples_guides = map_sample_to_guide(refseq, variants, phased, debug)
         # reverse the sample-guide dictionary to use guides as keys -> useful
         # for reporting purposes
