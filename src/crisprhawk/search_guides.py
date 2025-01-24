@@ -6,8 +6,11 @@ from crisprhawk_error import CrisprHawkBitsetError
 from sequences import PAM
 from bedfile import Region, IndelRegion
 from bitset import Bitset
+from guide import Guide
+from utils import print_verbosity, VERBOSITYLVL
 
 from typing import Tuple, List, Union
+from time import time
 
 import os
 
@@ -101,27 +104,30 @@ def retrieve_guides(
     region: Region,
     guidelen: int,
     right: bool,
-) -> Tuple[List[List[str]], List[List[str]]]:
-    # helper function to recover guides sequence
-    def get_guides(matches: List[int], guideright: bool) -> List[List[str]]:
-        return [
-            extract_guide(region, pos, guidelen, pamlen, guideright)
-            for pos in matches
-            if valid_position(pos, guidelen, len(region), guideright)
-        ]
-
-    guides_fwd = get_guides(matches_fwd, right)  # guides on positive strand
-    guides_rev = get_guides(matches_rev, not right)  # guides on negative strand
-    return guides_fwd, guides_rev
-
+    debug: bool,
+) -> List[Guide]:
+    # recover guides sequences from candidate matching positions
+    guides = [
+        Guide(pos, extract_guide(region, pos, guidelen, pamlen, right=(not right if strand == 1 else right)), strand, debug)
+        for strand, matches in enumerate([matches_fwd, matches_rev])
+        for pos in matches
+        if valid_position(pos, guidelen, len(region), right=(not right if strand == 1 else right))
+    ]
+    return guides
 
 def search(
-    pam: PAM, region: Region, guidelen: int, right: bool, debug: bool
-) -> Tuple[Tuple[List[int], List[int]], Tuple[List[List[str]], List[List[str]]]]:
+    pam: PAM, region: Region, guidelen: int, right: bool, verbosity: int, debug: bool
+) -> List[Guide]:
     # search pam occurrences on forward and reverse strand of the input sequence
+    print_verbosity(f"Searching guide candidates in {region.format(pad=guidelen, string=True)}", verbosity, VERBOSITYLVL[2])
     matches_fwd, matches_rev = pam_search(pam, region, guidelen, debug)
+    print_verbosity(f"Found {len(matches_fwd)} guide candidates on 5'-3'in {region.format(pad=guidelen, string=True)}", verbosity, VERBOSITYLVL[3])
+    print_verbosity(f"Found {len(matches_rev)} guide candidates on 3'-5'in {region.format(pad=guidelen, string=True)}", verbosity, VERBOSITYLVL[3])
     # recover guide candidates found on forward and reverse strands
-    guides_fwd, guides_rev = retrieve_guides(
-        matches_fwd, matches_rev, len(pam), region, guidelen, right
+    print_verbosity(f"Recover guides sequences in {region.format(pad=guidelen, string=True)}", verbosity, VERBOSITYLVL[3])
+    start = time()  # track guide retrieval start time
+    guides = retrieve_guides(
+        matches_fwd, matches_rev, len(pam), region, guidelen, right, debug
     )
-    return (matches_fwd, matches_rev), (guides_fwd, guides_rev)
+    print_verbosity(f"Guides sequences in {region.format(pad=guidelen, string=True)} recovered in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
+    return guides

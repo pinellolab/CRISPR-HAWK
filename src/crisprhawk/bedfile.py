@@ -22,7 +22,9 @@ class Coordinate:
     def __str__(self) -> str:
         return f"{self._contig}:{self._start}-{self._stop}"
 
-    def format(self, pad: Optional[int] = 0) -> str:
+    def format(self, pad: Optional[int] = 0, string: Optional[bool] = False) -> str:
+        if string:
+            return f"{self._contig}:{self._start + pad}-{self._stop - pad}"
         return "_".join(
             list(map(str, [self._contig, self._start + pad, self._stop - pad]))
         )
@@ -82,9 +84,15 @@ class Region(Sequence):
 
     def __str__(self):
         return f">{self._coordinates}\n{super().__str__()}"
+    
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} object; region={self._coordinates}>"
 
-    def format(self, pad: Optional[int] = 0) -> str:
-        return self._coordinates.format(pad)
+    def format(self, pad: Optional[int] = 0, string: Optional[bool] = False) -> str:
+        return self._coordinates.format(pad, string)
+    
+    def display(self) -> str:
+        return f"{self._coordinates}"
 
     def enrich(self, pos: int, iupac_nt: str) -> None:
         try:
@@ -237,8 +245,8 @@ class RegionList:
             )
         self._regions.append(region)
 
-    def format(self, sep: Optional[str] = "\n", pad: Optional[int] = 0) -> str:
-        return sep.join([r.format(pad) for r in self._regions])
+    def format(self, sep: Optional[str] = "\n", pad: Optional[int] = 0, string: Optional[bool] = False) -> str:
+        return sep.join([r.format(pad, string) for r in self._regions])
 
 
 class RegionListIterator:
