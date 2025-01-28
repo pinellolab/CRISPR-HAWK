@@ -7,7 +7,7 @@ from search_guides import search
 from bedfile import Bed, Region, IndelRegion, RegionList
 from sequences import Fasta, PAM
 from reports import report_guides
-from enrichment import enricher
+from enrichment import enricher, load_vcfs
 from variants import VariantRecord
 from haplotypes import track_haplotypes
 from guide import Guide
@@ -35,33 +35,9 @@ def construct_regions(bedfile: str, fastafile: str, fasta_idx: str, guidelen: in
 
 
 def enrichment(
-    fasta: str,
-    bedfile: str,
-    fasta_idx: str,
-    vcfs: List[str],
-    guidelen: int,
-    pamlen: int,
-    onlyref: bool,
-    no_filter: bool,
-    verbosity: int,
-    debug: bool,
-) -> Tuple[RegionList, Dict[Region, Dict[int, VariantRecord]], bool]:
-    # read and parse regions from input bedfile
-    print_verbosity(f"Parsing input BED file {bedfile}", verbosity, VERBOSITYLVL[2])
-    bed = Bed(bedfile, guidelen, debug)  
-    print_verbosity(f"Parsed regions number: {len(bed)}", verbosity, VERBOSITYLVL[3])
-    # extract regions sequences for subsequent steps
-    print_verbosity(f"Extracting regions from {fasta}", verbosity, VERBOSITYLVL[2])
-    regions = bed.extract(Fasta(fasta, verbosity, debug, fasta_idx))  # extract regions
-    print_verbosity(
-        f"Extracted regions:\n{regions.format(pad=guidelen, string=True)}",
-        verbosity,
-        VERBOSITYLVL[3],
-    )
-    if onlyref:  # no variants in input, skip enrichment and go to encoding
-        warning("Skipping enrichment (no input VCF)", verbosity)
-        return regions, None, None
-    # variants in input -> proceed with genome enrichment
+    regions: RegionList, vcflist: List[str], guidelen: int, pamlen: int, no_filter: bool, verbosity: int, debug: bool,
+) -> Tuple[Dict[Region, Dict[int, VariantRecord]], bool]:
+    vcfs = load_vcfs(vcflist, verbosity, debug)  # load input vcfs 
     return enricher(regions, vcfs, guidelen, pamlen, no_filter, verbosity, debug)
 
 
@@ -85,11 +61,24 @@ def initialize_pam(pam: str, verbosity: int, debug: bool) -> PAM:
     print_verbosity(f"Creating PAM object for PAM {pam}", verbosity, VERBOSITYLVL[2])
     return PAM(pam, debug)
 
-def crisprhawk_ref(regions: RegionList, pam: PAM, guidelen: int, right: bool, outdir: str, verbosity: int, debug: bool) -> Dict[Region, List[Guide]]:
+def crisprhawk_ref(regions: RegionList, pam: PAM, guidelen: int, right: bool, verbosity: int, debug: bool) -> Dict[Region, List[Guide]]:
     # encode sequences in bit for efficient candidate guide search
     regions = encoding(regions, verbosity)  
+    # search guide candidates within input regions
     return guide_search(pam, regions, guidelen, right, verbosity, debug)  # search guides
-    
+
+def crisprhawk_alt(regions: RegionList, vcflist: List[str], guidelen: int, pam: PAM, right: bool, no_filter: bool, verbosity: int, debug: bool):
+    # enrich input regions with SNVs and indels and assess whether input VCFs are phased
+    variant_maps = enrichment(regions, vcflist, guidelen, len(pam), no_filter, verbosity, debug)
+    # encode sequences in bit for efficient candidate guide search
+    regions = encoding(regions, verbosity)
+    # search guide candidates within input regions
+    guides = guide_search(pam, regions, guidelen, right, verbosity, debug)
+    # track haplotypes on guides
+    for region in regions:
+        guides[region] = track_haplotypes(region, guides[region], variant_maps[region])
+    return guides    
+
 
 def crisprhawk(args: CrisprHawkInputArgs) -> None:
     # extract genomic regions defined in input bed 
@@ -97,9 +86,10 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
     pam = initialize_pam(args.pam, args.verbosity, args.debug)  # initialize pam object
     onlyref = not args.vcfs  # establish whether variants have been given
     if onlyref:  # reference-only data in input, follow the reference only pipeline
-        guides = crisprhawk_ref(regions, pam, args.guidelen, args.right, args.outdir, args.verbosity, args.debug)
+        warning("Skipping enrichment (no input VCF)", args.verbosity)
+        guides = crisprhawk_ref(regions, pam, args.guidelen, args.right, args.verbosity, args.debug)
     else:
-        pass
+        guides = crisprhawk_alt(regions, args.vcfs, args.guidelen, pam, args.right, args.no_filter, args.verbosity, args.debug)            
     # report found guides in output directory
     report_guides(guides, args.guidelen, pam, args.outdir, args.right, args.debug)
 

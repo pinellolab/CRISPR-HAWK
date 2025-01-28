@@ -1,11 +1,9 @@
 """
 """
 
-from crisprhawk_error import CrisprHawkVCFError, CrisprHawkEnrichmentError
+from crisprhawk_error import CrisprHawkVCFError
 from exception_handlers import exception_handler
 from utils import print_verbosity, VERBOSITYLVL
-from bedfile import Region
-from sequences import _encoder
 
 from typing import Optional, List, Tuple, Set
 from pysam import TabixFile, tabix_index
@@ -32,6 +30,10 @@ class VariantRecord:
         self._samples = _genotypes_to_samples(
             variant[9:], samples, self._allelesnum, phased, self._debug
         )
+
+    def __repr__(self) -> str:
+        altalleles = ",".join(self._alt)
+        return f"<{self.__class__.__name__} object; variant=\"{self._chrom} {self._position} {self._ref} {altalleles}\">"
 
     def _retrieve_alt_alleles(self, altalleles: str) -> List[str]:
         # alternative alleles in multiallelic sites are separated by a comma

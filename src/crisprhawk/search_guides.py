@@ -108,7 +108,7 @@ def retrieve_guides(
 ) -> List[Guide]:
     # recover guides sequences from candidate matching positions
     guides = [
-        Guide(pos, extract_guide(region, pos, guidelen, pamlen, right=(not right if strand == 1 else right)), strand, debug)
+        Guide(pos, extract_guide(region, pos, guidelen, pamlen, right=(not right if strand == 1 else right)), guidelen, pamlen, strand, debug, right=(not right if strand == 1 else right))
         for strand, matches in enumerate([matches_fwd, matches_rev])
         for pos in matches
         if valid_position(pos, guidelen, len(region), right=(not right if strand == 1 else right))

@@ -6,79 +6,14 @@ from bedfile import RegionList, Region, IndelRegion, Coordinate
 from utils import print_verbosity, warning, VERBOSITYLVL, IUPAC_ENCODER
 from exception_handlers import exception_handler
 from crisprhawk_error import CrisprHawkEnrichmentError
+from variant_map import VariantMap
 
 from typing import List, Tuple, Union, Dict
+from time import time
 
 import os
 
 INDELTYPES = [0, 1]  # indel types -> 0 for insertion, 1 for deletion
-
-
-def adjust_region_coords(region: Region, guidelen: int) -> Tuple[int, int]:
-    # remove guide length padding from region's start and stop position to
-    # extract variants in that range
-    return region.start + guidelen, region.stop - guidelen
-
-
-def fetch_variants(
-    vcf: VCF, region: Region, guidelen: int
-) -> Tuple[List[VariantRecord], List[VariantRecord]]:
-    # recover variants mapped on the query region
-    # each region is padded by |guide| nts to avoid missing guides mapped on
-    # region's border
-    variants = vcf.fetch(*adjust_region_coords(region, guidelen))
-    # split variants between snps and indels -> they follow different
-    # enrichment workflows
-    snps = [v for v in variants if VTYPES[0] in v.vtype]  # SNPs
-    indels = [v for v in variants if VTYPES[1] in v.vtype]  # indels
-    return snps, indels
-
-
-def enricher(
-    regions: RegionList,
-    vcflist: List[str],
-    guidelen: int,
-    pamlen: int,
-    no_filter: bool,
-    verbosity: int,
-    debug: bool,
-) -> Tuple[RegionList, Dict[Region, Dict[int, VariantRecord]], bool]:
-    # load vcf files and map each vcf to its contig (assume on vcf per contig)
-    print_verbosity("Loading VCF files", verbosity, VERBOSITYLVL[2])
-    vcfs = {vcf.contig: vcf for vcf in [VCF(f, verbosity, debug) for f in vcflist]}
-    print_verbosity(f"Loaded VCF number: {len(vcfs)}", verbosity, VERBOSITYLVL[3])
-    variant_maps = {}  # dictionary to map variants in each region
-    indels_map = {}  # dictionary to store indels in each region
-    # retrieve variants in each region
-    for r in regions:
-        region_name = r.format(pad=guidelen).replace("_", " ")  # verbosity option
-        print_verbosity(
-            f"Adding variants to region: {region_name}",
-            verbosity,
-            VERBOSITYLVL[2],
-        )
-        print_verbosity(
-            f"Fetching variants in {region_name}", verbosity, VERBOSITYLVL[3]
-        )
-        snps, indels = fetch_variants(vcfs[r.contig], r, guidelen)
-        print_verbosity(
-            f"Fetched {len(snps) + len(indels)} (snps: {len(snps)} - indels: {len(indels)}) variants in {region_name}",
-            verbosity,
-            VERBOSITYLVL[3],
-        )
-        indels_map[r] = indels  # record indels found in the query region
-        # insert variants within region sequence
-        variant_maps[r] = insert_snps(r, snps, no_filter, verbosity, debug)
-    # insert indels within region sequence
-    indelregions, variant_maps = insert_indels(
-        indels_map, variant_maps, guidelen, pamlen, debug
-    )
-    regions.extend(indelregions)  # extend region list to consider indel regions
-    return (
-        regions,
-        variant_maps,
-        vcfs[r.contig].phased,
-    )  # return enriched regions, variant maps, and phasing
 
 
 def guess_indel_type(ref: str, alt: str, position: int, debug) -> int:
@@ -235,31 +170,75 @@ def insert_indels(
     return indelregions, variant_maps
 
 
-def insert_snps(
-    region: Region,
-    snps: List[VariantRecord],
-    no_filter: bool,
-    verbosity: int,
-    debug: bool,
-) -> Dict[int, VariantRecord]:
-    # dictionary to map variants to their relative position within the sequence
-    variant_map = {}
-    # iterate over variants falling in the input region and add variants
-    for snp in snps:
-        # by default, crispr-hawk discards variants that are not flagged as PASS
-        # on filter, however the user may want to consider tem as well
-        if not no_filter and snp.filter != "PASS":
-            warning(f"Skipping {snp.format()}", verbosity)
-            continue
-        # compute relative variant position (1-based)
-        posrel = snp.position - 1 - region.start
-        # compute iupac char, representing the snp
-        iupac_nt = encode_snp_iupac(region[posrel], snp, debug)
-        if iupac_nt is not None:  # if none, indels -> skip
-            region.enrich(posrel, iupac_nt)  # assign iupac char at position
-            variant_map[posrel] = snp  # map variant to its relative position
-    return variant_map
+# def insert_snps(
+#     region: Region,
+#     snps: List[VariantRecord],
+#     no_filter: bool,
+#     verbosity: int,
+#     debug: bool,
+# ) -> Dict[int, VariantRecord]:
+#     # dictionary to map variants to their relative position within the sequence
+#     variant_map = {}
+#     # iterate over variants falling in the input region and add variants
+#     for snp in snps:
+#         # by default, crispr-hawk discards variants that are not flagged as PASS
+#         # on filter, however the user may want to consider tem as well
+#         if not no_filter and snp.filter != "PASS":
+#             warning(f"Skipping {snp.format()}", verbosity)
+#             continue
+#         # compute relative variant position (1-based)
+#         posrel = snp.position - 1 - region.start
+#         # compute iupac char, representing the snp
+#         iupac_nt = encode_snp_iupac(region[posrel], snp, debug)
+#         if iupac_nt is not None:  # if none, indels -> skip
+#             region.enrich(posrel, iupac_nt)  # assign iupac char at position
+#             variant_map[posrel] = snp  # map variant to its relative position
+#     return variant_map
 
+
+# def encode_snp_iupac(
+#     refnt: str, variant: VariantRecord, debug: bool
+# ) -> Union[str, None]:
+#     altalleles = "".join(variant.get_altalleles(VTYPES[0]))  # retrieve snps
+#     if not altalleles:  # variants are all indels
+#         return None
+#     if refnt != variant.ref:  # ref alleles must match between vcf and fasta
+#         exception_handler(
+#             CrisprHawkEnrichmentError,
+#             f"Reference allele mismatch between FASTA and VCF file ({refnt} - "
+#             f"{variant.ref}) at position {variant.position}",
+#             os.EX_DATAERR,
+#             debug,
+#         )
+#     # encode ref and alt as iupac characters
+#     return IUPAC_ENCODER["".join([variant.ref, altalleles])]
+
+def load_vcfs(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
+    # load vcf files and map each vcf to its contig (assume on vcf per contig)
+    print_verbosity("Loading VCF files", verbosity, VERBOSITYLVL[2])
+    start = time()  # track vcf parsing time
+    vcfs = {vcf.contig: vcf for vcf in [VCF(f, verbosity, debug) for f in vcflist]}
+    print_verbosity(f"Loaded {len(vcfs)} VCFs in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
+    return vcfs
+
+def adjust_region_coords(region: Region, guidelen: int) -> Tuple[int, int]:
+    # remove guide length padding from region's start and stop position to
+    # extract variants in that range
+    return region.start + guidelen, region.stop - guidelen
+
+
+def fetch_variants(vcf: VCF, region: Region, guidelen: int, verbosity: int) -> List[VariantRecord]:  
+    # recover variants mapped on the query region
+    # each region is padded by |guide| nts to avoid missing guides mapped on
+    # region's border
+    print_verbosity(f"Fetching variants in {region.display()}", verbosity, VERBOSITYLVL[3])
+    start = time()  # track variants fecthing time
+    variants = vcf.fetch(*adjust_region_coords(region, guidelen))
+    # split variants between snps and indels -> they follow different
+    # enrichment workflows
+    snps = [v for v in variants if VTYPES[0] in v.vtype]  # SNPs
+    print_verbosity(f"Fetched {len(snps)} variants in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
+    return snps
 
 def encode_snp_iupac(
     refnt: str, variant: VariantRecord, debug: bool
@@ -277,3 +256,55 @@ def encode_snp_iupac(
         )
     # encode ref and alt as iupac characters
     return IUPAC_ENCODER["".join([variant.ref, altalleles])]
+
+def insert_snps(
+    region: Region, snps: List[VariantRecord], phased: bool, no_filter: bool, verbosity: int, debug: bool,
+) -> VariantMap:
+    # hashmap variants to their relative position within the sequence
+    vmap = VariantMap(phased, debug)  
+    # iterate over variants falling in the input region and add variants
+    for snp in snps:
+        # by default, crispr-hawk discards variants that are not flagged as PASS
+        # on filter, however the user may want to consider tem as well
+        if not no_filter and snp.filter != "PASS":
+            warning(f"Skipping {snp.format()}", verbosity)
+            continue
+        # compute relative variant position (1-based)
+        posrel = snp.position - 1 - region.start
+        # compute iupac char, representing the snp
+        iupac_nt = encode_snp_iupac(region[posrel], snp, debug)
+        if iupac_nt is not None:  # if none, indels -> skip
+            region.enrich(posrel, iupac_nt)  # assign iupac char at position
+            vmap.insert_variant(posrel, snp)  # map variant to its relative position
+    return vmap
+
+def enricher(regions: RegionList, vcfs: Dict[str, VCF], guidelen: int, pamlen: int, no_filter: bool, verbosity: int, debug: bool) -> Dict[Region, VariantMap]:
+    variant_maps = {}  # dictionary to map variants in each region
+    for region in regions:  # retrieve variants in each region
+        print_verbosity(f"Adding variants in {region.display()}", verbosity, VERBOSITYLVL[2])
+        snps = fetch_variants(vcfs[region.contig], region, guidelen, verbosity)
+        # add variants to regions sequence
+        phased = vcfs[region.contig].phased  # assess variants phasing
+        variant_maps[region] = insert_snps(region, snps, phased, no_filter, verbosity, debug)
+    return variant_maps
+
+
+# def enricher(
+#     regions: RegionList, vcflist: List[str], guidelen: int, pamlen: int, no_filter: bool, verbosity: int, debug: bool,
+# ) -> Tuple[Dict[Region, Dict[int, VariantRecord]], bool]:
+#     # load vcf files and map each vcf to its contig (assume on vcf per contig)
+#     for r in regions:
+
+#         indels_map[r] = indels  # record indels found in the query region
+#         # insert variants within region sequence
+#         variant_maps[r] = insert_snps(r, snps, no_filter, verbosity, debug)
+#     # insert indels within region sequence
+#     indelregions, variant_maps = insert_indels(
+#         indels_map, variant_maps, guidelen, pamlen, debug
+#     )
+#     regions.extend(indelregions)  # extend region list to consider indel regions
+#     return (
+#         regions,
+#         variant_maps,
+#         vcfs[r.contig].phased,
+#     )  # return enriched regions, variant maps, and phasing
