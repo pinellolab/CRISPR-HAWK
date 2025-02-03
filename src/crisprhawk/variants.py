@@ -22,6 +22,17 @@ class VariantRecord:
     def __repr__(self) -> str:
         altalleles = ",".join(self._alt)
         return f'<{self.__class__.__name__} object; variant="{self._chrom} {self._position} {self._ref} {altalleles}">'
+    
+    def __eq__(self, vrecord: "VariantRecord") -> bool:
+        if not hasattr(vrecord, "_chrom"):
+            exception_handler(AttributeError, f"Comparison between {self.__class__.__name__} object failed", os.EX_DATAERR)
+        if not hasattr(vrecord, "_position"):
+            exception_handler(AttributeError, f"Comparison between {self.__class__.__name__} object failed", os.EX_DATAERR)
+        if not hasattr(vrecord, "_ref"):
+            exception_handler(AttributeError, f"Comparison between {self.__class__.__name__} object failed", os.EX_DATAERR)
+        if not hasattr(vrecord, "_alt"):
+            exception_handler(AttributeError, f"Comparison between {self.__class__.__name__} object failed", os.EX_DATAERR)
+        return self._chrom == vrecord.contig and self._position == vrecord.position and self._ref == vrecord.ref and self._alt == vrecord.alt
 
     def _retrieve_alt_alleles(self, altalleles: str) -> List[str]:
         # alternative alleles in multiallelic sites are separated by a comma
@@ -70,10 +81,12 @@ class VariantRecord:
     def _copy(self, i: int) -> "VariantRecord":
         # copy current variant record instance
         vrecord = VariantRecord(self._debug)  # create new instance
+        # adjust ref/alt alleles and positions for multiallelic sites
+        ref, alt, position = _adjust_multiallelic(self._ref, self._alt[i], self._position)
         vrecord._chrom = self._chrom
-        vrecord._position = self._position  
-        vrecord._ref = self._ref 
-        vrecord._alt = [self._alt[i]]
+        vrecord._position = position  
+        vrecord._ref = ref
+        vrecord._alt = [alt]
         vrecord._allelesnum = 1
         vrecord._vtype = [self._vtype[i]]
         vrecord._filter = self._filter
@@ -178,6 +191,20 @@ def _genotypes_to_samples(
         elif gt2 != "0" and gt2 != ".":
             sampleshap[int(gt2) - 1][0].add(samples[i])
     return sampleshap
+
+def _adjust_multiallelic(ref: str, alt: str, pos: int) -> Tuple[str, str, int]:
+    if len(ref) == len(alt):  # likely snp
+        ref_new, alt_new = ref[-1], alt[-1]  # adjust ref/alt alleles 
+        pos_new = pos + len(ref) - 1  # ref/alt have same length
+    elif len(ref) > len(alt):  # deletion
+        ref_new = ref[len(alt) - 1:]  # adjust ref allele
+        alt_new = alt[-1]  # adjust alt allele
+        pos_new = pos + (len(alt)) - 1  # adjust variant position
+    else:  # insertion
+        ref_new = ref[-1]  # adjust ref allele
+        alt_new = alt[len(ref) - 1:]  # adjust alt allele
+        pos_new = pos + len(ref) - 1  # adjust variant position
+    return ref_new, alt_new, pos_new
 
 
 class VCF:

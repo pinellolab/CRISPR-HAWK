@@ -55,6 +55,8 @@ def adjust_coordinates(guide: Guide, region: Region) -> Tuple[int, int]:
     # adjust start position (matching position is placed on pam start)
     start = guide.position + region.start + 1
     stop = start + guide.guidelen + guide.pamlen  # adjust stop position
+    if isinstance(region, IndelRegion):
+        stop = stop - region.indel_length if region.indel_type == INDELTYPES[0] else stop + region.indel_length
     return start, stop
 
 
@@ -160,6 +162,31 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
             e,
         )
 
+def split_reports(reports: Dict[Union[Region, IndelRegion], pd.DataFrame]) -> Tuple[Dict[Region, pd.DataFrame], Dict[IndelRegion, pd.DataFrame]]:
+    # split reports in reports for guides containing snps and indels
+    reports_snps, reports_indels = {}, {}
+    for region, report in reports.items():
+        if isinstance(region, IndelRegion):  # region defined for indels + snps
+            reports_indels[region] = report
+        else:  # region containing just snps
+            reports_snps[region] = report
+    return reports_snps, reports_indels
+
+
+def merge_reports(reports: Dict[Union[Region, IndelRegion], pd.DataFrame]) -> Dict[Region, pd.DataFrame]:
+    # retrieve indel region reports
+    reports_snps, reports_indels = split_reports(reports)
+    reports_merged = {}  # merged reports dictionary
+    for region, report_snp in reports_snps.items():
+        # retrieve indel regions fully overlapped by query region
+        iregions_overlapping = [
+            report_indel 
+            for iregion, report_indel in reports_indels.items() 
+            if region.contains(iregion)
+        ]
+        reports_merged[region] = pd.concat([report_snp] + iregions_overlapping)
+        reports_merged[region][REPORTCOLS[10]] = report_snp.loc[0,REPORTCOLS[10]]
+    return reports_merged
 
 def report_guides(
     guides: Dict[Union[Region, IndelRegion], List[Guide]],
@@ -170,6 +197,7 @@ def report_guides(
     debug: bool,
 ) -> None:
     reports = construct_report(guides, pam, debug)  # construct reports
+    reports = merge_reports(reports)  # merge indel and snp reports
     for region, report in reports.items():  # store reports in output folder
         guidesreport = os.path.join(
             outdir,

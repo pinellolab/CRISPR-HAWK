@@ -70,6 +70,9 @@ class Guide:
         self._right = not self._right  # update guide direction
         self._compute_pamguide_sequences()  # adjust pam and guide sequences
 
+    def set_position(self, position: int) -> None:
+        self._position = position  # set guide position
+
     def set_samples(self, samples: Set[str]) -> None:
         self._samples = ",".join(samples)  # set samples carrying guide variants
 

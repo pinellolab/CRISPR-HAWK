@@ -136,8 +136,10 @@ def compute_vmap(vmap: VariantMap, region: IndelRegion, indel: VariantRecord, of
     for i, nt in enumerate(region.sequence):
         if nt in IUPAC[4:]:  # skip ACGT
             position = (region.start + i) - offset
+            # adjust position for variant map query
+            if i > region.indel_pos:
+                position = position - region.indel_length if region.indel_type == INDELTYPES[0] else position + region.indel_length
             vmap_indel.insert_variant(i, vmap[position])
-    print(vmap_indel)
     return vmap_indel
 
 

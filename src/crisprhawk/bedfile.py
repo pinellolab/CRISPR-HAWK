@@ -205,8 +205,20 @@ class IndelRegion:
         return self._indel_length
     
     @property
+    def offset_deletion(self) -> int:
+        return self._indel_length - self._offset_del
+    
+    @property
+    def offset_insertion(self) -> int:
+        return self._indel_length + self._offset_ins
+    
+    @property
     def indel_type(self) -> int:
         return self._indel_type
+    
+    @property
+    def contig(self) -> str:
+        return self._coordinates.contig
     
     @property
     def start(self) -> int:
