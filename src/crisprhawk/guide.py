@@ -8,14 +8,24 @@ from utils import RC
 from typing import List, Union, Set
 import os
 
+
 class Guide:
-    def __init__(self, position: int, sequence: List[str], guidelen: int, pamlen: int, direction: int, debug: bool, right: bool) -> None:
+    def __init__(
+        self,
+        position: int,
+        sequence: List[str],
+        guidelen: int,
+        pamlen: int,
+        direction: int,
+        debug: bool,
+        right: bool,
+    ) -> None:
         self._guidelen = guidelen  # guide length
         self._pamlen = pamlen  # pam lenght
         self._position = position if right else position - guidelen  # guide position
         self._sequence_raw = sequence  # sequence as list of chars
         self._sequence = "".join(sequence)  # sequence as string
-        self._direction = direction  # guide direction 
+        self._direction = direction  # guide direction
         self._debug = debug  # store debug mode
         self._samples = "NA"  # samples carrying guide variants
         self._variants = "NA"  # variants overlapping guide
@@ -24,10 +34,10 @@ class Guide:
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} object; position={self._position} sequence={self._sequence} direction={self._direction}>"
-        
+
     def __len__(self) -> int:
         return len(self._sequence_raw)
-    
+
     def __getitem__(self, idx: Union[int, slice]) -> str:
         assert hasattr(self, "_sequence")
         try:
@@ -38,21 +48,21 @@ class Guide:
                 f"Index {idx} out of range",
                 os.EX_DATAERR,
                 self._debug,
-                e
+                e,
             )
 
     def __iter__(self) -> "GuideIterator":
         return GuideIterator(self)
-    
+
     def _compute_pamguide_sequences(self) -> None:
         assert hasattr(self, "_sequence_raw")  # check if sequence is available
         if self._right:  # guide on the right side of pam
-            self._pamseq = self._sequence[:self._pamlen]
-            self._guideseq = self._sequence[self._pamlen:]
+            self._pamseq = self._sequence[: self._pamlen]
+            self._guideseq = self._sequence[self._pamlen :]
         else:  # guide on the left side of pam
-            self._pamseq = self._sequence[-self._pamlen:]
-            self._guideseq = self._sequence[:-self._pamlen]
-    
+            self._pamseq = self._sequence[-self._pamlen :]
+            self._guideseq = self._sequence[: -self._pamlen]
+
     def reverse_complement(self) -> None:
         assert hasattr(self, "_sequence")
         self._sequence_raw = [RC[nt] for nt in self._sequence[::-1]]
@@ -65,19 +75,19 @@ class Guide:
 
     def set_variants(self, variants: Set[str]) -> None:
         self._variants = ",".join(variants)  # set variants overlapping guide
-    
+
     @property
     def position(self) -> int:
         return self._position
-    
+
     @property
     def strand(self) -> int:
         return self._direction
-    
+
     @property
     def sequence(self) -> str:
         return self._sequence
-    
+
     @property
     def samples(self) -> str:
         return self._samples
@@ -85,31 +95,31 @@ class Guide:
     @property
     def variants(self) -> str:
         return self._variants
-    
+
     @property
     def pam(self) -> str:
         return self._pamseq
-    
+
     @property
     def pamlen(self) -> int:
         return self._pamlen
-    
+
     @property
     def guide(self) -> str:
         return self._guideseq
-    
+
     @property
     def guidelen(self) -> int:
         return self._guidelen
-    
+
     @property
     def right(self) -> bool:
         return self._right
-    
+
     @property
     def debug(self) -> bool:
         return self._debug
-    
+
 
 class GuideIterator:
     def __init__(self, guide: Guide) -> None:
@@ -118,9 +128,9 @@ class GuideIterator:
                 AttributeError,
                 f"Missing _sequence_raw attribute on {self.__class__.__name__}",
                 os.EX_DATAERR,
-                True
+                True,
             )
-        self._guide = guide  # guide object to iterate over 
+        self._guide = guide  # guide object to iterate over
         self._index = 0  # iterator index used over the guide sequence
 
     def __next__(self) -> str:

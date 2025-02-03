@@ -50,66 +50,80 @@ def keepguide(pam_query: PAM, pamseq: str, debug: bool) -> bool:
             e,
         )
 
-def adjust_coordinates(guide: Guide, region: Region) -> Tuple[int, int]: 
+
+def adjust_coordinates(guide: Guide, region: Region) -> Tuple[int, int]:
     # adjust start position (matching position is placed on pam start)
-    start = guide.position + region.start + 1 
+    start = guide.position + region.start + 1
     stop = start + guide.guidelen + guide.pamlen  # adjust stop position
     return start, stop
+
 
 def compute_pam_class(pam: PAM) -> str:
     # retrieve a string representing the input pam class
     # e.g. NGG -> [ACGT]GG
     return "".join([nt if nt in IUPAC[:4] else f"[{IUPACTABLE[nt]}]" for nt in pam.pam])
 
+
 def compute_guide_origin(samples: str) -> str:
     # compute whether the guide came from reference or alternative genomes
     return "ref" if samples == "NA" else "alt"
+
 
 def compute_strand_orientation(strand: int) -> str:
     # retrieve strand orientation
     return "+" if strand == STRAND[0] else "-"  # retrieve strand orientation
 
-def update_report_fields(report: Dict[str, List[Any]], region: Region, guide: Guide, pamclass: str) -> Dict[str, List[Any]]:
+
+def update_report_fields(
+    report: Dict[str, List[Any]], region: Region, guide: Guide, pamclass: str
+) -> Dict[str, List[Any]]:
     # update report fields
     # TODO: handle starting on indel
-    start, stop = adjust_coordinates(guide, region)  # compute start and stop 
+    start, stop = adjust_coordinates(guide, region)  # compute start and stop
     report[REPORTCOLS[1]].append(start)  # start position
     report[REPORTCOLS[2]].append(stop)  # stop position
     report[REPORTCOLS[3]].append(guide.guide)  # guide sequence
     report[REPORTCOLS[4]].append(guide.pam)  # pam guide
     report[REPORTCOLS[5]].append(pamclass)  # extended pam class
     # strand orientation
-    report[REPORTCOLS[6]].append(compute_strand_orientation(guide.strand))  
-    report[REPORTCOLS[7]].append(compute_guide_origin(guide.samples)) # genome
+    report[REPORTCOLS[6]].append(compute_strand_orientation(guide.strand))
+    report[REPORTCOLS[7]].append(compute_guide_origin(guide.samples))  # genome
     report[REPORTCOLS[8]].append(guide.samples)  # samples list
     report[REPORTCOLS[9]].append(guide.variants)  # variant ids
-    report[REPORTCOLS[10]].append(region.format(pad=guide.guidelen, string=True))  
+    report[REPORTCOLS[10]].append(region.format(pad=guide.guidelen, string=True))
     return report
 
 
-def process_data(region: Region, guides: List[Guide], pam: PAM, debug: bool) -> pd.DataFrame:
+def process_data(
+    region: Region, guides: List[Guide], pam: PAM, debug: bool
+) -> pd.DataFrame:
     report = {cname: [] for cname in REPORTCOLS}  # initialize report dictionary
-    pamclass = compute_pam_class(pam)  # compute extended pam class 
+    pamclass = compute_pam_class(pam)  # compute extended pam class
     for guide in guides:  # iterate over guides and add to report
         if guide.strand == STRAND[1]:  # negative strand -> report 3'-5' sequence
             guide.reverse_complement()  # compute guide reverse complement sequence
-        if keepguide(pam, guide.pam.upper(), debug):  # valid guide pam 
+        if keepguide(pam, guide.pam.upper(), debug):  # valid guide pam
             report[REPORTCOLS[0]].append(region.contig)  # region contig (chrom)
             # update report with current guide data
-            report = update_report_fields(report, region, guide, pamclass)  
+            report = update_report_fields(report, region, guide, pamclass)
     return pd.DataFrame(report)  # build dataframe from report data
 
 
-def construct_report(guides: Dict[Region, List[Guide]], pam: PAM, debug: bool) -> Dict[Region, pd.DataFrame]:
+def construct_report(
+    guides: Dict[Region, List[Guide]], pam: PAM, debug: bool
+) -> Dict[Region, pd.DataFrame]:
     return {
-        region: process_data(region, guides_list, pam, debug) 
+        region: process_data(region, guides_list, pam, debug)
         for region, guides_list in guides.items()
     }
+
 
 def format_report(report: pd.DataFrame) -> pd.DataFrame:
     # reset dataframe index and sort by genomic coordinates
     report = report.reset_index(drop=True)
-    report = report.sort_values([REPORTCOLS[0], REPORTCOLS[1], REPORTCOLS[2]], ascending=True)
+    report = report.sort_values(
+        [REPORTCOLS[0], REPORTCOLS[1], REPORTCOLS[2]], ascending=True
+    )
     # force start and stop to int values - they may be treated as float if
     # concatenated with empty dataframe (e.g. no guide found on + or - strand)
     report[REPORTCOLS[1]] = report[REPORTCOLS[1]].astype(int)
@@ -147,12 +161,18 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
         )
 
 
-def report_guides(guides: Dict[Union[Region, IndelRegion], List[Guide]], guidelen: int, pam: PAM, outdir: str, right: bool, debug: bool) -> None:
+def report_guides(
+    guides: Dict[Union[Region, IndelRegion], List[Guide]],
+    guidelen: int,
+    pam: PAM,
+    outdir: str,
+    right: bool,
+    debug: bool,
+) -> None:
     reports = construct_report(guides, pam, debug)  # construct reports
     for region, report in reports.items():  # store reports in output folder
         guidesreport = os.path.join(
-            outdir, 
-            f"{GUIDESREPORTPREFIX}__{region.format(pad=guidelen)}_{pam}_{guidelen}.tsv"
+            outdir,
+            f"{GUIDESREPORTPREFIX}__{region.format(pad=guidelen)}_{pam}_{guidelen}.tsv",
         )
         store_report(report, guidesreport, debug)  # write report
-

@@ -48,10 +48,10 @@ def pam_search(
     pam: PAM, region: Union[Region, IndelRegion], guidelen: int, debug: bool
 ) -> Tuple[List[int], List[int]]:
     # assert that the input region has already bin encoded in bits
-    assert hasattr(region, "_sequence_bits")
+    assert hasattr(region.sequence, "_sequence_bits")
     pam.encode()  # encode pam linear time search
     # matching limit on the right - ignore pad nts
-    stop_position = len(region) - len(pam) + 1
+    scan_stop = len(region) - len(pam) + 1
     # lists storing hits for input pam on forward and reverse strands
     matches_fwd, matches_rev = [], []
     # establish whether we scan a regular or an indel region
@@ -60,7 +60,7 @@ def pam_search(
     # start pam search from real region start - ignore pad nts
     # instead, if indel region start from the beginning
     scan_start = 0 if indel else guidelen
-    for pos in range(scan_start, stop_position):
+    for pos in range(scan_start, scan_stop):
         for strand, matches, pam_bit in [
             (0, matches_fwd, pam.bits[0]),
             (1, matches_rev, pam.bits[1]),
@@ -68,8 +68,8 @@ def pam_search(
             if not indel or (
                 indel
                 and (
-                    (strand == 0 and pos >= guidepamlen - 1)
-                    or (strand == 1 and pos < guidepamlen)
+                    (strand == 0 and pos >= guidelen)
+                    or (strand == 1 and pos < guidepamlen - 1)
                 )
             ):
                 scan_pam(
@@ -87,8 +87,8 @@ def extract_guide(
     region: Region, pos: int, guidelen: int, pamlen: int, right: bool
 ) -> str:
     if right:
-        return region[pos : pos + guidelen + pamlen]
-    return region[pos - guidelen : pos + pamlen]
+        return region.sequence[pos : pos + guidelen + pamlen]
+    return region.sequence[pos - guidelen : pos + pamlen]
 
 
 def valid_position(pos: int, guidelen: int, regionlen: int, right: bool) -> bool:
@@ -108,26 +108,63 @@ def retrieve_guides(
 ) -> List[Guide]:
     # recover guides sequences from candidate matching positions
     guides = [
-        Guide(pos, extract_guide(region, pos, guidelen, pamlen, right=(not right if strand == 1 else right)), guidelen, pamlen, strand, debug, right=(not right if strand == 1 else right))
+        Guide(
+            pos,
+            extract_guide(
+                region,
+                pos,
+                guidelen,
+                pamlen,
+                right=(not right if strand == 1 else right),
+            ),
+            guidelen,
+            pamlen,
+            strand,
+            debug,
+            right=(not right if strand == 1 else right),
+        )
         for strand, matches in enumerate([matches_fwd, matches_rev])
         for pos in matches
-        if valid_position(pos, guidelen, len(region), right=(not right if strand == 1 else right))
+        if valid_position(
+            pos, guidelen, len(region), right=(not right if strand == 1 else right)
+        )
     ]
     return guides
 
+
 def search(
-    pam: PAM, region: Region, guidelen: int, right: bool, verbosity: int, debug: bool
+    pam: PAM, region: Union[Region, IndelRegion], guidelen: int, right: bool, verbosity: int, debug: bool
 ) -> List[Guide]:
     # search pam occurrences on forward and reverse strand of the input sequence
-    print_verbosity(f"Searching guide candidates in {region.format(pad=guidelen, string=True)}", verbosity, VERBOSITYLVL[2])
+    print_verbosity(
+        f"Searching guide candidates in {region.format(pad=guidelen, string=True)}",
+        verbosity,
+        VERBOSITYLVL[2],
+    )
     matches_fwd, matches_rev = pam_search(pam, region, guidelen, debug)
-    print_verbosity(f"Found {len(matches_fwd)} guide candidates on 5'-3'in {region.format(pad=guidelen, string=True)}", verbosity, VERBOSITYLVL[3])
-    print_verbosity(f"Found {len(matches_rev)} guide candidates on 3'-5'in {region.format(pad=guidelen, string=True)}", verbosity, VERBOSITYLVL[3])
+    print_verbosity(
+        f"Found {len(matches_fwd)} guide candidates on 5'-3'in {region.format(pad=guidelen, string=True)}",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
+    print_verbosity(
+        f"Found {len(matches_rev)} guide candidates on 3'-5'in {region.format(pad=guidelen, string=True)}",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
     # recover guide candidates found on forward and reverse strands
-    print_verbosity(f"Recover guides sequences in {region.format(pad=guidelen, string=True)}", verbosity, VERBOSITYLVL[3])
+    print_verbosity(
+        f"Recover guides sequences in {region.format(pad=guidelen, string=True)}",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
     start = time()  # track guide retrieval start time
     guides = retrieve_guides(
         matches_fwd, matches_rev, len(pam), region, guidelen, right, debug
     )
-    print_verbosity(f"Guides sequences in {region.format(pad=guidelen, string=True)} recovered in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
+    print_verbosity(
+        f"Guides sequences in {region.format(pad=guidelen, string=True)} recovered in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
     return guides

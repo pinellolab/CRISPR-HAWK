@@ -91,6 +91,7 @@ class CrisprHawkHaplotypeError(CrisprHawkError):
     def __str__(self):
         return super().__str__()  # string representation for the exception
 
+
 class CrisprHawkGuideError(CrisprHawkError):
     def __init__(self, value):
         # initialize exception object when raised
@@ -98,7 +99,8 @@ class CrisprHawkGuideError(CrisprHawkError):
 
     def __str__(self):
         return super().__str__()  # string representation for the exception
-    
+
+
 class CrisprHawkVariantMapError(CrisprHawkError):
     def __init__(self, value):
         # initialize exception object when raised

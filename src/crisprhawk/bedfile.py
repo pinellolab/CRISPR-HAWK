@@ -3,11 +3,14 @@
 
 from crisprhawk_error import CrisprHawkBedError, CrisprHawkEnrichmentError
 from exception_handlers import exception_handler
+from variants import INDELTYPES
 from sequences import Sequence, Fasta
+from bitset import Bitset
 
 from typing import List, Union, Optional, final
 
 import os
+
 
 
 class Coordinate:
@@ -76,27 +79,32 @@ def _parse_bed_line(
     return Coordinate(chrom, start - guidelen, stop + guidelen)
 
 
-class Region(Sequence):
+class Region:
     def __init__(self, sequence: str, coord: Coordinate, debug: bool):
-        super().__init__(sequence, debug)  # init parent sequence object
+        self._debug = debug  # store debug mode flag
+        self._refseq = Sequence(sequence, debug)  # store reference sequence
+        self._sequence = Sequence(sequence, debug)  # store sequence object
         # store contig name, start and stop coordinates of the extracted region
         self._coordinates = coord
 
+    def __len__(self) -> int:
+        return len(self._sequence)
+
     def __str__(self):
         return f">{self._coordinates}\n{super().__str__()}"
-    
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} object; region={self._coordinates}>"
 
     def format(self, pad: Optional[int] = 0, string: Optional[bool] = False) -> str:
         return self._coordinates.format(pad, string)
     
-    def display(self) -> str:
-        return f"{self._coordinates}"
+    def encode(self) -> None:
+        self._sequence.encode()  # encode sequence in bits
 
     def enrich(self, pos: int, iupac_nt: str) -> None:
         try:
-            self._sequence_raw[pos] = iupac_nt
+            self._sequence._sequence_raw[pos] = iupac_nt
         except IndexError as e:
             exception_handler(
                 f"Enrichment failed for region {self.format()}",
@@ -133,71 +141,93 @@ class Region(Sequence):
     @property
     def stop(self) -> int:
         return self._coordinates.stop
-
-
-class IndelRegion(Region):
-    def __init__(
-        self,
-        indelpos: int,
-        sequence: str,
-        coord: Coordinate,
-        ref: str,
-        alt: str,
-        indel_type: str,
-        debug: bool,
-    ) -> None:
-        super().__init__(sequence, coord, debug)  # initialize indel region
-        self._refseq = sequence  # keep ref seq to simplify haplotype tracking
-        self._indelpos = indelpos  # store indel position
-        self._ref = ref  # indel reference allele
-        self._alt = alt  # indel alt allele
-        self._indel_type = indel_type  # insertion or deletion
-        self._indel_len = abs(len(alt) - len(ref))  # compute indel length
-
-    def _update_sequence(self) -> None:
-        assert hasattr(self, "_sequence_raw")
-        # update pointed sequence after changes on raw sequence data
-        self._sequence = "".join(self._sequence_raw)
-
-    def enrich(self) -> None:
-        try:
-            # enrich sequence replacing reference allele with indel allele
-            self._sequence_raw = (
-                self._sequence_raw[: self._indelpos]
-                + list(self._alt)
-                + self._sequence_raw[self._indelpos + len(self._ref) :]
-            )
-            self._sequence = "".join(self._sequence_raw)  # adjust pointed sequence
-        except IndexError as e:
-            exception_handler(
-                f"Indel enrichement failed for region {self.format()}",
-                CrisprHawkEnrichmentError,
-                os.EX_DATAERR,
-                self._debug,
-                e,
-            )
-
+    
     @property
-    def refseq(self) -> str:
+    def sequence(self) -> Sequence:
+        return self._sequence
+    
+    @property
+    def sequence_ref(self) -> Sequence:
         return self._refseq
+    
+    @property
+    def bits(self) -> List[Bitset]:
+        return self._sequence.bits
+
+
+class IndelRegion:
+    def __init__(self, reference_seq: List[str], sequence: List[str], coordinates: Coordinate, offset_ins: int, offset_del: int, indel_pos: int, indel_length: int, indel_type: int, debug: bool):
+        self._debug = debug  # store debug mode flag
+        self._sequence_ref = Sequence("".join(reference_seq), debug)  # store reference sequence
+        self._sequence = Sequence("".join(sequence), debug)  # store sequence object
+        # store contig name, start and stop coordinates of the extracted region
+        self._coordinates = coordinates
+        # store indel position, type and length
+        self._indel_pos = indel_pos
+        self._indel_length = indel_length
+        self._indel_type = indel_type
+        self._offset_ins = offset_ins  # store indel offset (handle variants GA -> GAT)
+        self._offset_del = offset_del  # store indel offset (handle variants GAT -> GA)
+
+    def __len__(self) -> int:
+        return len(self._sequence)
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} object; region={self._coordinates}>"
+    
+    def enrich(self, alt: str) -> None:
+        # indel start and stop positions
+        start = self._indel_pos
+        stop = self._indel_pos + self._offset_ins + 1 if self._indel_type == INDELTYPES[0] else self._indel_pos + self._indel_length + self._offset_del + 1
+        sequence_enr = self._sequence._sequence_raw[:start] + [alt] + self._sequence._sequence_raw[stop:]        
+        self._sequence = Sequence("".join(sequence_enr), self._debug)
+
+    def encode(self) -> None:
+        self._sequence.encode()  # encode sequence in bits
+
+    def format(self, pad: Optional[int] = 0, string: Optional[bool] = False) -> str:
+        return self._coordinates.format(pad, string)
 
     @property
-    def indelpos(self) -> int:
-        return self._indelpos
-
+    def sequence(self) -> Sequence:
+        return self._sequence
+    
     @property
-    def indel_len(self) -> int:
-        return self._indel_len
-
+    def sequence_ref(self) -> Sequence:
+        return self._sequence_ref
+    
+    @property
+    def indel_pos(self) -> int:
+        return self._indel_pos
+    
+    @property
+    def indel_length(self) -> int:
+        return self._indel_length
+    
     @property
     def indel_type(self) -> int:
         return self._indel_type
-
+    
+    @property
+    def start(self) -> int:
+        return self._coordinates.start
+    
+    @property
+    def stop(self) -> int:
+        return self._coordinates.stop
+    
+    @property
+    def bits(self) -> List[Bitset]:
+        return self._sequence.bits
+    
 
 class RegionList:
     def __init__(self, regions: List[Region], debug: bool) -> None:
         self._regions = regions
         self._debug = debug
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} object; regions={len(self)}>"
 
     def __len__(self) -> int:
         return len(self._regions)
@@ -245,7 +275,12 @@ class RegionList:
             )
         self._regions.append(region)
 
-    def format(self, sep: Optional[str] = "\n", pad: Optional[int] = 0, string: Optional[bool] = False) -> str:
+    def format(
+        self,
+        sep: Optional[str] = "\n",
+        pad: Optional[int] = 0,
+        string: Optional[bool] = False,
+    ) -> str:
         return sep.join([r.format(pad, string) for r in self._regions])
 
 

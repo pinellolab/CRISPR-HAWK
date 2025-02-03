@@ -34,8 +34,14 @@ IUPACSPECIALCHARS = ["R", "Y", "M", "K", "S", "W", "H", "B", "V", "D"]
 #     )
 #     return refseq, variants
 
+
 def find_variant_pos_indel(
-    guide: str, position: int, variants_maps: Dict[int, VariantRecord], indelregion: IndelRegion, guidelen: int, pamlen: int
+    guide: str,
+    position: int,
+    variants_maps: Dict[int, VariantRecord],
+    indelregion: IndelRegion,
+    guidelen: int,
+    pamlen: int,
 ) -> Tuple[str, Dict[int, VariantRecord]]:
     # store variants found within the guide; variants are denoted by iupac chars
     # different from the canonical nucleotides
@@ -46,7 +52,9 @@ def find_variant_pos_indel(
     }
     guidepamlen = guidelen + pamlen  # total guide + pam length
     # compute guide reference sequence
-    offset = position if position <= len(indelregion) - guidepamlen else position - guidelen
+    offset = (
+        position if position <= len(indelregion) - guidepamlen else position - guidelen
+    )
     indelposrel = indelregion.indelpos - offset
     indelposrel = 0 if indelposrel < 0 else indelposrel
 
@@ -73,7 +81,6 @@ def find_variant_pos_indel(
     #         [variants[i].ref if i in variants else nt for i, nt in enumerate(guide)]
     #     )
     return refseq, variants
-
 
 
 # def filter_guides(
@@ -103,9 +110,9 @@ def _compute_indel_posrel(
 ) -> int:
     guidepamlen = guidelen + pamlen  # total guide + pam length
     # adjust subtraction term to identify indel position, based on the occurrence
-    # position of the guide: if upstream wrt indel position, guide position 
+    # position of the guide: if upstream wrt indel position, guide position
     # correspond to pam start (easy adjustment), otherwise need to first remove
-    # guide length (pam not considered) 
+    # guide length (pam not considered)
     offset = guidepos if guidepos < guidepamlen else guidepos - (guidelen + pamlen - 1)
     # compute indel position within current guide candidate
     indelpos_rel = indelpos - offset
@@ -129,7 +136,7 @@ def filter_samples(
     # compute indel position within current guide
     posrel = _compute_indel_posrel(indelpos, region_len, guidelen, pamlen, guidepos)
     # empty samples set or indel position -> do nothing
-    if not samples or position == posrel:  
+    if not samples or position == posrel:
         return samples, posrel
     try:
         samples_indel = variants[posrel].samples[i][chromcopy]  # samples carrying indel
@@ -399,8 +406,11 @@ def report_guide_haps(
 #         )
 #     return positions_rep, guides_rep, samples_rep, variants_rep
 
-def find_snp_pos(guide: Guide, vmap: VariantMap) -> Tuple[str, Dict[int, VariantRecord]]:
-    # store variants found within the guide; look for positions within guide 
+
+def find_snp_pos(
+    guide: Guide, vmap: VariantMap
+) -> Tuple[str, Dict[int, VariantRecord]]:
+    # store variants found within the guide; look for positions within guide
     # sequence that carry variants
     variants = {
         i: vmap[guide.position + i]
@@ -414,7 +424,9 @@ def find_snp_pos(guide: Guide, vmap: VariantMap) -> Tuple[str, Dict[int, Variant
     return refseq, variants
 
 
-def retrieve_variant_samples(variants: Dict[int, VariantRecord], chromcopy: int) -> Set[str]:
+def retrieve_variant_samples(
+    variants: Dict[int, VariantRecord], chromcopy: int
+) -> Set[str]:
     return {
         sample
         for variant in variants.values()  # iterate over variants
@@ -422,10 +434,11 @@ def retrieve_variant_samples(variants: Dict[int, VariantRecord], chromcopy: int)
         for sample in samples_aa[chromcopy]  # iterate over altallele samples
     }
 
+
 def update_guideseq_snp(guideseq: List[str], position: int, alt: str) -> List[str]:
     # insert variant in guide candidate sequence (variants denoted by lowercase)
     return guideseq[:position] + [alt.lower()] + guideseq[(position + 1) :]
- 
+
 
 def update_sample_guide_snps(
     position: int, alt: str, guideseq: List[str], var_id: str, occurring_vars: List[str]
@@ -434,6 +447,7 @@ def update_sample_guide_snps(
     guideseq = update_guideseq_snp(guideseq, position, alt)
     occurring_vars.append(var_id)  # add current variant id
     return guideseq, occurring_vars
+
 
 def filter_guides_snps(
     sample_guides_chromcopy: Dict[str, Tuple[List[str], List[str]]]
@@ -446,7 +460,10 @@ def filter_guides_snps(
         if variants
     }
 
-def process_sample_guides_snps(refseq: str, samples: Set[str], variants: Dict[int, VariantRecord], chromcopy: int) -> Dict[str, Tuple[List[str], List[str]]]:
+
+def process_sample_guides_snps(
+    refseq: str, samples: Set[str], variants: Dict[int, VariantRecord], chromcopy: int
+) -> Dict[str, Tuple[List[str], List[str]]]:
     # initialize the sample-guide map with reference sequence for each sample
     # the ref guide is iteratively modified accordingly to the variants carried
     # by each sample
@@ -479,8 +496,9 @@ def assign_sample_guide_snps(
         )  # track guides with associated variants
     return sample_guides
 
+
 def retrieve_guide_samples_snps(
-    samples_guides:Dict[int, Dict[str, Tuple[List[str], List[str]]]],
+    samples_guides: Dict[int, Dict[str, Tuple[List[str], List[str]]]],
     refseq: str,
 ):
     # initialize with reference guide -> no sample
@@ -494,8 +512,20 @@ def retrieve_guide_samples_snps(
     return guide_dict
 
 
-def create_guide(guide: Guide, guideseq: str, samples: Set[str], variants: List[str]) -> Guide:
-    g = Guide(guide.position, list(guideseq), guide.guidelen, guide.pamlen, guide.strand, guide.debug, guide.right)
+def create_guide(
+    guide: Guide, guideseq: str, samples: Set[str], variants: List[str]
+) -> Guide:
+    # hack to avoid side effects on the original guide's position (see init())
+    position = guide.position if guide.right else guide.position + guide.guidelen
+    g = Guide(
+        position,
+        list(guideseq),
+        guide.guidelen,
+        guide.pamlen,
+        guide.strand,
+        guide.debug,
+        guide.right,
+    )
     # set samples and variants for current guide
     if samples:
         g.set_samples(samples)
@@ -503,9 +533,10 @@ def create_guide(guide: Guide, guideseq: str, samples: Set[str], variants: List[
         g.set_variants(variants)
     return g
 
+
 def reconstruct_haplotype_snps(guide: Guide, vmap: VariantMap) -> List[Guide]:
     # compute guide's reference sequence and positions carrying variants
-    refseq, variants = find_snp_pos(guide, vmap) 
+    refseq, variants = find_snp_pos(guide, vmap)
     # map samples to their personal guide following haps if input vcf is phased
     samples_guides = assign_sample_guide_snps(refseq, variants, vmap.phased)
     # reverse the sample-guide dictionary to use guides as keys -> useful
@@ -544,10 +575,17 @@ def reconstruct_haplotype_snps(guide: Guide, vmap: VariantMap) -> List[Guide]:
 #         )
 #     return positions_rep, guides_rep, samples_rep, variants_rep
 
-def track_haplotypes(region: Region, guides: List[Guide], vmap: VariantMap) -> List[Guide]:
+
+def track_haplotypes(
+    region: Region, guides: List[Guide], vmap: VariantMap
+) -> List[Guide]:
     if isinstance(region, IndelRegion):
         pass
-    else:  #track haplotypes on SNP region
+    else:  # track haplotypes on SNP region
         # for guide in guides:
         #     reconstruct_haplotype_snps(guide, vmap)
-        return [guide_ for guide in guides for guide_ in reconstruct_haplotype_snps(guide, vmap)]
+        return [
+            guide_
+            for guide in guides
+            for guide_ in reconstruct_haplotype_snps(guide, vmap)
+        ]
