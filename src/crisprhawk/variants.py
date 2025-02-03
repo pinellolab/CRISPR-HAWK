@@ -1,11 +1,9 @@
 """
 """
 
-from crisprhawk_error import CrisprHawkVCFError, CrisprHawkEnrichmentError
+from crisprhawk_error import CrisprHawkVCFError
 from exception_handlers import exception_handler
 from utils import print_verbosity, VERBOSITYLVL
-from bedfile import Region
-from sequences import _encoder
 
 from typing import Optional, List, Tuple, Set
 from pysam import TabixFile, tabix_index
@@ -14,24 +12,27 @@ import os
 
 TBI = "tbi"  # tabix index file extnsion
 VTYPES = ["snp", "indel"]  # variant types
+INDELTYPES = [0, 1]  # indel types -> 0 for insertion, 1 for deletion
 
 
 class VariantRecord:
-    def __init__(
-        self, variant: List[str], samples: List[str], phased: bool, debug: bool
-    ) -> None:
+    def __init__(self, debug: bool):
         self._debug = debug  # set debug mode flag
-        self._chrom = variant[0]  # store chromosome
-        self._position = int(variant[1])  # store variant position
-        self._ref = variant[3]  # store ref allele
-        self._alt = self._retrieve_alt_alleles(variant[4])  # store alt alleles
-        self._allelesnum = len(self._alt)  # number of alt alleles
-        self._vtype = self._assess_vtype()  # establish whether is a snp or indel
-        self._filter = variant[6]  # store filter value
-        self._vid = self._assign_id(variant[2])  # assign variant id
-        self._samples = _genotypes_to_samples(
-            variant[9:], samples, self._allelesnum, phased, self._debug
-        )
+
+    def __repr__(self) -> str:
+        altalleles = ",".join(self._alt)
+        return f'<{self.__class__.__name__} object; variant="{self._chrom} {self._position} {self._ref} {altalleles}">'
+    
+    def __eq__(self, vrecord: "VariantRecord") -> bool:
+        if not hasattr(vrecord, "_chrom"):
+            exception_handler(AttributeError, f"Comparison between {self.__class__.__name__} object failed", os.EX_DATAERR)
+        if not hasattr(vrecord, "_position"):
+            exception_handler(AttributeError, f"Comparison between {self.__class__.__name__} object failed", os.EX_DATAERR)
+        if not hasattr(vrecord, "_ref"):
+            exception_handler(AttributeError, f"Comparison between {self.__class__.__name__} object failed", os.EX_DATAERR)
+        if not hasattr(vrecord, "_alt"):
+            exception_handler(AttributeError, f"Comparison between {self.__class__.__name__} object failed", os.EX_DATAERR)
+        return self._chrom == vrecord.contig and self._position == vrecord.position and self._ref == vrecord.ref and self._alt == vrecord.alt
 
     def _retrieve_alt_alleles(self, altalleles: str) -> List[str]:
         # alternative alleles in multiallelic sites are separated by a comma
@@ -76,6 +77,38 @@ class VariantRecord:
             _compute_id(self._chrom, self._position, self._ref, altallele)
             for altallele in self._alt
         ]
+    
+    def _copy(self, i: int) -> "VariantRecord":
+        # copy current variant record instance
+        vrecord = VariantRecord(self._debug)  # create new instance
+        # adjust ref/alt alleles and positions for multiallelic sites
+        ref, alt, position = _adjust_multiallelic(self._ref, self._alt[i], self._position)
+        vrecord._chrom = self._chrom
+        vrecord._position = position  
+        vrecord._ref = ref
+        vrecord._alt = [alt]
+        vrecord._allelesnum = 1
+        vrecord._vtype = [self._vtype[i]]
+        vrecord._filter = self._filter
+        vrecord._vid = [self._vid[i]]
+        vrecord._samples = [self._samples[i]]
+        return vrecord
+    
+    def read_vcf_line(self, variant: List[str], samples: List[str], phased: bool) -> None:
+        self._chrom = variant[0]  # store chromosome
+        self._position = int(variant[1])  # store variant position
+        self._ref = variant[3]  # store ref allele
+        self._alt = self._retrieve_alt_alleles(variant[4])  # store alt alleles
+        self._allelesnum = len(self._alt)  # number of alt alleles
+        self._vtype = self._assess_vtype()  # establish whether is a snp or indel
+        self._filter = variant[6]  # store filter value
+        self._vid = self._assign_id(variant[2])  # assign variant id
+        self._samples = _genotypes_to_samples(
+            variant[9:], samples, self._allelesnum, phased, self._debug
+        )  # recover samples with their genotypes
+
+    def split(self, vtype: str) -> List["VariantRecord"]:
+        return [self._copy(i) for i, _ in enumerate(self._vtype) if self._vtype[i] == vtype]
 
     def format(self) -> str:
         altalleles = ",".join(self.alt)
@@ -159,6 +192,20 @@ def _genotypes_to_samples(
             sampleshap[int(gt2) - 1][0].add(samples[i])
     return sampleshap
 
+def _adjust_multiallelic(ref: str, alt: str, pos: int) -> Tuple[str, str, int]:
+    if len(ref) == len(alt):  # likely snp
+        ref_new, alt_new = ref[-1], alt[-1]  # adjust ref/alt alleles 
+        pos_new = pos + len(ref) - 1  # ref/alt have same length
+    elif len(ref) > len(alt):  # deletion
+        ref_new = ref[len(alt) - 1:]  # adjust ref allele
+        alt_new = alt[-1]  # adjust alt allele
+        pos_new = pos + (len(alt)) - 1  # adjust variant position
+    else:  # insertion
+        ref_new = ref[-1]  # adjust ref allele
+        alt_new = alt[len(ref) - 1:]  # adjust alt allele
+        pos_new = pos + len(ref) - 1  # adjust variant position
+    return ref_new, alt_new, pos_new
+
 
 class VCF:
     def __init__(
@@ -230,9 +277,7 @@ class VCF:
         try:  # extract variants in the input range from vcf file
             self._is_phased()  # assess whether the vcf is phased
             variants = [
-                VariantRecord(
-                    v.strip().split(), self._samples, self._phased, self._debug
-                )
+                _create_variant_record(v.strip().split(), self._samples, self._phased, self._debug)
                 for v in self._vcf.fetch(self._contig, start, stop)
             ]
             return variants
@@ -262,3 +307,8 @@ def _find_tbi(vcf: str) -> bool:
     if os.path.exists(vcfindex):  # index must be a non empty file
         return os.path.isfile(vcfindex) and os.stat(vcfindex).st_size > 0
     return False
+
+def _create_variant_record(variant: List[str], samples: List[str], phased: bool, debug: bool) -> VariantRecord:
+    vrecord = VariantRecord(debug)  # create variant record instance
+    vrecord.read_vcf_line(variant, samples, phased)  # read vcf line
+    return vrecord
