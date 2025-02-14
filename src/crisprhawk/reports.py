@@ -10,7 +10,7 @@ from guide import Guide
 from enrichment import INDELTYPES
 from utils import GUIDESREPORTPREFIX, IUPACTABLE, IUPAC, STRAND, reverse_complement
 
-from typing import Tuple, List, Union, Dict, Any
+from typing import Tuple, List, Union, Dict, Any, Set
 
 import pandas as pd
 
@@ -56,7 +56,11 @@ def adjust_coordinates(guide: Guide, region: Region) -> Tuple[int, int]:
     start = guide.position + region.start + 1
     stop = start + guide.guidelen + guide.pamlen  # adjust stop position
     if isinstance(region, IndelRegion):
-        stop = stop - region.indel_length if region.indel_type == INDELTYPES[0] else stop + region.indel_length
+        stop = (
+            stop - region.indel_length
+            if region.indel_type == INDELTYPES[0]
+            else stop + region.indel_length
+        )
     return start, stop
 
 
@@ -162,7 +166,10 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
             e,
         )
 
-def split_reports(reports: Dict[Union[Region, IndelRegion], pd.DataFrame]) -> Tuple[Dict[Region, pd.DataFrame], Dict[IndelRegion, pd.DataFrame]]:
+
+def split_reports(
+    reports: Dict[Union[Region, IndelRegion], pd.DataFrame]
+) -> Tuple[Dict[Region, pd.DataFrame], Dict[IndelRegion, pd.DataFrame]]:
     # split reports in reports for guides containing snps and indels
     reports_snps, reports_indels = {}, {}
     for region, report in reports.items():
@@ -173,20 +180,56 @@ def split_reports(reports: Dict[Union[Region, IndelRegion], pd.DataFrame]) -> Tu
     return reports_snps, reports_indels
 
 
-def merge_reports(reports: Dict[Union[Region, IndelRegion], pd.DataFrame]) -> Dict[Region, pd.DataFrame]:
+def merge_reports(
+    reports: Dict[Union[Region, IndelRegion], pd.DataFrame]
+) -> Dict[Region, pd.DataFrame]:
     # retrieve indel region reports
     reports_snps, reports_indels = split_reports(reports)
     reports_merged = {}  # merged reports dictionary
     for region, report_snp in reports_snps.items():
         # retrieve indel regions fully overlapped by query region
         iregions_overlapping = [
-            report_indel 
-            for iregion, report_indel in reports_indels.items() 
+            report_indel
+            for iregion, report_indel in reports_indels.items()
             if region.contains(iregion)
         ]
         reports_merged[region] = pd.concat([report_snp] + iregions_overlapping)
-        reports_merged[region][REPORTCOLS[10]] = report_snp.loc[0,REPORTCOLS[10]]
+        reports_merged[region][REPORTCOLS[10]] = report_snp.loc[0, REPORTCOLS[10]]
     return reports_merged
+
+
+def collapse_samples(samples: pd.Series) -> str:
+    return (
+        ",".join(sorted(set(",".join(samples).split(",")))) if not samples.empty else ""
+    )
+
+
+def parse_variant_ids(variant_ids: pd.Series) -> Set[str]:
+    return set(variant_ids.split(",")) if variant_ids else set()
+
+
+def check_variant_ids(variant_ids_list: List[str]) -> str:
+    variant_sets = [parse_variant_ids(vid) for vid in variant_ids_list]
+    unique_variant_ids_sets = set(tuple(sorted(vs)) for vs in variant_sets)
+    assert len(unique_variant_ids_sets) == 1
+    return ",".join(sorted(unique_variant_ids_sets.pop()))
+
+
+def collapse_report_entries(report: pd.DataFrame) -> pd.DataFrame:
+    # Define the columns to group by
+    group_cols = REPORTCOLS[:5] + REPORTCOLS[6:8]
+    # Group by the key columns and apply aggregation functions
+    report_collapsed = report.groupby(group_cols, as_index=False).agg(
+        {
+            "pam_class": "first",  # Assuming pam_class is the same across entries
+            "origin": "first",  # Assuming origin does not change
+            "samples": collapse_samples,  # Merge sample lists
+            "variant_id": check_variant_ids,  # Ensure identical variant_id
+            "target": "first",  # Keep the first target entry
+        }
+    )
+    return report_collapsed
+
 
 def report_guides(
     guides: Dict[Union[Region, IndelRegion], List[Guide]],
@@ -203,4 +246,5 @@ def report_guides(
             outdir,
             f"{GUIDESREPORTPREFIX}__{region.format(pad=guidelen)}_{pam}_{guidelen}.tsv",
         )
+        report = collapse_report_entries(report)
         store_report(report, guidesreport, debug)  # write report

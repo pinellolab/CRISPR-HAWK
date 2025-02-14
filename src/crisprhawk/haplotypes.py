@@ -276,6 +276,7 @@ def reconstruct_haplotype_snps(guide: Guide, vmap: VariantMap) -> List[Guide]:
         for guideseq in guides_samples
     ]
 
+
 def _isindel(variant: VariantRecord) -> bool:
     if variant.allelesnum == 1 and variant.vtype[0] == VTYPES[1]:
         return True  # indels are divided from potential other alleles at locus
@@ -297,17 +298,29 @@ def find_snp_indel_pos(
         guide.set_position(guide.position - 1)
     # retrieve guide reference
     start = guide.position
-    stop = guide.position + len(guide) - region.indel_length if region.indel_type == INDELTYPES[0] else guide.position + len(guide) + region.indel_length
+    stop = (
+        guide.position + len(guide) - region.indel_length
+        if region.indel_type == INDELTYPES[0]
+        else guide.position + len(guide) + region.indel_length
+    )
     refseq = "".join(region.sequence_ref[start:stop])
     return refseq, variants
 
-def update_guideseq_indel(guideseq: List[str], position: int, ref: str, alt: str) -> List[str]:
+
+def update_guideseq_indel(
+    guideseq: List[str], position: int, ref: str, alt: str
+) -> List[str]:
     # insert variant in guide candidate sequence (variants denoted by lowercase)
-    return guideseq[:position] + list(alt.lower()) + guideseq[position + len(ref):]
+    return guideseq[:position] + list(alt.lower()) + guideseq[position + len(ref) :]
 
 
 def update_sample_guide_indels(
-    position: int, ref: str, alt: str, guideseq: List[str], var_id: str, occurring_vars: List[str],
+    position: int,
+    ref: str,
+    alt: str,
+    guideseq: List[str],
+    var_id: str,
+    occurring_vars: List[str],
 ) -> Tuple[List[str], List[str]]:
     # update guide candidate sequence
     guideseq = update_guideseq_indel(guideseq, position, ref, alt)
@@ -333,10 +346,16 @@ def process_sample_guides_indels(
                 guideseq, occurring_vars = sample_guides[sample]
                 if pos < len(guideseq):
                     sample_guides[sample] = update_sample_guide_indels(
-                        pos, variant.ref, variant.alt[i], guideseq, variant.id[i], occurring_vars
+                        pos,
+                        variant.ref,
+                        variant.alt[i],
+                        guideseq,
+                        variant.id[i],
+                        occurring_vars,
                     )  # update sample's guide
         variant_current = variant  # avoid repeated adjustments on insertions
     return sample_guides
+
 
 def filter_guides_indels(
     sample_guides_chromcopy: Dict[str, Tuple[List[str], List[str]]], guidelen: int
@@ -347,7 +366,6 @@ def filter_guides_indels(
         sample: (guide, list(dict.fromkeys(variants)))
         for sample, (guide, variants) in sample_guides_chromcopy.items()
         if variants and len(guide) == guidelen
-        # if (variants and indel.id[0] in variants) and len(guide) == guidelen
     }
 
 
@@ -368,12 +386,13 @@ def assign_sample_guide_indels(
     return sample_guides
 
 
-
 def reconstruct_haplotype_indels(region: IndelRegion, guide: Guide, vmap: VariantMap):
     # compute guide's reference sequence and positions carrying variants
     refseq, variants = find_snp_indel_pos(region, guide, vmap)
     # map samples to their personal guide following haps if input vcf is phased
-    samples_guides = assign_sample_guide_indels(refseq, variants, len(guide), vmap.phased)
+    samples_guides = assign_sample_guide_indels(
+        refseq, variants, len(guide), vmap.phased
+    )
     # reverse the sample-guide dictionary to use guides as keys -> useful
     guides_samples = retrieve_guide_samples_snps(samples_guides, refseq)
     # update guide with samples and variants
@@ -381,7 +400,8 @@ def reconstruct_haplotype_indels(region: IndelRegion, guide: Guide, vmap: Varian
         create_guide(guide, guideseq, *guides_samples[guideseq])
         for guideseq in guides_samples
         if len(guideseq) == len(guide)
-    ]    
+    ]
+
 
 def track_haplotypes(
     region: Union[Region, IndelRegion], guides: List[Guide], vmap: VariantMap

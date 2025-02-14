@@ -133,7 +133,12 @@ def retrieve_guides(
 
 
 def search(
-    pam: PAM, region: Union[Region, IndelRegion], guidelen: int, right: bool, verbosity: int, debug: bool
+    pam: PAM,
+    region: Union[Region, IndelRegion],
+    guidelen: int,
+    right: bool,
+    verbosity: int,
+    debug: bool,
 ) -> List[Guide]:
     # search pam occurrences on forward and reverse strand of the input sequence
     print_verbosity(

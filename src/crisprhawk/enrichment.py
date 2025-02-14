@@ -14,7 +14,6 @@ from time import time
 import os
 
 
-
 def load_vcfs(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
     # load vcf files and map each vcf to its contig (assume on vcf per contig)
     print_verbosity("Loading VCF files", verbosity, VERBOSITYLVL[2])
@@ -39,7 +38,9 @@ def fetch_variants(
     # each region is padded by |guide| nts to avoid missing guides mapped on
     # region's border
     print_verbosity(
-        f"Fetching variants in {region.format(pad=guidelen, string=True)}", verbosity, VERBOSITYLVL[3]
+        f"Fetching variants in {region.format(pad=guidelen, string=True)}",
+        verbosity,
+        VERBOSITYLVL[3],
     )
     start = time()  # track variants fecthing time
     variants = vcf.fetch(*adjust_region_coords(region, guidelen))
@@ -99,6 +100,7 @@ def insert_snps(
             vmap.insert_variant(posrel, snp)  # map variant to its relative position
     return vmap
 
+
 def guess_indel_type(ref: str, alt: str, position: int, debug) -> int:
     # guess from ref and alt alleles if the input indel is an insertion
     # (|ref| < |alt|) deletion (|ref| > |alt|)
@@ -111,7 +113,10 @@ def guess_indel_type(ref: str, alt: str, position: int, debug) -> int:
         )
     return INDELTYPES[0] if len(ref) < len(alt) else INDELTYPES[1]
 
-def create_indel_region(region: Region, indel: VariantRecord, guidepamlen: int, debug: bool) -> IndelRegion:
+
+def create_indel_region(
+    region: Region, indel: VariantRecord, guidepamlen: int, debug: bool
+) -> IndelRegion:
     # compute relative indel position
     posrel = indel.position - 1 - region.start
     indel_length = abs(len(indel.ref) - len(indel.alt[0]))  # compute indel length
@@ -122,13 +127,32 @@ def create_indel_region(region: Region, indel: VariantRecord, guidepamlen: int, 
         stop += indel_length
     refsequence = region.sequence_ref[start:stop]  # extract region sequence
     sequence = region.sequence[start:stop]  # extract region sequence
-    coordinates = Coordinate(region.contig, region.start + start, region.start + stop)  # create coordinate object
+    coordinates = Coordinate(
+        region.contig, region.start + start, region.start + stop
+    )  # create coordinate object
     # compute offset for insertions and deletions
     offset_ins = len(indel.ref) - 1
-    offset_del = len(indel.alt[0]) - 1 
-    return IndelRegion(refsequence, sequence, coordinates, offset_ins, offset_del, guidepamlen - 1, indel_length, indeltype, debug)
+    offset_del = len(indel.alt[0]) - 1
+    return IndelRegion(
+        refsequence,
+        sequence,
+        coordinates,
+        offset_ins,
+        offset_del,
+        guidepamlen - 1,
+        indel_length,
+        indeltype,
+        debug,
+    )
 
-def compute_vmap(vmap: VariantMap, region: IndelRegion, indel: VariantRecord, offset: int, debug: bool) -> VariantMap:
+
+def compute_vmap(
+    vmap: VariantMap,
+    region: IndelRegion,
+    indel: VariantRecord,
+    offset: int,
+    debug: bool,
+) -> VariantMap:
     vmap_indel = VariantMap(vmap.phased, debug)
     # positions overlapping indel
     for i in range(len(indel.alt[0])):
@@ -138,19 +162,32 @@ def compute_vmap(vmap: VariantMap, region: IndelRegion, indel: VariantRecord, of
             position = (region.start + i) - offset
             # adjust position for variant map query
             if i > region.indel_pos:
-                position = position - region.indel_length if region.indel_type == INDELTYPES[0] else position + region.indel_length
+                position = (
+                    position - region.indel_length
+                    if region.indel_type == INDELTYPES[0]
+                    else position + region.indel_length
+                )
             vmap_indel.insert_variant(i, vmap[position])
     return vmap_indel
 
 
-def insert_indels(regions: RegionList, i: int, indels: List[VariantRecord], vmaps: Dict[Region, VariantMap], guidepamlen: int, debug: bool):
+def insert_indels(
+    regions: RegionList,
+    i: int,
+    indels: List[VariantRecord],
+    vmaps: Dict[Region, VariantMap],
+    guidepamlen: int,
+    debug: bool,
+):
     region = regions[i]  # retrieve current region
     for indel_variant in indels:
         for indel in indel_variant.split(VTYPES[1]):
             iregion = create_indel_region(region, indel, guidepamlen, debug)
-            iregion.enrich(indel.alt[0])  # insert indel in region 
+            iregion.enrich(indel.alt[0])  # insert indel in region
             regions.append(iregion)  # append indel region to regions list
-            vmaps[iregion] = compute_vmap(vmaps[region], iregion, indel, region.start, debug)  # insert indel in vmap
+            vmaps[iregion] = compute_vmap(
+                vmaps[region], iregion, indel, region.start, debug
+            )  # insert indel in vmap
     return vmaps
 
 
@@ -168,16 +205,18 @@ def enricher(
     for i in range(regions_num):
         region = regions[i]  # retrieve region
         print_verbosity(
-            f"Adding variants in {region.format(pad=guidelen, string=True)}", verbosity, VERBOSITYLVL[2]
+            f"Adding variants in {region.format(pad=guidelen, string=True)}",
+            verbosity,
+            VERBOSITYLVL[2],
         )
         # retrieve variants in each region
-        snps, indels_ = fetch_variants(vcfs[region.contig], region, guidelen, verbosity)        
+        snps, indels_ = fetch_variants(vcfs[region.contig], region, guidelen, verbosity)
         # add variants to regions sequence
         phased = vcfs[region.contig].phased  # assess variants phasing
         variant_maps[region] = insert_snps(
             region, snps, phased, no_filter, verbosity, debug
         )
-        variant_maps = insert_indels(regions, i, indels_, variant_maps, guidelen + pamlen, debug)
+        variant_maps = insert_indels(
+            regions, i, indels_, variant_maps, guidelen + pamlen, debug
+        )
     return variant_maps
-
-

@@ -164,4 +164,3 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         )
     # report found guides in output directory
     report_guides(guides, args.guidelen, pam, args.outdir, args.right, args.debug)
-

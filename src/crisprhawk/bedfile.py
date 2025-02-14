@@ -12,7 +12,6 @@ from typing import List, Union, Optional, final
 import os
 
 
-
 class Coordinate:
     def __init__(self, contig: str, start: int, stop: int) -> None:
         # initialize a genomic coordinate interval
@@ -98,7 +97,7 @@ class Region:
 
     def format(self, pad: Optional[int] = 0, string: Optional[bool] = False) -> str:
         return self._coordinates.format(pad, string)
-    
+
     def encode(self) -> None:
         self._sequence.encode()  # encode sequence in bits
 
@@ -141,24 +140,37 @@ class Region:
     @property
     def stop(self) -> int:
         return self._coordinates.stop
-    
+
     @property
     def sequence(self) -> Sequence:
         return self._sequence
-    
+
     @property
     def sequence_ref(self) -> Sequence:
         return self._refseq
-    
+
     @property
     def bits(self) -> List[Bitset]:
         return self._sequence.bits
 
 
 class IndelRegion:
-    def __init__(self, reference_seq: List[str], sequence: List[str], coordinates: Coordinate, offset_ins: int, offset_del: int, indel_pos: int, indel_length: int, indel_type: int, debug: bool):
+    def __init__(
+        self,
+        reference_seq: List[str],
+        sequence: List[str],
+        coordinates: Coordinate,
+        offset_ins: int,
+        offset_del: int,
+        indel_pos: int,
+        indel_length: int,
+        indel_type: int,
+        debug: bool,
+    ):
         self._debug = debug  # store debug mode flag
-        self._sequence_ref = Sequence("".join(reference_seq), debug)  # store reference sequence
+        self._sequence_ref = Sequence(
+            "".join(reference_seq), debug
+        )  # store reference sequence
         self._sequence = Sequence("".join(sequence), debug)  # store sequence object
         # store contig name, start and stop coordinates of the extracted region
         self._coordinates = coordinates
@@ -174,12 +186,20 @@ class IndelRegion:
 
     def __repr__(self):
         return f"<{self.__class__.__name__} object; region={self._coordinates}>"
-    
+
     def enrich(self, alt: str) -> None:
         # indel start and stop positions
         start = self._indel_pos
-        stop = self._indel_pos + self._offset_ins + 1 if self._indel_type == INDELTYPES[0] else self._indel_pos + self._indel_length + self._offset_del + 1
-        sequence_enr = self._sequence._sequence_raw[:start] + [alt] + self._sequence._sequence_raw[stop:]        
+        stop = (
+            self._indel_pos + self._offset_ins + 1
+            if self._indel_type == INDELTYPES[0]
+            else self._indel_pos + self._indel_length + self._offset_del + 1
+        )
+        sequence_enr = (
+            self._sequence._sequence_raw[:start]
+            + [alt]
+            + self._sequence._sequence_raw[stop:]
+        )
         self._sequence = Sequence("".join(sequence_enr), self._debug)
 
     def encode(self) -> None:
@@ -191,47 +211,47 @@ class IndelRegion:
     @property
     def sequence(self) -> Sequence:
         return self._sequence
-    
+
     @property
     def sequence_ref(self) -> Sequence:
         return self._sequence_ref
-    
+
     @property
     def indel_pos(self) -> int:
         return self._indel_pos
-    
+
     @property
     def indel_length(self) -> int:
         return self._indel_length
-    
+
     @property
     def offset_deletion(self) -> int:
         return self._indel_length - self._offset_del
-    
+
     @property
     def offset_insertion(self) -> int:
         return self._indel_length + self._offset_ins
-    
+
     @property
     def indel_type(self) -> int:
         return self._indel_type
-    
+
     @property
     def contig(self) -> str:
         return self._coordinates.contig
-    
+
     @property
     def start(self) -> int:
         return self._coordinates.start
-    
+
     @property
     def stop(self) -> int:
         return self._coordinates.stop
-    
+
     @property
     def bits(self) -> List[Bitset]:
         return self._sequence.bits
-    
+
 
 class RegionList:
     def __init__(self, regions: List[Region], debug: bool) -> None:
