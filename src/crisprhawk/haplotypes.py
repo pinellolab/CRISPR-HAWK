@@ -276,6 +276,11 @@ def reconstruct_haplotype_snps(guide: Guide, vmap: VariantMap) -> List[Guide]:
         for guideseq in guides_samples
     ]
 
+def _isindel(variant: VariantRecord) -> bool:
+    if variant.allelesnum == 1 and variant.vtype[0] == VTYPES[1]:
+        return True  # indels are divided from potential other alleles at locus
+    return False
+
 
 def find_snp_indel_pos(
     region: IndelRegion, guide: Guide, vmap: VariantMap
@@ -288,8 +293,8 @@ def find_snp_indel_pos(
         if guide.position + i in vmap
     }
     # if guide starts from indel, adjust the guide's position
-    if 0 in variants and region.indel_type == INDELTYPES[0]:
-        guide.set_position(variants[0].position - 1)
+    if (0 in variants and _isindel(variants[0])) and region.indel_type == INDELTYPES[0]:
+        guide.set_position(guide.position - 1)
     # retrieve guide reference
     start = guide.position
     stop = guide.position + len(guide) - region.indel_length if region.indel_type == INDELTYPES[0] else guide.position + len(guide) + region.indel_length
@@ -326,9 +331,10 @@ def process_sample_guides_indels(
         for i, samples_aa in enumerate(variant.samples):
             for sample in samples_aa[chromcopy]:
                 guideseq, occurring_vars = sample_guides[sample]
-                sample_guides[sample] = update_sample_guide_indels(
-                    pos, variant.ref, variant.alt[i], guideseq, variant.id[i], occurring_vars
-                )  # update sample's guide
+                if pos < len(guideseq):
+                    sample_guides[sample] = update_sample_guide_indels(
+                        pos, variant.ref, variant.alt[i], guideseq, variant.id[i], occurring_vars
+                    )  # update sample's guide
         variant_current = variant  # avoid repeated adjustments on insertions
     return sample_guides
 
@@ -341,6 +347,7 @@ def filter_guides_indels(
         sample: (guide, list(dict.fromkeys(variants)))
         for sample, (guide, variants) in sample_guides_chromcopy.items()
         if variants and len(guide) == guidelen
+        # if (variants and indel.id[0] in variants) and len(guide) == guidelen
     }
 
 

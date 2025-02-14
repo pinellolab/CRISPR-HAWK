@@ -154,6 +154,10 @@ class VariantRecord:
     @property
     def id(self) -> List[str]:
         return self._vid
+    
+    @property
+    def allelesnum(self) -> int:
+        return self._allelesnum
 
 
 def _assign_vtype(ref: str, alt: str) -> bool:
