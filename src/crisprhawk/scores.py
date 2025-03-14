@@ -1,7 +1,8 @@
 """
 """
 
-from scores.azimuth.azimuth import load_azimuth_model, override_learn_options
+from scores.azimuth.azimuth import load_azimuth_model, override_learn_options, construct_sequences_table
+from scores.azimuth.features import featurize, concatenate_features
 
 from typing import List, Optional, Dict
 
@@ -25,18 +26,27 @@ def azimuth(
 ) -> np.ndarray:
     # load azimuth model
     model, learn_options = load_azimuth_model(model_file, peptide_pct, aa_cut_positions, verbosity)
-    print(type(model))
-    print(learn_options)
-    exit()
-    learn_options_dict["V"] = 2  # set V=2 fro azimuth learn parameters
+    learn_options["V"] = 2  # set V=2 fro azimuth learn parameters
     if learn_options_dict is not None:  # update learn options if provided
         learn_options = override_learn_options(learn_options_dict, learn_options)
+    # construct sequence table
+    seqtable, geneposition = construct_sequences_table(sequences, peptide_pct, aa_cut_positions)
+    # compute sequence features
+    features = featurize(seqtable, learn_options, geneposition, check_pam, check_len)
+    inputs = concatenate_features(features)  # concatenate features 
+    predictions = model.predict(inputs)  # call to scikit-learn, returns a vector of predicted values    
+    if all(p in [0, 1] for p in np.unique(predictions)):
+        raise Exception
+    return predictions
+
 
 if __name__ == "__main__":
     sequences = np.array(['ACAGCTGATCTCCAGATATGACCATGGGTT', 'CAGCTGATCTCCAGATATGACCATGGGTTT', 'CCAGAAGTTTGAGCCACAAACCCATGGTCA'])
     amino_acid_cut_positions = np.array([2, 2, 4])
     percent_peptides = np.array([0.18, 0.18, 0.35])
-    azimuth(sequences, 3, amino_acid_cut_positions, percent_peptides)
+    predictions = azimuth(sequences, 3, amino_acid_cut_positions, percent_peptides)
+    for i, prediction in enumerate(predictions):
+        print(sequences[i], prediction)
 
 
     

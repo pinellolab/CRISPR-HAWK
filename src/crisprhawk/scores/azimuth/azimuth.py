@@ -3,24 +3,23 @@
 
 from .azimuth_error import CrisprHawkAzimuthError
 from .azimuth_utils import warning
+from .features import featurize
 
-from sklearn import GradientBoostingRegressor
 from typing import List, Optional, Union, Dict, Tuple, Any
-
-# from sklearn.ensemble. import LeastSquaresError
 
 import pandas as pd
 import numpy as np
 
+import warnings
 import pickle
 import sys
 import os
 
-sys.modules["sklearn.ensemble.gradient_boosting"] = sys.modules["sklearn.ensemble"]
-# sys.modules["sklearn.ensemble.gradient_boosting.LeastSquaresError"] = LeastSquaresError
+warnings.filterwarnings("ignore")  # ignore warnings on sklearn imports
+
 
 AZIMUTHMODELS = ["V3_model_full.pickle", "V3_model_nopos.pickle"]
-SEQTABLECOLS = [u"30mer", u"Strand", u"Percent Peptide", u"Amino Acid Cut Position"]
+SEQTABLECOLS = [u"30mer", u"Strand", u"Percent Peptide", u"Amino Acid Cut position"]
 
 def load_azimuth_model(model_file: Union[str, None], peptide_pct: Union[np.ndarray, None], aa_cut_positions: Union[np.ndarray, None], verbosity: int) -> Tuple[Any, Dict[str, Any]]:
     if model_file is None:  # no input model file provided (most common case)
@@ -49,12 +48,13 @@ def override_learn_options(learn_options_new: Dict[str, float], learn_options: D
     return learn_options
 
 
-def construct_sequences_table(sequences: List[str], peptide_pct: Union[np.ndarray, None], aa_cut_positions: Union[np.ndarray, None]) -> pd.DataFrame:
+def construct_sequences_table(sequences: List[str], peptide_pct: Union[np.ndarray, None], aa_cut_positions: Union[np.ndarray, None]) -> Tuple[pd.DataFrame, pd.DataFrame]:
     seqtable = pd.DataFrame(columns=SEQTABLECOLS[:2], data=zip(sequences, ["NA" for _ in range(len(sequences))]))
     if np.all(peptide_pct != -1) and (peptide_pct is not None and aa_cut_positions is not None):
         geneposition = pd.DataFrame(columns=SEQTABLECOLS[2:], data=zip(peptide_pct, aa_cut_positions))
     else:
         geneposition = pd.DataFrame(columns=SEQTABLECOLS[2:], data=zip(np.ones(len(sequences)) * -1, np.ones(len(sequences)) * -1))
+    return seqtable, geneposition
     
 
 
