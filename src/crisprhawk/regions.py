@@ -27,7 +27,7 @@ def read_bed(bedfile: str, guidelen: int, verbosity: int, debug: bool) -> Bed:
     try:  # create bed object
         bed = Bed(bedfile, guidelen)  # guidelen used to pad regions
     except (FileNotFoundError, PermissionError, IOError, Exception) as e:
-        exception_handler(e, f"Failed parsing BED file ({bedfile})", os.EX_DATAERR, debug, e)
+        exception_handler(Exception, f"Failed parsing BED file ({bedfile})", os.EX_DATAERR, debug, e)
     print_verbosity(f"Parsed {len(bed)} regions in {(time() - start):.2f}s", verbosity, VERBOSITYLVL[3])
     return bed
 
@@ -38,7 +38,7 @@ def extract_regions(bed: Bed, fasta: Fasta, verbosity: int, debug: bool) -> Regi
     try:  # extract regions from input fasta file
         regions = bed.extract_regions(fasta)
     except AttributeError as e:
-        exception_handler(e, f"Failed region extraction from {fasta.fname}", os.EX_DATAERR, debug, e)
+        exception_handler(Exception, f"Failed region extraction from {fasta.fname}", os.EX_DATAERR, debug, e)
     print_verbosity(f"Extracted regions:\n{str(regions)}", verbosity, VERBOSITYLVL[3])
     print_verbosity(f"Regions extracted in {(time() - start):.2f}s", verbosity, VERBOSITYLVL[3])
     return regions
