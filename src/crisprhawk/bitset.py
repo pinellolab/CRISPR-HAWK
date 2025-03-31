@@ -32,7 +32,7 @@ class Bitset(object):
 
     def __repr__(self) -> str:
         # value is the binary string, size is the len of the binary string
-        return f"<{self.__class__.__name__} object> <value: {str(self)}, size: {self._size}>"
+        return f"<{self.__class__.__name__} object; value={self}, size={self._size}>"
 
     def __and__(self, bitset: "Bitset") -> "Bitset":
         if self._size != bitset.size:

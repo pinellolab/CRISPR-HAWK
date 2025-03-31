@@ -3,11 +3,46 @@
 
 from crisprhawk_argparse import CrisprHawkInputArgs
 from regions import construct_regions
-from haplotypes import reconstruct_haplotypes
+from haplotypes import reconstruct_haplotypes, reconstruct_haplotypes_ref
+from utils import print_verbosity, VERBOSITYLVL
+from encoder import encode
+from bitset import Bitset
+from pam import PAM
 
+from hapsolver import Region, Haplotype
+from typing import Dict, List
+from time import time
+
+
+def encode_pam(pam: str, verbosity: int, debug: bool) -> PAM:
+    # construct pam object
+    print_verbosity(f"Creating PAM object for PAM {pam}", verbosity, VERBOSITYLVL[2])
+    pam = PAM(pam, debug)
+    pam.encode(verbosity)  # encode pam sequence
+    return pam
+
+def encode_haplotypes(haplotypes: Dict[Region, List[Haplotype]], verbosity: int, debug: bool) -> Dict[Region, List[List[Bitset]]]:
+    # encode haplotypes in bit for efficient guide search
+    print_verbosity(
+        f"Encoding {len(haplotypes)} haplotypes in bits", 2, VERBOSITYLVL[2]
+    )
+    start = time()  # encoding start time
+    haplotypes_bits = {
+        region: [encode(hap.sequence, verbosity, debug) for hap in haps]
+        for region, haps in haplotypes.items()
+    }  # encode input haplotypes as sequences of bits
+    print_verbosity(f"Haplotype encoding completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
+    return haplotypes_bits
 
 def crisprhawk(args: CrisprHawkInputArgs) -> None:
     # extract genomic regions defined in input bed file
     regions = construct_regions(args.fasta, args.bedfile, args.fasta_idx, args.guidelen, args.verbosity, args.debug)
-    # reconstruct haplotypes in each region
-    haplotypes = reconstruct_haplotypes(args.vcfs, regions, args.verbosity, args.debug)
+    if args.vcfs:  # establish whether variants have been given
+        # reconstruct haplotypes in each region
+        haplotypes = reconstruct_haplotypes(args.vcfs, regions, args.verbosity, args.debug)
+    else:
+        # reconstruct haplotypes with reference sequence only
+        haplotypes = reconstruct_haplotypes_ref(regions, args.verbosity, args.debug)
+    # encode pam and haplotype sequences in bit for efficient guides search
+    pam = encode_pam(args.pam, args.verbosity, args.debug)
+    haplotypes_bits = encode_haplotypes(haplotypes, args.verbosity, args.debug)

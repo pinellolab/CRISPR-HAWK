@@ -66,7 +66,7 @@ def retrieve_haplotypes(hapgraph: HaplotypeGraph, refseq: str, coordinate: Coord
     print_verbosity(f"Haplotypes retrieved in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
     return haplotypes
 
-def reconstruct_haplotypes(vcflist: List[str], regions: RegionList, verbosity: int, debug: bool) -> None:
+def reconstruct_haplotypes(vcflist: List[str], regions: RegionList, verbosity: int, debug: bool) -> Dict[Region, List[Haplotype]]:
     # read input vcf files and fetch variants in each region
     vcfs = read_vcf(vcflist, verbosity, debug)
     variants = fetch_variants(vcfs, regions, verbosity, debug)
@@ -83,6 +83,10 @@ def reconstruct_haplotypes(vcflist: List[str], regions: RegionList, verbosity: i
             region_haps.extend(retrieve_haplotypes(hapgraph, region.sequence.sequence, region.coordinates, phased, chromcopy, verbosity, debug))
         haplotypes[region] = region_haps
     return haplotypes
+
+def reconstruct_haplotypes_ref(regions: RegionList, verbosity: int, debug: bool) -> Dict[Region, List[Haplotype]]:
+    # initialize haplotypes list with reference sequence haplotype
+    return {r: [initialize_haplotype(r.sequence.sequence, r.coordinates, False, 0)] for r in regions}    
 
 
 
