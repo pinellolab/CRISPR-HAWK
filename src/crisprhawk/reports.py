@@ -2,7 +2,7 @@
 """
 
 from bedfile import Region, IndelRegion
-from search_guides import match
+from crisprhawk.search_guides_old import match
 from crisprhawk_error import CrisprHawkBitsetError, CrisprHawkGuidesReportError
 from exception_handlers import exception_handler
 from sequences import PAM

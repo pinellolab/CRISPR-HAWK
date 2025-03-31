@@ -9,6 +9,8 @@ from time import time
 
 import os
 
+PADDING = 100  # padding length for regions
+
 def read_fasta(fastafile: str, fasta_idx: str, verbosity: int, debug: bool) -> Fasta:
     # read input fasta and bed and construct Region object for each genomic region
     print_verbosity(f"Reading input Fasta file {fastafile}", verbosity, VERBOSITYLVL[2])
@@ -20,12 +22,12 @@ def read_fasta(fastafile: str, fasta_idx: str, verbosity: int, debug: bool) -> F
     print_verbosity(f"Fasta file parsed in {(time() - start):.2f}s", verbosity, VERBOSITYLVL[3])
     return fasta
 
-def read_bed(bedfile: str, guidelen: int, verbosity: int, debug: bool) -> Bed:
+def read_bed(bedfile: str, verbosity: int, debug: bool) -> Bed:
     # read input bed and construct Region object for each genomic region
     print_verbosity(f"Parsing input BED file {bedfile}", verbosity, VERBOSITYLVL[2])
     start = time()  # track processing time
     try:  # create bed object
-        bed = Bed(bedfile, guidelen)  # guidelen used to pad regions
+        bed = Bed(bedfile, PADDING)  # guidelen used to pad regions
     except (FileNotFoundError, PermissionError, IOError, Exception) as e:
         exception_handler(Exception, f"Failed parsing BED file ({bedfile})", os.EX_DATAERR, debug, e)
     print_verbosity(f"Parsed {len(bed)} regions in {(time() - start):.2f}s", verbosity, VERBOSITYLVL[3])
@@ -46,7 +48,7 @@ def extract_regions(bed: Bed, fasta: Fasta, verbosity: int, debug: bool) -> Regi
 def construct_regions(fastafile: str, bedfile: str, fasta_idx: str, guidelen: int, verbosity: int, debug: bool) -> RegionList:
     # read input fasta and bed and construct Region object for each genomic region
     fasta = read_fasta(fastafile, fasta_idx, verbosity, debug)
-    bed = read_bed(bedfile, guidelen, verbosity, debug)
+    bed = read_bed(bedfile, verbosity, debug)
     regions = extract_regions(bed, fasta, verbosity, debug)
     return regions
 

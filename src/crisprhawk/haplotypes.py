@@ -40,7 +40,7 @@ def construct_hapgraph(variants: List[VariantRecord], coordinate: Coordinate, ch
     print_verbosity(f"Constructing haplotype graph for region {coordinate}", verbosity, VERBOSITYLVL[2])
     start = time()  # track haplotype graph construction time
     try:  # create haplotype graph
-        hapgraph = HaplotypeGraph(variants)
+        hapgraph = HaplotypeGraph(variants, chromcopy)
         hapgraph.compute_graph()  # populate haplotype graph
     except ValueError as e:
         exception_handler(Exception, f"Failed constructing haplotype graph for region {coordinate}", os.EX_DATAERR, debug, e)
@@ -70,6 +70,8 @@ def reconstruct_haplotypes(vcflist: List[str], regions: RegionList, verbosity: i
     # read input vcf files and fetch variants in each region
     vcfs = read_vcf(vcflist, verbosity, debug)
     variants = fetch_variants(vcfs, regions, verbosity, debug)
+    for v in variants.values():
+        print(v)
     # reconstruct haplotypes for each region
     phased = vcfs[regions[0].contig].phased  # assess VCF phasing
     chromcopies = [0, 1] if phased else [0]

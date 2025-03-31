@@ -5,8 +5,10 @@ from crisprhawk_argparse import CrisprHawkInputArgs
 from regions import construct_regions
 from haplotypes import reconstruct_haplotypes, reconstruct_haplotypes_ref
 from utils import print_verbosity, VERBOSITYLVL
+from search_guides import search
 from encoder import encode
 from bitset import Bitset
+from guide import Guide
 from pam import PAM
 
 from hapsolver import Region, Haplotype
@@ -23,9 +25,7 @@ def encode_pam(pam: str, verbosity: int, debug: bool) -> PAM:
 
 def encode_haplotypes(haplotypes: Dict[Region, List[Haplotype]], verbosity: int, debug: bool) -> Dict[Region, List[List[Bitset]]]:
     # encode haplotypes in bit for efficient guide search
-    print_verbosity(
-        f"Encoding {len(haplotypes)} haplotypes in bits", 2, VERBOSITYLVL[2]
-    )
+    print_verbosity("Encoding haplotypes in bits", verbosity, VERBOSITYLVL[2])
     start = time()  # encoding start time
     haplotypes_bits = {
         region: [encode(hap.sequence, verbosity, debug) for hap in haps]
@@ -33,6 +33,9 @@ def encode_haplotypes(haplotypes: Dict[Region, List[Haplotype]], verbosity: int,
     }  # encode input haplotypes as sequences of bits
     print_verbosity(f"Haplotype encoding completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
     return haplotypes_bits
+
+def search_guides(pam: PAM, haplotypes_bits: Dict[Region, List[List[Bitset]]], guidelen: int, right: bool, verbosity: int, debug: bool) -> Dict[Region, List[Guide]]:
+    pass
 
 def crisprhawk(args: CrisprHawkInputArgs) -> None:
     # extract genomic regions defined in input bed file
@@ -46,3 +49,5 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
     # encode pam and haplotype sequences in bit for efficient guides search
     pam = encode_pam(args.pam, args.verbosity, args.debug)
     haplotypes_bits = encode_haplotypes(haplotypes, args.verbosity, args.debug)
+    for region, hap in haplotypes.items():
+        search(pam, region, hap, haplotypes_bits[region], args.guidelen, args.right, args.verbosity, args.debug)
