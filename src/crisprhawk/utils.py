@@ -3,6 +3,7 @@
 
 from exception_handlers import exception_handler
 
+from typing import List
 from itertools import permutations
 from colorama import Fore
 
@@ -102,3 +103,12 @@ def print_verbosity(message: str, verbosity: int, verbosity_threshold: int) -> N
     if verbosity >= verbosity_threshold:
         sys.stdout.write(f"{message}\n")
     return
+
+
+def adjust_guide_position(pos: int, pos_rel: List[int]) -> int:
+    offset = -1
+    for i, p in enumerate(pos_rel):
+        if p == pos:
+            offset = i
+            break
+    return offset

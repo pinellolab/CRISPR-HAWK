@@ -8,6 +8,7 @@ from utils import RC
 from typing import List, Union, Set
 import os
 
+GUIDESEQPAD = 10  # upstream and downstream sequence padding for guides scoring
 
 class Guide:
     def __init__(
@@ -23,8 +24,8 @@ class Guide:
         self._guidelen = guidelen  # guide length
         self._pamlen = pamlen  # pam lenght
         self._position = position if right else position - guidelen  # guide position
-        self._sequence_raw = sequence  # sequence as list of chars
-        self._sequence = "".join(sequence)  # sequence as string
+        self._sequence_raw = list(sequence)  # sequence as list of chars
+        self._sequence = sequence  # sequence as string
         self._direction = direction  # guide direction
         self._debug = debug  # store debug mode
         self._samples = "NA"  # samples carrying guide variants
@@ -89,7 +90,7 @@ class Guide:
 
     @property
     def sequence(self) -> str:
-        return self._sequence
+        return self._sequence[GUIDESEQPAD:-GUIDESEQPAD]
 
     @property
     def samples(self) -> str:
