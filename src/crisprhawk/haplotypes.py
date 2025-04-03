@@ -13,7 +13,7 @@ import os
 
 def read_vcf(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
     # load vcf files and map each vcf to its contig (assume on vcf per contig)
-    print_verbosity("Loading VCF files", verbosity, VERBOSITYLVL[2])
+    print_verbosity("Loading VCF files", verbosity, VERBOSITYLVL[3])
     start = time()  # track vcf parsing time
     try:  # create vcf dictionary
         vcfs = {vcf.contig: vcf for vcf in [VCF(f) for f in vcflist]}
@@ -26,7 +26,7 @@ def read_vcf(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
 
 def fetch_variants(vcfs: Dict[str, VCF], regions: RegionList,  verbosity: int, debug: bool) -> Dict[Region, List[VariantRecord]]:
     # recover variants mapped on the query region
-    print_verbosity("Fetching variants", verbosity, VERBOSITYLVL[2])
+    print_verbosity("Fetching variants", verbosity, VERBOSITYLVL[3])
     start = time()  # track variants fetching time 
     try:  # fecth variants in each region
         variants = {region: flatten_list([v.split() for v in vcfs[region.contig].fetch(region.coordinates)]) for region in regions}
@@ -37,7 +37,7 @@ def fetch_variants(vcfs: Dict[str, VCF], regions: RegionList,  verbosity: int, d
 
 def construct_hapgraph(variants: List[VariantRecord], coordinate: Coordinate, chromcopy: int, verbosity: int, debug: bool) -> HaplotypeGraph:
     # construct haplotype graph from input variants
-    print_verbosity(f"Constructing haplotype graph for region {coordinate}", verbosity, VERBOSITYLVL[2])
+    print_verbosity(f"Constructing haplotype graph for region {coordinate}", verbosity, VERBOSITYLVL[3])
     start = time()  # track haplotype graph construction time
     try:  # create haplotype graph
         hapgraph = HaplotypeGraph(variants, chromcopy)
@@ -53,7 +53,7 @@ def initialize_haplotype(sequence: str, coord: Coordinate, phased: bool, chromco
 
 def retrieve_haplotypes(hapgraph: HaplotypeGraph, refseq: str, coordinate: Coordinate, phased: bool, chromcopy: int, verbosity: int, debug: bool) -> List[Haplotype]:
     # retrieve haplotypes from haplotype graph
-    print_verbosity(f"Retrieving haplotypes for region {coordinate}", verbosity, VERBOSITYLVL[2])
+    print_verbosity(f"Retrieving haplotypes for region {coordinate}", verbosity, VERBOSITYLVL[3])
     start = time()  # track haplotype retrieval time
     haplotypes = []  # list of haplotypes
     try:  # retrieve haplotypes
@@ -68,10 +68,10 @@ def retrieve_haplotypes(hapgraph: HaplotypeGraph, refseq: str, coordinate: Coord
 
 def reconstruct_haplotypes(vcflist: List[str], regions: RegionList, verbosity: int, debug: bool) -> Dict[Region, List[Haplotype]]:
     # read input vcf files and fetch variants in each region
+    print_verbosity("Reconstructing haplotypes", verbosity, VERBOSITYLVL[1])
+    start = time()  # track haplotypes reconstruction time
     vcfs = read_vcf(vcflist, verbosity, debug)
     variants = fetch_variants(vcfs, regions, verbosity, debug)
-    for v in variants.values():
-        print(v)
     # reconstruct haplotypes for each region
     phased = vcfs[regions[0].contig].phased  # assess VCF phasing
     chromcopies = [0, 1] if phased else [0]
@@ -84,13 +84,16 @@ def reconstruct_haplotypes(vcflist: List[str], regions: RegionList, verbosity: i
             hapgraph = construct_hapgraph(variants[region], region.coordinates, chromcopy, verbosity, debug)
             region_haps.extend(retrieve_haplotypes(hapgraph, region.sequence.sequence, region.coordinates, phased, chromcopy, verbosity, debug))
         haplotypes[region] = region_haps
+    print_verbosity(f"Haplotypes reconstructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2])
     return haplotypes
 
 def reconstruct_haplotypes_ref(regions: RegionList, verbosity: int, debug: bool) -> Dict[Region, List[Haplotype]]:
     # initialize haplotypes list with reference sequence haplotype
-    return {r: [initialize_haplotype(r.sequence.sequence, r.coordinates, False, 0)] for r in regions}    
-
-
+    print_verbosity("Reconstructing haplotypes (REF only)", verbosity, VERBOSITYLVL[1])
+    start = time()  # track haplotype reconstruction time
+    haplotypes = {r: [initialize_haplotype(r.sequence.sequence, r.coordinates, False, 0)] for r in regions}    
+    print_verbosity(f"Haplotypes reconstructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2])
+    return haplotypes
 
 
 

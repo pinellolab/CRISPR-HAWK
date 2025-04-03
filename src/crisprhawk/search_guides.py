@@ -34,7 +34,6 @@ def scan_haplotype(pam: PAM, haplotype: List[Bitset], start: int, stop: int, deb
             matches_rev.append(pos)  # hit on negative strand
     return matches_fwd, matches_rev
 
-
 def pam_search(pam: PAM, region: Region, haplotypes: List[Haplotype], haplotypes_bits: List[List[Bitset]], verbosity: int, debug: bool) -> List[Tuple[List[int], List[int]]]:
     pam_hits = []  # list of pam hits
     for i, hap in enumerate(haplotypes):
@@ -64,14 +63,12 @@ def retrieve_guides(pam_hits: List[int], haplotype: Haplotype, guidelen: int, pa
             continue
         position = haplotype.position_map_rev[pos][0] 
         position += adjust_guide_position(pos, haplotype.position_map[position])
-        guides.append(Guide(position, guideseq, guidelen, pamlen, direction, debug, right))
+        guides.append(Guide(position, guideseq, guidelen, pamlen, direction, haplotype.samples, haplotype.variants, debug, right))
     print_verbosity(f"Guides retrieved in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
     return guides
         
-    
-
 def search(pam: PAM, region: Region, haplotypes: List[Haplotype], haplotypes_bits: List[List[Bitset]], guidelen: int, right: bool, verbosity: int, debug: bool) -> List[Guide]:
-    print_verbosity(f"Searching guide candidates in {region.coordinates}", verbosity, VERBOSITYLVL[2])
+    print_verbosity(f"Searching guide candidates in {region.coordinates}", verbosity, VERBOSITYLVL[3])
     # search pam occurrences on forward and reverse strand of the input sequence
     pam_hits = pam_search(pam, region, haplotypes, haplotypes_bits, verbosity, debug)
     # retrieve guide candidates sequence for each haplotype
@@ -83,8 +80,3 @@ def search(pam: PAM, region: Region, haplotypes: List[Haplotype], haplotypes_bit
         ]
     )
     return guides
-
-
-
-
-

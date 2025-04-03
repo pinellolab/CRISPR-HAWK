@@ -56,7 +56,7 @@ def _encoder(nt: str, position: int, debug: bool) -> Bitset:
 
 def encode(sequence: str, verbosity: int, debug: bool) -> List[Bitset]:
     # encode sequence in bits for efficient matching
-    print_verbosity(f"Encoding sequence {sequence} in bits", verbosity, VERBOSITYLVL[2])
+    print_verbosity(f"Encoding sequence {sequence} in bits", verbosity, VERBOSITYLVL[3])
     start = time()  # encoding start time
     bits = [_encoder(nt.upper(), i, debug) for i, nt in enumerate(sequence)]
     assert len(bits) == len(sequence)
