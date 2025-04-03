@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from typing import NoReturn, Optional
 from colorama import init, Fore

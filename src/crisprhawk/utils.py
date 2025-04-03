@@ -1,5 +1,4 @@
-""" 
-"""
+""" """
 
 from exception_handlers import exception_handler
 
@@ -112,6 +111,7 @@ def adjust_guide_position(pos: int, pos_rel: List[int]) -> int:
             offset = i
             break
     return offset
+
 
 def round_score(score: float) -> float:
     # round score to 4 decimal places

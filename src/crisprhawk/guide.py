@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from exception_handlers import exception_handler
 from crisprhawk_error import CrisprHawkGuideError
@@ -9,6 +8,7 @@ from typing import List, Union, Set
 import os
 
 GUIDESEQPAD = 10  # upstream and downstream sequence padding for guides scoring
+
 
 class Guide:
     def __init__(
@@ -86,9 +86,13 @@ class Guide:
 
     def set_azimuth_score(self, score: float) -> None:
         if not isinstance(score, float):
-            exception_handler(TypeError, f"Expected azimuth score of type {float.__name__}, got {type(score).__name__}", os.EX_DATAERR, self._debug)
+            exception_handler(
+                TypeError,
+                f"Expected azimuth score of type {float.__name__}, got {type(score).__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
         self._azimuth_score = str(round_score(score))
-
 
     @property
     def position(self) -> int:
@@ -129,10 +133,10 @@ class Guide:
     @property
     def right(self) -> bool:
         return self._right
-    
+
     @property
     def azimuth_score(self) -> str:
-        return self._azimuth_score 
+        return self._azimuth_score
 
 
 class GuideIterator:

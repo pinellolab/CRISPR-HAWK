@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from exception_handlers import exception_handler
 from utils import IUPAC, VERBOSITYLVL, print_verbosity
@@ -49,7 +48,7 @@ def _encoder(nt: str, position: int, debug: bool) -> Bitset:
             CrisprHawkIupacTableError,
             f"The nucleotide {nt} at {position} is not a IUPAC character",
             os.EX_DATAERR,
-            debug
+            debug,
         )
     return bitset
 
@@ -60,6 +59,7 @@ def encode(sequence: str, verbosity: int, debug: bool) -> List[Bitset]:
     start = time()  # encoding start time
     bits = [_encoder(nt.upper(), i, debug) for i, nt in enumerate(sequence)]
     assert len(bits) == len(sequence)
-    print_verbosity(f"Encoding completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
+    print_verbosity(
+        f"Encoding completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+    )
     return bits
-

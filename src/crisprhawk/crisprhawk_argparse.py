@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from utils import COMMAND, IUPAC, VERBOSITYLVL
 from crisprhawk_version import __version__

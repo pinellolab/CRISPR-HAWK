@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from crisprhawk_error import CrisprHawkBitsetError
 from exception_handlers import exception_handler
