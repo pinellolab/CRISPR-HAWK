@@ -96,13 +96,12 @@ def construct_report(
 def format_report(report: pd.DataFrame) -> pd.DataFrame:
     # reset dataframe index and sort by genomic coordinates
     report = report.reset_index(drop=True)
-    report = report.sort_values(
-        [REPORTCOLS[0], REPORTCOLS[1], REPORTCOLS[2]], ascending=True
-    )
+    report = report.sort_values([REPORTCOLS[7]], ascending=False)
     # force start and stop to int values - they may be treated as float if
     # concatenated with empty dataframe (e.g. no guide found on + or - strand)
     report[REPORTCOLS[1]] = report[REPORTCOLS[1]].astype(int)
     report[REPORTCOLS[2]] = report[REPORTCOLS[2]].astype(int)
+    report = report[REPORTCOLS]
     return report
 
 

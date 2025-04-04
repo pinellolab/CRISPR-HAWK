@@ -81,6 +81,10 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
         guidepamlen = guide.guidelen + guide.pamlen  # total guide length
         guide_vars = set()  # variants occurring in variant
         for variant in guide.variants.split(","):
+            if variant == "NA": # no variants
+                if guide_vars:
+                    exception_handler(ValueError, "Forbidden NA variant", os.EX_DATAERR, debug)
+                break
             try:  # retrieve each variant position
                 variant_position = int(variant.split("-")[1])
             except TypeError as e:
@@ -91,6 +95,9 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
                     debug,
                     e,
                 )
+            except IndexError:
+                print(variant, guide.guide, guide.variants, guide.position, guide.samples)
+                exit()
             # assess whether the snp occurs within the guide or is part of the haplotype
             if guide.position <= variant_position <= guide.position + guidepamlen:
                 guide_vars.add(variant)
