@@ -14,8 +14,10 @@ TOOLNAME = "CRISPR-HAWK"  # tool name
 COMMAND = "crisprhawk"  # command line call
 # define verbosity levels
 VERBOSITYLVL = [0, 1, 2, 3]
+# dna alphabet
+DNA = ["A", "C", "G", "T", "N"]
 # complete iupac alphabet
-IUPAC = ["A", "C", "G", "T", "R", "Y", "S", "W", "K", "M", "B", "D", "H", "V", "N"]
+IUPAC = DNA + ["R", "Y", "S", "W", "K", "M", "B", "D", "H", "V"]
 # reverse complement dictionary
 RC = {
     "A": "T",

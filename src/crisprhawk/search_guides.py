@@ -6,7 +6,7 @@ from utils import print_verbosity, adjust_guide_position, VERBOSITYLVL
 from guide import Guide, GUIDESEQPAD
 from bitset import Bitset
 from pam import PAM
-from regions import PADDING
+from region_constructor import PADDING
 
 from typing import List, Tuple
 from hapsolver import Region, Haplotype, flatten_list

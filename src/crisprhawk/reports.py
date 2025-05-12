@@ -4,7 +4,7 @@ from crisprhawk_error import CrisprHawkGuidesReportError
 from exception_handlers import exception_handler
 from pam import PAM
 from guide import Guide
-from regions import PADDING
+from region_constructor import PADDING
 from utils import (
     print_verbosity,
     VERBOSITYLVL,

@@ -1,7 +1,7 @@
 """ """
 
 from crisprhawk_argparse import CrisprHawkInputArgs
-from regions import construct_regions
+from region_constructor import construct_regions
 from haplotypes import reconstruct_haplotypes, reconstruct_haplotypes_ref
 from utils import print_verbosity, VERBOSITYLVL
 from search_guides import search
@@ -90,6 +90,11 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         args.verbosity,
         args.debug,
     )
+
+    for region in regions:
+        print(region)
+    exit()
+
     if args.vcfs:  # establish whether variants have been given
         # reconstruct haplotypes in each region
         haplotypes = reconstruct_haplotypes(
