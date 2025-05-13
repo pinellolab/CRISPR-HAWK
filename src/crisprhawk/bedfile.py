@@ -44,7 +44,12 @@ class Bed:
         """
         self._debug = debug  # store debug flag
         if not os.path.isfile(bedfile):
-            exception_handler(FileNotFoundError, f"Cannot find input BED file {bedfile}", os.EX_DATAERR, self._debug)
+            exception_handler(
+                FileNotFoundError,
+                f"Cannot find input BED file {bedfile}",
+                os.EX_DATAERR,
+                self._debug,
+            )
         self._fname = bedfile  # store input file name
         # read input bed file content and store a list of coordinates
         self._coordinates = self._read(padding)
@@ -145,13 +150,37 @@ class Bed:
                     if not line.startswith("#") and line.strip()
                 )
         except FileNotFoundError as e:  # bed file not found
-            exception_handler(FileNotFoundError, f"Unable to find {self._fname}", os.EX_DATAERR, self._debug, e)
+            exception_handler(
+                FileNotFoundError,
+                f"Unable to find {self._fname}",
+                os.EX_DATAERR,
+                self._debug,
+                e,
+            )
         except PermissionError as e:  # permission error on reading
-            exception_handler(PermissionError, f"Permission denied when trying reading {self._fname}", os.EX_DATAERR, self._debug, e)
+            exception_handler(
+                PermissionError,
+                f"Permission denied when trying reading {self._fname}",
+                os.EX_DATAERR,
+                self._debug,
+                e,
+            )
         except IOError as e:  # i/o error on read
-            exception_handler(IOError, f"I/O error while reading {self._fname}", os.EX_DATAERR, self._debug, e)
+            exception_handler(
+                IOError,
+                f"I/O error while reading {self._fname}",
+                os.EX_DATAERR,
+                self._debug,
+                e,
+            )
         except Exception as e:  # generic exception caught
-            exception_handler(Exception, f"An unexpected error occurred while reading {self._fname}", os.EX_DATAERR, self._debug, e)  # sourcery skip: raise-specific-error
+            exception_handler(
+                Exception,
+                f"An unexpected error occurred while reading {self._fname}",
+                os.EX_DATAERR,
+                self._debug,
+                e,
+            )  # sourcery skip: raise-specific-error
         return coordinates
 
     def extract_regions(self, fasta: Fasta) -> RegionList:
@@ -221,7 +250,9 @@ class BedIterator:
         raise StopIteration  # stop iteration over bed object
 
 
-def _parse_bed_line(bedline: str, linenum: int, padding: int, debug: bool) -> Coordinate:
+def _parse_bed_line(
+    bedline: str, linenum: int, padding: int, debug: bool
+) -> Coordinate:
     """Parse a single line from a BED file and return a Coordinate object.
 
     Extracts chromosome, start, and stop positions from a BED file line, applies padding, and returns a Coordinate object. Handles errors for missing or invalid fields.
@@ -243,12 +274,30 @@ def _parse_bed_line(bedline: str, linenum: int, padding: int, debug: bool) -> Co
     # minimum fields required: chrom, start, stop
     # (see https://genome.ucsc.edu/FAQ/FAQformat.html#format1)
     if len(columns) < 3:
-        exception_handler(ValueError, f"Less than three columns at line {linenum}", os.EX_DATAERR, debug, e)
+        exception_handler(
+            ValueError,
+            f"Less than three columns at line {linenum}",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
     try:  # initialize chrom, start and stop fields
         chrom, start, stop = columns[0], int(columns[1]), int(columns[2])
     except ValueError as e:  # raise if start or stop are not valid int
-        exception_handler(TypeError, f"Start/stop values at line {linenum} are not {int.__name__}", os.EX_DATAERR, debug, e)
+        exception_handler(
+            TypeError,
+            f"Start/stop values at line {linenum} are not {int.__name__}",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
     if stop < start:  # ensure valid genomic range
-        exception_handler(ValueError, f"Stop < start coordinate ({stop} < {start}) at line {linenum}", os.EX_DATAERR, debug, e)
+        exception_handler(
+            ValueError,
+            f"Stop < start coordinate ({stop} < {start}) at line {linenum}",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
     # if required, pad the input region sequence up and downstream
     return Coordinate(chrom, start, stop, padding)

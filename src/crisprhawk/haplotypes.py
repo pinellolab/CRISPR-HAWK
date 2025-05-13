@@ -2,9 +2,9 @@
 
 from exception_handlers import exception_handler
 from utils import print_verbosity, VERBOSITYLVL
+from variant import VCF
 
 from hapsolver import (
-    VCF,
     VariantRecord,
     Region,
     RegionList,
@@ -25,7 +25,7 @@ def read_vcf(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
     print_verbosity("Loading VCF files", verbosity, VERBOSITYLVL[3])
     start = time()  # track vcf parsing time
     try:  # create vcf dictionary
-        vcfs = {vcf.contig: vcf for vcf in [VCF(f) for f in vcflist]}
+        vcfs = {vcf.contig: vcf for vcf in [VCF(f, verbosity, debug) for f in vcflist]}
     except FileNotFoundError as e:
         exception_handler(
             Exception, f"Failed parsing VCF files", os.EX_DATAERR, debug, e

@@ -52,9 +52,16 @@ class Region:
         return (self._sequence == region_query.sequence) and (
             self._coordinates == region_query._coordinates
         )
-    
+
     def __hash__(self) -> int:
-        return hash((self._sequence.sequence, self._coordinates.contig, self._coordinates.start, self._coordinates.stop))
+        return hash(
+            (
+                self._sequence.sequence,
+                self._coordinates.contig,
+                self._coordinates.start,
+                self._coordinates.stop,
+            )
+        )
 
     def __str__(self) -> str:
         """Return a string representation of the region.

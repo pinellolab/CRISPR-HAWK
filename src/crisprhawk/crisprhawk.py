@@ -83,18 +83,8 @@ def guides_search(
 def crisprhawk(args: CrisprHawkInputArgs) -> None:
     # extract genomic regions defined in input bed file
     regions = construct_regions(
-        args.fasta,
-        args.bedfile,
-        args.fasta_idx,
-        args.guidelen,
-        args.verbosity,
-        args.debug,
+        args.fasta, args.bedfile, args.fasta_idx, args.verbosity, args.debug
     )
-
-    for region in regions:
-        print(region)
-    exit()
-
     if args.vcfs:  # establish whether variants have been given
         # reconstruct haplotypes in each region
         haplotypes = reconstruct_haplotypes(

@@ -40,7 +40,12 @@ class Sequence:
         self._debug = debug  # store debug flag
         sequence = sequence.upper()  # force sequence nucleotides to upper case
         if any(nt.upper() not in DNA for nt in set(sequence)):
-            exception_handler(ValueError, "The input string is not a DNA string", os.EX_DATAERR, self._debug)
+            exception_handler(
+                ValueError,
+                "The input string is not a DNA string",
+                os.EX_DATAERR,
+                self._debug,
+            )
         self._sequence = sequence  # store sequence
         # cast str to list for fast index access
         self._sequence_raw = list(self._sequence)
@@ -177,7 +182,9 @@ class Fasta:
         _contigs (list): A list of contig names in the FASTA file.
     """
 
-    def __init__(self, fname: str, verbosity: int, debug: bool, faidx: Optional[str] = "") -> None:
+    def __init__(
+        self, fname: str, verbosity: int, debug: bool, faidx: Optional[str] = ""
+    ) -> None:
         """Initialize a Fasta object for handling FASTA file operations.
 
         Sets up the Fasta object by validating the input FASTA file, searching for or creating an index, and initializing internal data structures.
@@ -194,7 +201,12 @@ class Fasta:
         self._debug = debug  # store debug flag
         self._verbosity = verbosity  # store verbosity level
         if not os.path.isfile(fname):
-            exception_handler(FileNotFoundError, f"Cannot find input FASTA {fname}", os.EX_DATAERR, self._debug)
+            exception_handler(
+                FileNotFoundError,
+                f"Cannot find input FASTA {fname}",
+                os.EX_DATAERR,
+                self._debug,
+            )
         self._fname = fname  # store input file name
         self._faidx = self._search_index(faidx)  # initialize fasta index
         if not self._faidx:  # index not found compute it
@@ -239,7 +251,12 @@ class Fasta:
             return ""
         # input fasta index index must not be empty
         if not (os.path.isfile(faidx) and os.stat(faidx).st_size > 0):
-            exception_handler(FileNotFoundError, f"Not existing or empty FASTA index {faidx}", os.EX_DATAERR, self._debug)
+            exception_handler(
+                FileNotFoundError,
+                f"Not existing or empty FASTA index {faidx}",
+                os.EX_DATAERR,
+                self._debug,
+            )
         return faidx
 
     def index_fasta(self) -> None:
@@ -252,13 +269,19 @@ class Fasta:
             RuntimeError: If an error occurs during indexing.
         """
         if self._faidx:  # launch warning
-            warning("FASTA index already present, forcing update", self._verbosity) 
+            warning("FASTA index already present, forcing update", self._verbosity)
         # compute fasta index if not provided during object creation or found
         try:  # create index in the same folder of base fasta
             sys.stdout.write(f"Generating FASTA index...\n")
             pysam.faidx(self._fname)  # index fasta using samtools
         except OSError as e:
-            exception_handler(RuntimeError, f"An error occurred while indexing {self._fname}", os.EX_SOFTWARE, self._debug, e) 
+            exception_handler(
+                RuntimeError,
+                f"An error occurred while indexing {self._fname}",
+                os.EX_SOFTWARE,
+                self._debug,
+                e,
+            )
         assert _find_fai(self._fname)
         self._faidx = f"{self._fname}.{FAI}"
 
@@ -279,15 +302,26 @@ class Fasta:
                 extraction fails.
         """
         if coord.contig not in self._contigs:  # conting not available in fasta
-            exception_handler(ValueError, f"Input contig ({coord.contig}) not available in {self._fname}", os.EX_DATAERR, self._debug)
+            exception_handler(
+                ValueError,
+                f"Input contig ({coord.contig}) not available in {self._fname}",
+                os.EX_DATAERR,
+                self._debug,
+            )
         try:  # extract sequence in the input range from fasta file
             return Sequence(
                 self._fasta.fetch(coord.contig, coord.start, coord.stop).strip(),
-                self._debug
+                self._debug,
             )
         except ValueError as e:  # failed extraction
-            exception_handler(ValueError, f"Sequence extraction failed for coordinates {coord.contig}:{coord.start}-{coord.stop}", os.EX_DATAERR, self._debug, e) 
-    
+            exception_handler(
+                ValueError,
+                f"Sequence extraction failed for coordinates {coord.contig}:{coord.start}-{coord.stop}",
+                os.EX_DATAERR,
+                self._debug,
+                e,
+            )
+
     @property
     def fname(self) -> str:
         return self._fname
