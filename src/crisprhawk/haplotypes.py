@@ -1,26 +1,50 @@
 """ """
 
 from exception_handlers import exception_handler
-from utils import print_verbosity, VERBOSITYLVL
-from variant import VCF
+from utils import print_verbosity, flatten_list, VERBOSITYLVL
+from region import Region, RegionList
+from variant import VCF, VariantRecord, VTYPES
+from coordinate import Coordinate
+from sequence import Sequence
+from haplotype import Haplotype
+
 
 from hapsolver import (
-    VariantRecord,
-    Region,
-    RegionList,
     HaplotypeGraph,
-    Coordinate,
-    Haplotype,
-    Sequence,
-    flatten_list,
 )
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from time import time
 
 import os
 
 
+
+
+    
+    
+
+    
+        
+
+
 def read_vcf(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
+    """Load VCF files and map each VCF to its contig.
+
+    Reads a list of VCF file paths, loads each as a VCF object, and returns a 
+    dictionary mapping contig names to their corresponding VCF objects. Assumes 
+    one VCF per contig.
+
+    Args:
+        vcflist: List of VCF file paths.
+        verbosity: The verbosity level for logging.
+        debug: Whether to enable debug mode for exception handling.
+
+    Returns:
+        A dictionary mapping contig names to VCF objects.
+
+    Raises:
+        Exception: If parsing any VCF file fails.
+    """
     # load vcf files and map each vcf to its contig (assume on vcf per contig)
     print_verbosity("Loading VCF files", verbosity, VERBOSITYLVL[3])
     start = time()  # track vcf parsing time
@@ -28,7 +52,7 @@ def read_vcf(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
         vcfs = {vcf.contig: vcf for vcf in [VCF(f, verbosity, debug) for f in vcflist]}
     except FileNotFoundError as e:
         exception_handler(
-            Exception, f"Failed parsing VCF files", os.EX_DATAERR, debug, e
+            Exception, "Failed parsing VCF files", os.EX_DATAERR, debug, e
         )
     print_verbosity(
         f"Loaded {len(vcfs)} VCFs in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
@@ -39,6 +63,24 @@ def read_vcf(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
 def fetch_variants(
     vcfs: Dict[str, VCF], regions: RegionList, verbosity: int, debug: bool
 ) -> Dict[Region, List[VariantRecord]]:
+    """Fetch variants mapped to each query region.
+
+    Iterates over the provided regions and retrieves variant records from the 
+    corresponding VCFs, returning a dictionary mapping each region to its list 
+    of variants.
+
+    Args:
+        vcfs: Dictionary mapping contig names to VCF objects.
+        regions: List of regions to fetch variants for.
+        verbosity: The verbosity level for logging.
+        debug: Whether to enable debug mode for exception handling.
+
+    Returns:
+        A dictionary mapping each region to a list of VariantRecord objects.
+
+    Raises:
+        Exception: If fetching variants fails.
+    """
     # recover variants mapped on the query region
     print_verbosity("Fetching variants", verbosity, VERBOSITYLVL[3])
     start = time()  # track variants fetching time
@@ -49,7 +91,7 @@ def fetch_variants(
             )
             for region in regions
         }
-    except (ValueError, IndexError, Exception) as e:
+    except Exception as e:
         exception_handler(
             Exception, "Failed fecthing variants", os.EX_DATAERR, debug, e
         )
@@ -130,6 +172,21 @@ def retrieve_haplotypes(
     )
     return haplotypes
 
+def compute_haplotypes_phased(variants: List[VariantRecord], samples: List[str]):
+    # initialize sample-variant map for both copies
+    sample_variants = {s: ([], []) for s in samples}
+    for variant in variants:
+        assert len(variant.samples) == 1
+        for chromcopy in [0, 1]:  # iterate over chromosome copies
+            for s in variant.samples[0][chromcopy]:  # add variant to sample-variant map
+                sample_variants[s][chromcopy].append(variant)
+    return sample_variants
+
+def resolve_haplotypes(haplotypes: Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]], refseq: str, region: Region, phased: bool):
+    for sample in haplotypes:
+        for i in [0,1]:
+            h = Haplotype(refseq, region.coordinates, phased, i)
+
 
 def reconstruct_haplotypes(
     vcflist: List[str], regions: RegionList, verbosity: int, debug: bool
@@ -141,6 +198,16 @@ def reconstruct_haplotypes(
     variants = fetch_variants(vcfs, regions, verbosity, debug)
     # reconstruct haplotypes for each region
     phased = vcfs[regions[0].contig].phased  # assess VCF phasing
+
+    for region in regions:
+        samples = vcfs[region.contig].samples
+        if phased:
+            haps =  compute_haplotypes_phased(variants[region], samples)
+            resolve_haplotypes(haps, region.sequence.sequence, region, phased)
+            
+
+    exit()
+
     chromcopies = [0, 1] if phased else [0]
     # initialize haplotypes list with reference sequence haplotype
     haplotypes = {r: [] for r in regions}

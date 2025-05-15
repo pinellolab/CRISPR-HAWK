@@ -2,14 +2,14 @@
 
 from exception_handlers import exception_handler
 from crisprhawk_error import CrisprHawkBitsetError
-from utils import print_verbosity, adjust_guide_position, VERBOSITYLVL
+from utils import print_verbosity, adjust_guide_position, flatten_list, VERBOSITYLVL
 from guide import Guide, GUIDESEQPAD
 from bitset import Bitset
 from pam import PAM
 from region_constructor import PADDING
 
 from typing import List, Tuple
-from hapsolver import Region, Haplotype, flatten_list
+from hapsolver import Region, Haplotype
 from time import time
 
 import os

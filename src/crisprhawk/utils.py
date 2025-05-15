@@ -2,7 +2,7 @@
 
 from exception_handlers import exception_handler
 
-from typing import List
+from typing import Any, List
 from itertools import permutations
 from colorama import Fore
 
@@ -171,3 +171,14 @@ def round_score(score: float) -> float:
     """
     # round score to 4 decimal places
     return round(score, 4)
+
+
+def flatten_list(lst: List[List[Any]]) -> List[Any]:
+    """Flattens a list of lists into a single list.
+
+    Args:
+        lst: The list of lists to flatten.
+    Returns:
+        A new list containing all the elements of the sublists in a single flattened list.
+    """
+    return [e for sublist in lst for e in sublist]

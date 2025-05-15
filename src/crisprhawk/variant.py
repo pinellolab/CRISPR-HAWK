@@ -221,7 +221,7 @@ class VariantRecord:
             A new VariantRecord object representing the specified alternative allele.
         """
         # copy current variant record instance
-        vrecord = VariantRecord()  # create new instance
+        vrecord = VariantRecord(self._debug)  # create new instance
         # adjust ref/alt alleles and positions for multiallelic sites
         ref, alt, position = _adjust_multiallelic(
             self._ref, self._alt[i], self._position
@@ -744,6 +744,10 @@ class VCF:
     @property
     def phased(self) -> bool:
         return self._phased
+    
+    @property
+    def samples(self) -> List[str]:
+        return self._samples
 
 
 def _find_tbi(vcf: str) -> bool:
@@ -768,6 +772,19 @@ def _find_tbi(vcf: str) -> bool:
 def _create_variant_record(
     variant: List[str], samples: List[str], phased: bool, debug: bool
 ) -> VariantRecord:
+    """Create and populate a VariantRecord from VCF line data.
+
+    Instantiates a VariantRecord object and populates it with information parsed from a VCF line. Returns the fully populated VariantRecord.
+
+    Args:
+        variant: A list of strings representing the fields of the VCF line.
+        samples: A list of sample names.
+        phased: True if the genotypes are phased, False otherwise.
+        debug: Whether to enable debug mode for exception handling.
+
+    Returns:
+        A populated VariantRecord object.
+    """
     vrecord = VariantRecord(debug)  # create variant record instance
     vrecord.read_vcf_line(variant, samples, phased)  # read vcf line
     return vrecord
