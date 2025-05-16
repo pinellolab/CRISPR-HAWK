@@ -8,11 +8,7 @@ from coordinate import Coordinate
 from sequence import Sequence
 from haplotype import Haplotype
 
-
-from hapsolver import (
-    HaplotypeGraph,
-)
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from time import time
 
 import os
@@ -103,74 +99,11 @@ def fetch_variants(
     return variants
 
 
-def construct_hapgraph(
-    variants: List[VariantRecord],
-    coordinate: Coordinate,
-    chromcopy: int,
-    verbosity: int,
-    debug: bool,
-) -> HaplotypeGraph:
-    # construct haplotype graph from input variants
-    print_verbosity(
-        f"Constructing haplotype graph for region {coordinate}",
-        verbosity,
-        VERBOSITYLVL[3],
-    )
-    start = time()  # track haplotype graph construction time
-    try:  # create haplotype graph
-        hapgraph = HaplotypeGraph(variants, chromcopy)
-        hapgraph.compute_graph()  # populate haplotype graph
-    except ValueError as e:
-        exception_handler(
-            Exception,
-            f"Failed constructing haplotype graph for region {coordinate}",
-            os.EX_DATAERR,
-            debug,
-            e,
-        )
-    print_verbosity(
-        f"Haplotype graph constructed in {time() - start:.2f}s",
-        verbosity,
-        VERBOSITYLVL[3],
-    )
-    return hapgraph
 
+def initialize_haplotypes(regions: RegionList, debug: bool) -> Dict[Region, List[Haplotype]]:
+    # initialize haplotype object with REF haplotype
+    return {r: [Haplotype(Sequence(r.sequence.sequence, debug), r.coordinates, False, 0, debug)] for r in regions}
 
-def initialize_haplotype(
-    sequence: str, coord: Coordinate, phased: bool, chromcopy: int
-) -> Haplotype:
-    # initialize haplotype object
-    return Haplotype(Sequence(sequence), coord, phased, chromcopy)
-
-
-def retrieve_haplotypes(
-    hapgraph: HaplotypeGraph,
-    refseq: str,
-    coordinate: Coordinate,
-    phased: bool,
-    chromcopy: int,
-    verbosity: int,
-    debug: bool,
-) -> List[Haplotype]:
-    # retrieve haplotypes from haplotype graph
-    print_verbosity(
-        f"Retrieving haplotypes for region {coordinate}", verbosity, VERBOSITYLVL[3]
-    )
-    start = time()  # track haplotype retrieval time
-    haplotypes = []  # list of haplotypes
-    try:  # retrieve haplotypes
-        for variants, samples in hapgraph.retrieve_haplotypes():
-            hap = initialize_haplotype(refseq, coordinate, phased, chromcopy)
-            hap.add_variants(variants, samples)  # add variants to haplotype
-            haplotypes.append(hap)  # add haplotype to haplotypes list
-    except ValueError as e:
-        exception_handler(
-            Exception, "Failed retrieving haplotypes", os.EX_DATAERR, debug, e
-        )
-    print_verbosity(
-        f"Haplotypes retrieved in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
-    )
-    return haplotypes
 
 def compute_haplotypes_phased(variants: List[VariantRecord], samples: List[str]):
     # initialize sample-variant map for both copies
@@ -178,15 +111,45 @@ def compute_haplotypes_phased(variants: List[VariantRecord], samples: List[str])
     for variant in variants:
         assert len(variant.samples) == 1
         for chromcopy in [0, 1]:  # iterate over chromosome copies
-            for s in variant.samples[0][chromcopy]:  # add variant to sample-variant map
+            for s in variant.samples[0][chromcopy]:  # type: ignore 
+                # add variant to sample-variant map
                 sample_variants[s][chromcopy].append(variant)
     return sample_variants
 
-def resolve_haplotypes(haplotypes: Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]], refseq: str, region: Region, phased: bool):
-    for sample in haplotypes:
-        for i in [0,1]:
-            h = Haplotype(refseq, region.coordinates, phased, i)
+def ishomozygous(haplotypes: List[Haplotype]) -> bool:
+    return len({h.sequence.sequence for h in haplotypes}) == 1
 
+def _solve_haplotypes(sequence: str, coordinates: Coordinate, phased: bool, variants: Tuple[List[VariantRecord], List[VariantRecord]], sample: str, debug: bool) -> List[Haplotype]:
+    # solve haplotypes for diploid samples
+    h0 = Haplotype(Sequence(sequence, debug), coordinates, phased, 0, debug)  # first copy
+    h0.add_variants(variants[0], sample)  # add variants to haplotype
+    h1 = Haplotype(Sequence(sequence, debug), coordinates, phased, 1, debug)  # second copy
+    h1.add_variants(variants[1], sample)  # add variants to haplotype
+    # check for homozygous haplotypes
+    if ishomozygous([h0, h1]):
+        h0.homozygous_samples()
+        return [h0]  # return only one haplotype (homozygous sample)
+    return [h0, h1]  # return both haplotypes
+
+
+def solve_haplotypes(sample_variants: Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]], hapseqs: List[Haplotype], refseq: str, coordinates: Coordinate, phased: bool, debug: bool) -> List[Haplotype]:
+    # solve haplotypes for each sample (assumes diploid samples)
+    for sample, variants in sample_variants.items():
+        hapseqs += _solve_haplotypes(refseq, coordinates, phased, variants, sample, debug)
+    return hapseqs
+
+def add_variants(vcflist: List[str], regions: RegionList, haplotypes: Dict[Region, List[Haplotype]], verbosity: int, debug: bool) -> Dict[Region, List[Haplotype]]:
+    # read VCF files and extract variants located within the region
+    vcfs = read_vcf(vcflist, verbosity, debug)  
+    variants = fetch_variants(vcfs, regions, verbosity, debug)  
+    phased = vcfs[regions[0].contig].phased  # assess VCF phasing
+    for region in regions:  # reconstruct haplotypes for each region
+        if phased:  # phased VCFs
+            # recover variants combinations on each chromosome copy
+            samples_variants = compute_haplotypes_phased(variants[region], vcfs[regions[0].contig].samples)
+            # solve haplotypes for each sample
+            haplotypes[region] = solve_haplotypes(samples_variants, haplotypes[region], region.sequence.sequence, region.coordinates, phased, debug)
+    return haplotypes
 
 def reconstruct_haplotypes(
     vcflist: List[str], regions: RegionList, verbosity: int, debug: bool
@@ -194,62 +157,10 @@ def reconstruct_haplotypes(
     # read input vcf files and fetch variants in each region
     print_verbosity("Reconstructing haplotypes", verbosity, VERBOSITYLVL[1])
     start = time()  # track haplotypes reconstruction time
-    vcfs = read_vcf(vcflist, verbosity, debug)
-    variants = fetch_variants(vcfs, regions, verbosity, debug)
-    # reconstruct haplotypes for each region
-    phased = vcfs[regions[0].contig].phased  # assess VCF phasing
-
-    for region in regions:
-        samples = vcfs[region.contig].samples
-        if phased:
-            haps =  compute_haplotypes_phased(variants[region], samples)
-            resolve_haplotypes(haps, region.sequence.sequence, region, phased)
-            
-
-    exit()
-
-    chromcopies = [0, 1] if phased else [0]
     # initialize haplotypes list with reference sequence haplotype
-    haplotypes = {r: [] for r in regions}
-    for region in regions:
-        # region haplotypes initialized with reference haplotype
-        region_haps = [
-            initialize_haplotype(
-                region.sequence.sequence, region.coordinates, phased, 0
-            )
-        ]
-        for chromcopy in chromcopies:  # iterate over chromosome copies
-            hapgraph = construct_hapgraph(
-                variants[region], region.coordinates, chromcopy, verbosity, debug
-            )
-            region_haps.extend(
-                retrieve_haplotypes(
-                    hapgraph,
-                    region.sequence.sequence,
-                    region.coordinates,
-                    phased,
-                    chromcopy,
-                    verbosity,
-                    debug,
-                )
-            )
-        haplotypes[region] = region_haps
-    print_verbosity(
-        f"Haplotypes reconstructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
-    )
-    return haplotypes
-
-
-def reconstruct_haplotypes_ref(
-    regions: RegionList, verbosity: int, debug: bool
-) -> Dict[Region, List[Haplotype]]:
-    # initialize haplotypes list with reference sequence haplotype
-    print_verbosity("Reconstructing haplotypes (REF only)", verbosity, VERBOSITYLVL[1])
-    start = time()  # track haplotype reconstruction time
-    haplotypes = {
-        r: [initialize_haplotype(r.sequence.sequence, r.coordinates, False, 0)]
-        for r in regions
-    }
+    haplotypes = initialize_haplotypes(regions, debug)
+    if vcflist:  # add variants to regions and solve haplotypes
+        haplotypes = add_variants(vcflist, regions, haplotypes, verbosity, debug)
     print_verbosity(
         f"Haplotypes reconstructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )

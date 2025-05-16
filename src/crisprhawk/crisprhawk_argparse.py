@@ -11,7 +11,7 @@ from argparse import (
     _MutuallyExclusiveGroup,
     Namespace,
 )
-from typing import Iterable, Optional, TypeVar, Tuple, Dict, NoReturn
+from typing import Iterable, Optional, TypeVar, Tuple, Dict, NoReturn, List
 from colorama import Fore
 from glob import glob
 
@@ -127,7 +127,7 @@ class CrisprHawkInputArgs:
         return self._args.bedfile
 
     @property
-    def vcfs(self) -> str:
+    def vcfs(self) -> List[str]:
         return self._vcfs
 
     @property
