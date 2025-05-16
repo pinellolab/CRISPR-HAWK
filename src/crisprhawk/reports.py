@@ -5,6 +5,7 @@ from exception_handlers import exception_handler
 from pam import PAM
 from guide import Guide
 from region_constructor import PADDING
+from region import Region
 from utils import (
     print_verbosity,
     VERBOSITYLVL,
@@ -15,7 +16,6 @@ from utils import (
 )
 
 from typing import List, Dict, Set
-from hapsolver import Region
 from time import time
 
 import pandas as pd

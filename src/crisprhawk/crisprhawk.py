@@ -4,7 +4,7 @@ from crisprhawk_argparse import CrisprHawkInputArgs
 from region_constructor import construct_regions
 from haplotypes import reconstruct_haplotypes
 from haplotype import Haplotype
-from region import Region, RegionList
+from region import Region
 from utils import print_verbosity, VERBOSITYLVL
 from search_guides import search
 from annotate import annotate_guides
@@ -19,6 +19,19 @@ from time import time
 
 
 def encode_pam(pamseq: str, verbosity: int, debug: bool) -> PAM:
+    """Creates and encodes a PAM object from a given sequence.
+
+    This function constructs a PAM object, encodes its sequence, and logs the 
+    process.
+
+    Args:
+        pamseq: The PAM sequence to encode.
+        verbosity: The verbosity level for logging.
+        debug: Whether to enable debug mode for error handling.
+
+    Returns:
+        PAM: The encoded PAM object.
+    """
     # construct pam object
     print_verbosity(f"Creating PAM object for PAM {pamseq}", verbosity, VERBOSITYLVL[1])
     start = time()  # encoding start time
@@ -35,11 +48,26 @@ def encode_pam(pamseq: str, verbosity: int, debug: bool) -> PAM:
 def encode_haplotypes(
     haplotypes: Dict[Region, List[Haplotype]], verbosity: int, debug: bool
 ) -> Dict[Region, List[List[Bitset]]]:
+    """Encodes haplotype sequences into lists of Bitset objects for efficient 
+    guide search.
+
+    This function processes each haplotype sequence for all regions and encodes 
+    them into bit representations.
+
+    Args:
+        haplotypes: A dictionary mapping regions to lists of Haplotype objects.
+        verbosity: The verbosity level for logging.
+        debug: Whether to enable debug mode for error handling.
+
+    Returns:
+        Dict[Region, List[List[Bitset]]]: A dictionary mapping regions to lists 
+            of encoded haplotype bitsets.
+    """
     # encode haplotypes in bit for efficient guide search
     print_verbosity("Encoding haplotypes in bits", verbosity, VERBOSITYLVL[1])
     start = time()  # encoding start time
     haplotypes_bits = {
-        region: [encode(hap.sequence, verbosity, debug) for hap in haps]
+        region: [encode(hap.sequence.sequence, verbosity, debug) for hap in haps]
         for region, haps in haplotypes.items()
     }  # encode input haplotypes as sequences of bits
     print_verbosity(
@@ -103,5 +131,8 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
     )
     # annotate guide candidates within each region
     guides = annotate_guides(guides, args.verbosity, args.debug)
+    for r, gs in guides.items():
+        for g in gs:
+            print(g)
     # construct reports
     report_guides(guides, args.guidelen, pam, args.outdir, args.verbosity, args.debug)

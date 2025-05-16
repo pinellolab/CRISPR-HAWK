@@ -4,8 +4,8 @@ from exception_handlers import exception_handler
 from scores import azimuth
 from guide import Guide, GUIDESEQPAD
 from utils import print_verbosity, VERBOSITYLVL
+from region import Region
 
-from hapsolver import Region
 from typing import List, Dict
 from time import time
 
@@ -124,7 +124,7 @@ def annotate_guides(
         # compute reverse complement for guides occurring on rev strand
         guides_list = reverse_guides(guides_list, verbosity)
         # compute guides position in genome
-        guides_list = compute_position(guides_list, region.start, verbosity)
+        # guides_list = compute_position(guides_list, region.start, verbosity)
         # set variants for current guide
         guides_list = annotate_variants(guides_list, verbosity, debug)
         # annotate each guide with azimuth scores

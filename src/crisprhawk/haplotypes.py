@@ -9,6 +9,7 @@ from sequence import Sequence
 from haplotype import Haplotype
 
 from typing import List, Dict, Tuple, Optional
+from collections import defaultdict
 from time import time
 
 import os
@@ -131,6 +132,19 @@ def _solve_haplotypes(sequence: str, coordinates: Coordinate, phased: bool, vari
         return [h0]  # return only one haplotype (homozygous sample)
     return [h0, h1]  # return both haplotypes
 
+def _collapse_haplotypes(sequence: str, haplotypes: List[Haplotype], debug: bool) -> Haplotype:
+    hap = Haplotype(Sequence(sequence, debug), haplotypes[0].coordinates, haplotypes[0].phased, 0, debug)
+    hap.set_samples(",".join([h.samples for h in haplotypes]))
+    hap.set_variants(",".join([h.variants for h in haplotypes]))
+    return hap
+    
+
+def collapse_haplotypes(haplotypes: List[Haplotype], debug: bool) -> List[Haplotype]:
+    haplotypes_dict = [(h.sequence.sequence, h) for h in haplotypes]
+    haplotypes_collapsed = defaultdict(list)
+    for seq, hap in haplotypes_dict:
+        haplotypes_collapsed[seq].append(hap)
+    return [_collapse_haplotypes(seq, haplist, debug) for seq, haplist in haplotypes_collapsed.items()]
 
 def solve_haplotypes(sample_variants: Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]], hapseqs: List[Haplotype], refseq: str, coordinates: Coordinate, phased: bool, debug: bool) -> List[Haplotype]:
     # solve haplotypes for each sample (assumes diploid samples)

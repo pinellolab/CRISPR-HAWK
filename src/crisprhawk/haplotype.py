@@ -7,7 +7,7 @@ from sequence import Sequence
 from coordinate import Coordinate
 from variant import VariantRecord, VTYPES
 
-from typing import List, Set
+from typing import List, Dict
 
 import os
 
@@ -21,6 +21,7 @@ class Haplotype(Region):
         self._samples = "REF"  # haplotype samples
         self._phased = phased  #haplotype phasing
         self._chromcopy = chromcopy  # chromosome copy
+        self._initialize_posmap([], self._coordinates.start)  # initialize position map
 
     def __str__(self) -> str:
         return f"{self._samples}: {self._sequence.sequence}"
@@ -37,7 +38,7 @@ class Haplotype(Region):
     def substring(self, start: int, stop: int) -> str:
         return "".join(self._sequence._sequence_raw[start:stop]) 
     
-    def _update_posmap(self, posrel: int, position: int, chain: int):
+    def _update_posmap(self, posrel: int, chain: int) -> None:
         if chain < 0:
             for pos in range(posrel + 1, max(self._posmap.keys()) + 1):
                 self._posmap[pos] = self._posmap[pos] - chain
@@ -56,7 +57,7 @@ class Haplotype(Region):
         if refnt != ref and refnt.isupper():
             raise ValueError(f"Mismatching reference alleles in VCF and reference sequence at position {position} ({refnt} - {ref}) {sample}")
         self._update_sequence(posrel, posrel_stop, alt)
-        self._update_posmap(posrel, position, chain)
+        self._update_posmap(posrel, chain)
     
     def add_variants(self, variants: List[VariantRecord], sample: str):
         variants = _sort_variants(variants)
@@ -74,15 +75,35 @@ class Haplotype(Region):
     def homozygous_samples(self) -> None:
         # if samples are homozygous, change their phasing value (support diploid)
         if self._samples == "REF":
-            exception_handler(CrisprHawkHaplotypeError, "REF haplotype cannot be homozygous", os.EX_DATAERR, self._debug)
+            exception_handler(CrisprHawkHaplotypeError, "REF haplotype cannot be homozygous", os.EX_DATAERR, self._debug) # type: ignore
         self._samples = ",".join([f"{s}:1|1" for s in self._samples.split(",")])
 
+    def set_samples(self, samples: str) -> None:
+        self._samples = samples  # set samples to haplotype
+
+    def set_variants(self, variants: str) -> None:
+        self._variants = variants  # set variants to haplotype
+
     @property
-    def sequence(self) -> str:
-        return "".join(self._sequence._sequence_raw)
-
-
-
+    def samples(self) -> str:
+        return self._samples
+    
+    @property
+    def variants(self) -> str:
+        return self._variants
+    
+    @property
+    def phased(self) -> bool:
+        return self._phased
+    
+    @property
+    def posmap(self) -> Dict[int, int]:
+        return self._posmap
+    
+    @property
+    def posmap_rev(self) -> Dict[int, int]:
+        return self._posmap_reverse
+  
 
 def _sort_variants(variants: List[VariantRecord]) -> List[VariantRecord]:
     # sort variants set to have snps before indels

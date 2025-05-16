@@ -167,10 +167,6 @@ class Region:
         return self._sequence
 
     @property
-    def sequence_ref(self) -> Sequence:
-        return self._refseq
-
-    @property
     def coordinates(self) -> Coordinate:
         return self._coordinates
 

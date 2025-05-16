@@ -141,20 +141,8 @@ def print_verbosity(message: str, verbosity: int, verbosity_threshold: int) -> N
     return
 
 
-def adjust_guide_position(pos: int, pos_rel: List[int]) -> int:
-    """Find the index of a position in a list of relative positions.
-
-    Returns the index of the first occurrence of pos in pos_rel, or -1 if not
-    found.
-
-    Args:
-        pos: The position to search for.
-        pos_rel: The list of relative positions.
-
-    Returns:
-        The index of pos in pos_rel, or -1 if not found.
-    """
-    return next((i for i, p in enumerate(pos_rel) if p == pos), -1)
+def adjust_guide_position(pos: int, guidelen: int, pamlen: int, right: bool) -> int:
+    return pos if right else pos - guidelen
 
 
 def round_score(score: float) -> float:

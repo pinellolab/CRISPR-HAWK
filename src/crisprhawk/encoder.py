@@ -38,28 +38,28 @@ def _encoder(nt: str, position: int, debug: bool) -> Bitset:
         bitset.set(2)
     elif nt == IUPAC[3]:  # T - 1000
         bitset.set(3)
-    elif nt == IUPAC[4]:  # R - 0101 G or A
-        bitset.set_bits("0101")
-    elif nt == IUPAC[5]:  # Y - 1010 C or T
-        bitset.set_bits("1010")
-    elif nt == IUPAC[6]:  # S - 0110 C or G
-        bitset.set_bits("0110")
-    elif nt == IUPAC[7]:  # W  - 1001 A or T
-        bitset.set_bits("1001")
-    elif nt == IUPAC[8]:  # K - 1100 G or T
-        bitset.set_bits("1100")
-    elif nt == IUPAC[9]:  # M - 0011 A or C
-        bitset.set_bits("0011")
-    elif nt == IUPAC[10]:  # B - 1110 --> not A (T or G or C)
-        bitset.set_bits("1110")
-    elif nt == IUPAC[11]:  # D - 1101 --> not C (A or G or T)
-        bitset.set_bits("1101")
-    elif nt == IUPAC[12]:  # H - 1011 --> not G (A or C or T)
-        bitset.set_bits("1011")
-    elif nt == IUPAC[13]:  # V - 0111 --> not T (A or C or G)
-        bitset.set_bits("0111")
-    elif nt == IUPAC[14]:  # N - 1111 --> any
+    elif nt == IUPAC[4]:  # N - 1111 --> any
         bitset.set_bits("1111")
+    elif nt == IUPAC[5]:  # R - 0101 G or A
+        bitset.set_bits("0101")
+    elif nt == IUPAC[6]:  # Y - 1010 C or T
+        bitset.set_bits("1010")
+    elif nt == IUPAC[7]:  # S - 0110 C or G
+        bitset.set_bits("0110")
+    elif nt == IUPAC[8]:  # W  - 1001 A or T
+        bitset.set_bits("1001")
+    elif nt == IUPAC[9]:  # K - 1100 G or T
+        bitset.set_bits("1100")
+    elif nt == IUPAC[10]:  # M - 0011 A or C
+        bitset.set_bits("0011")
+    elif nt == IUPAC[11]:  # B - 1110 --> not A (T or G or C)
+        bitset.set_bits("1110")
+    elif nt == IUPAC[12]:  # D - 1101 --> not C (A or G or T)
+        bitset.set_bits("1101")
+    elif nt == IUPAC[13]:  # H - 1011 --> not G (A or C or T)
+        bitset.set_bits("1011")
+    elif nt == IUPAC[14]:  # V - 0111 --> not T (A or C or G)
+        bitset.set_bits("0111")
     else:  # default case
         exception_handler(
             CrisprHawkIupacTableError, # type: ignore
