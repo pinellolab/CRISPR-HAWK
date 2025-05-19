@@ -93,6 +93,9 @@ class Haplotype(Region):
     def set_posmap(self, posmap: Dict[int, int]) -> None:
         self._posmap = posmap  # set position map to haplotype
 
+    def set_id(self, hapid: str) -> None:
+        self._id = hapid  # set haplotype ID
+
     @property
     def samples(self) -> str:
         return self._samples
@@ -112,6 +115,10 @@ class Haplotype(Region):
     @property
     def posmap_rev(self) -> Dict[int, int]:
         return self._posmap_reverse
+    
+    @property
+    def id(self) -> str:
+        return self._id
   
 
 def _sort_variants(variants: List[VariantRecord]) -> List[VariantRecord]:

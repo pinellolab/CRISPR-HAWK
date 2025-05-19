@@ -23,6 +23,7 @@ class Guide:
         variants: str,
         debug: bool,
         right: bool,
+        hapid: str,
     ) -> None:
         self._debug = debug  # store debug mode
         self._guidelen = guidelen  # guide length
@@ -35,6 +36,7 @@ class Guide:
         self._direction = direction  # guide direction
         self._samples = samples  # samples carrying guide variants
         self._variants = variants  # variants overlapping guide
+        self._hapid = hapid  # haplotype ID
         self._initialize_scores()  # initialize scores to NAs
 
     def __repr__(self) -> str:
@@ -140,6 +142,10 @@ class Guide:
     @property
     def azimuth_score(self) -> str:
         return self._azimuth_score
+    
+    @property
+    def hapid(self) -> str:
+        return self._hapid
 
 
 class GuideIterator:

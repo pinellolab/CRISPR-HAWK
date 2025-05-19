@@ -196,6 +196,7 @@ def retrieve_guides(
                 haplotype.variants,
                 debug,
                 right,
+                haplotype.id,
             )
         )
     print_verbosity(

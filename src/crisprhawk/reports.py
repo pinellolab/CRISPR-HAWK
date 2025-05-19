@@ -36,6 +36,7 @@ REPORTCOLS = [
     "samples",
     "variant_id",
     "target",
+    "haplotype_id",
 ]
 
 
@@ -71,6 +72,7 @@ def update_report_fields(
     report[REPORTCOLS[9]].append(guide.samples)  # samples list
     report[REPORTCOLS[10]].append(guide.variants)  # variant ids
     report[REPORTCOLS[11]].append(str(region.coordinates))  # region
+    report[REPORTCOLS[12]].append(guide.hapid)  # haplotype id
     return report
 
 
@@ -111,7 +113,7 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
         report.to_csv(guidesreport, sep="\t", index=False)  # store report
     except FileNotFoundError as e:
         exception_handler(
-            CrisprHawkGuidesReportError,
+            CrisprHawkGuidesReportError, # type: ignore
             f"Unable to write to {guidesreport}",
             os.EX_OSERR,
             debug,
@@ -119,7 +121,7 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
         )
     except PermissionError as e:
         exception_handler(
-            CrisprHawkGuidesReportError,
+            CrisprHawkGuidesReportError, # type: ignore
             f"Permission denied to write {guidesreport}",
             os.EX_OSERR,
             debug,
@@ -127,7 +129,7 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
         )
     except Exception as e:
         exception_handler(
-            CrisprHawkGuidesReportError,
+            CrisprHawkGuidesReportError, # type: ignore
             f"An unexpected error occurred while writing {guidesreport}",
             os.EX_OSERR,
             debug,
@@ -137,12 +139,12 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
 
 def collapse_samples(samples: pd.Series) -> str:
     return (
-        ",".join(sorted(set(",".join(samples).split(",")))) if not samples.empty else ""
+        "" if samples.empty else ",".join(sorted(set(",".join(samples).split(","))))
     )
 
 
-def parse_variant_ids(variant_ids: pd.Series) -> Set[str]:
-    return set(variant_ids.split(",")) if bool(variant_ids) else set()
+def parse_variant_ids(variant_ids: str) -> Set[str]:
+    return set(variant_ids.split(",")) if variant_ids else set()
 
 
 def check_variant_ids(variant_ids_list: List[str]) -> str:
@@ -150,6 +152,11 @@ def check_variant_ids(variant_ids_list: List[str]) -> str:
     unique_variant_ids_sets = {tuple(sorted(vs)) for vs in variant_sets}
     assert len(unique_variant_ids_sets) == 1
     return ",".join(sorted(unique_variant_ids_sets.pop()))
+
+def collapse_haplotype_ids(hapids: pd.Series) -> str:
+    return (
+        "" if hapids.empty else ",".join(sorted(set(",".join(hapids).split(","))))
+    )
 
 
 def collapse_report_entries(report: pd.DataFrame) -> pd.DataFrame:
@@ -162,6 +169,7 @@ def collapse_report_entries(report: pd.DataFrame) -> pd.DataFrame:
             "samples": collapse_samples,  # Merge sample lists
             "variant_id": check_variant_ids,  # Ensure identical variant_id
             "target": "first",  # Keep the first target entry
+            "haplotype_id": collapse_haplotype_ids,  # Merge haplotype IDs
         }
     )
 

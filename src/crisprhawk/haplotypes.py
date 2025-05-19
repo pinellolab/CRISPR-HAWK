@@ -4,7 +4,7 @@ from crisprhawk_error import CrisprHawkHaplotypeError
 from exception_handlers import exception_handler
 from utils import print_verbosity, flatten_list, VERBOSITYLVL
 from region import Region, RegionList
-from variant import VCF, VariantRecord
+from variant import VCF, VariantRecord, VTYPES
 from coordinate import Coordinate
 from sequence import Sequence
 from haplotype import Haplotype
@@ -13,9 +13,11 @@ from typing import List, Dict, Tuple
 from collections import defaultdict
 from time import time
 
+import random
+import string
 import os   
 
-HAPTABCNAMES = ["haplotype", "variants", "samples"]
+HAPTABCNAMES = ["id", "haplotype", "variants", "samples"]
 
 
 def read_vcf(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
@@ -100,7 +102,7 @@ def initialize_haplotypes(regions: RegionList, debug: bool) -> Dict[Region, List
     return {r: [Haplotype(Sequence(r.sequence.sequence, debug), r.coordinates, False, 0, debug)] for r in regions}
 
 
-def compute_haplotypes_phased(variants: List[VariantRecord], samples: List[str]):
+def compute_haplotypes_phased(variants: List[VariantRecord], samples: List[str]) -> Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]]:
     # initialize sample-variant map for both copies
     sample_variants = {s: ([], []) for s in samples}
     for variant in variants:
@@ -110,6 +112,23 @@ def compute_haplotypes_phased(variants: List[VariantRecord], samples: List[str])
                 # add variant to sample-variant map
                 sample_variants[s][chromcopy].append(variant)
     return sample_variants
+
+def _count_unphased_haplotypes(variants: List[VariantRecord], samples: List[str]) -> Dict[str, int]:
+    hapnum_samples = {s: 0 for s in samples}  # initialize sample hap counts
+    for variant in variants:
+        if variant.vtype[0] == VTYPES[1]:  # if indels, check if alt are required
+            for sample in variant.samples[0][0]: # type: ignore
+                if sample not in variant.samples[0][1]:  # type: ignore
+                    hapnum_samples[sample] += 1  # not homozygous
+    return hapnum_samples
+
+def compute_haplotypes_unphased(variants: List[VariantRecord], samples: List[str]):
+    # count number of haplotypes per sample as function of the number of indels
+    hapnum_sample = _count_unphased_haplotypes(variants, samples)
+    # initialize sample-variant map
+    sample_variants = {s: None for s in samples}
+    
+        
 
 def ishomozygous(haplotypes: List[Haplotype]) -> bool:
     return len({h.sequence.sequence for h in haplotypes}) == 1
@@ -157,6 +176,19 @@ def add_variants(vcflist: List[str], regions: RegionList, haplotypes: Dict[Regio
             samples_variants = compute_haplotypes_phased(variants[region], vcfs[regions[0].contig].samples)
             # solve haplotypes for each sample
             haplotypes[region] = solve_haplotypes(samples_variants, haplotypes[region], region.sequence.sequence, region.coordinates, phased, debug)
+        else:  # unphased VCFs
+            samples_variants = compute_haplotypes_unphased(variants[region], vcfs[regions[0].contig].samples)
+    return haplotypes
+
+def generate_haplotype_ids(haplotypes: Dict[Region, List[Haplotype]]) -> Dict[Region, List[Haplotype]]:
+    chars = string.ascii_letters + string.digits  # generate random characters
+    for region, haps in haplotypes.items():
+        ids = set()
+        while len(ids) < len(haps):
+            ids.add("hap_" + "".join(random.choices(chars, k=8)))  # generate random ID
+        ids = list(ids)
+        for i, hap in enumerate(haps):
+            hap.set_id(ids[i])  # set haplotype ID
     return haplotypes
 
 def haplotypes_table(haplotypes: Dict[Region, List[Haplotype]], outdir: str, verbosity: int, debug: bool) -> None:
@@ -169,13 +201,13 @@ def haplotypes_table(haplotypes: Dict[Region, List[Haplotype]], outdir: str, ver
             with open(haptable_fname, "w") as outfile:
                 outfile.write("\t".join(HAPTABCNAMES) + "\n")
                 for hap in haps:
-                    outfile.write(f"{hap.sequence}\t{hap.variants}\t{hap.samples}\n")
+                    outfile.write(f"{hap.id}\t{hap.sequence}\t{hap.variants}\t{hap.samples}\n")
         except OSError as e:
             exception_handler(CrisprHawkHaplotypeError, f"Failed writing haplotype table for region {region}", os.EX_IOERR, debug, e) # type: ignore
     print_verbosity(
         f"Haplotypes table written in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )
-
+        
 def reconstruct_haplotypes(
     vcflist: List[str], regions: RegionList, store_table: bool, outdir: str, verbosity: int, debug: bool
 ) -> Dict[Region, List[Haplotype]]:
@@ -186,6 +218,8 @@ def reconstruct_haplotypes(
     haplotypes = initialize_haplotypes(regions, debug)
     if vcflist:  # add variants to regions and solve haplotypes
         haplotypes = add_variants(vcflist, regions, haplotypes, verbosity, debug)
+    # generate random haplotype IDs
+    haplotypes = generate_haplotype_ids(haplotypes)
     print_verbosity(
         f"Haplotypes reconstructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )

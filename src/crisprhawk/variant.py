@@ -476,10 +476,14 @@ def _parse_genotype_unphased(
                 sampleshap[int(gt) - 1][0].add(sample)
     else:  # handle genotypes like 0/1
         gt1, gt2 = gt_alleles  # retrieve allele occurring on first and second copy
-        if gt1 not in ["0", "."]:  # left copy
+        if gt1 not in ["0", "."] and gt1 == gt2:  # special case 1/1
             sampleshap[int(gt1) - 1][0].add(sample)
-        if gt2 not in ["0", "."]:  # left copy
-            sampleshap[int(gt2) - 1][0].add(sample)
+            sampleshap[int(gt2) - 1][1].add(sample)
+        else:
+            if gt1 not in ["0", "."]:  # 1/0
+                sampleshap[int(gt1) - 1][0].add(sample)
+            if gt2 not in ["0", "."]:  # 0/1
+                sampleshap[int(gt2) - 1][0].add(sample)
     return sampleshap
 
 
