@@ -2,7 +2,7 @@
 
 from exception_handlers import exception_handler
 from crisprhawk_error import CrisprHawkBitsetError
-from utils import print_verbosity, adjust_guide_position, flatten_list, VERBOSITYLVL
+from utils import print_verbosity, flatten_list, VERBOSITYLVL
 from guide import Guide, GUIDESEQPAD
 from bitset import Bitset
 from pam import PAM
@@ -10,7 +10,7 @@ from region_constructor import PADDING
 from region import Region
 from haplotype import Haplotype
 
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from time import time
 
 import os
@@ -153,6 +153,10 @@ def extract_guide_sequence(
         haplotype[position - guidelen - GUIDESEQPAD : position + pamlen + GUIDESEQPAD]
     )
 
+def adjust_guide_position(posmap: Dict[int, int], posrel: int, guidelen: int, pamlen: int, right: bool) -> Tuple[int, int]:
+    start = posmap[posrel] if right else posmap[posrel - guidelen]
+    stop = posmap[posrel + guidelen + pamlen] + 1 if right else posmap[posrel + pamlen]
+    return start, stop
 
 def retrieve_guides(
     pam_hits: List[int],
@@ -178,11 +182,12 @@ def retrieve_guides(
             haplotype.samples != "REF" and guideseq[GUIDESEQPAD:-GUIDESEQPAD].isupper()
         ):  # reference guide
             continue
-        position = haplotype.posmap[pos]
-        # adjust_guide_position(haplotype.posmap[pos], guidelen, pamlen, right)
+        # compute guide's start and stop positions
+        guide_start, guide_stop = adjust_guide_position(haplotype.posmap, pos, guidelen, pamlen, right)
         guides.append(
             Guide(
-                position,
+                guide_start,
+                guide_stop,
                 guideseq,
                 guidelen,
                 pamlen,

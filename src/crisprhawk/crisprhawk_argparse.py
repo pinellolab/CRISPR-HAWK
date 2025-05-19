@@ -28,7 +28,7 @@ class CrisprHawkArgumentParser(ArgumentParser):
 
     class CrisprHawkHelpFormatter(HelpFormatter):
 
-        def add_usage(
+        def add_usage( # type: ignore
             self,
             usage: str,
             actions: Iterable[Action],
@@ -43,15 +43,15 @@ class CrisprHawkArgumentParser(ArgumentParser):
 
     def __init__(self, *args: Tuple[_D], **kwargs: Dict[_D, _V]) -> None:
         # set custom help formatter defined as
-        kwargs["formatter_class"] = self.CrisprHawkHelpFormatter
+        kwargs["formatter_class"] = self.CrisprHawkHelpFormatter # type: ignore
         # replace the default version display in usage help with a custom
         # version display formatter
-        kwargs["usage"] = kwargs["usage"].replace("{version}", __version__)
+        kwargs["usage"] = kwargs["usage"].replace("{version}", __version__) # type: ignore
         # initialize argument parser object with input parameters for
         # usage display
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs) # type: ignore
 
-    def error(self, error: str) -> NoReturn:
+    def error(self, error: str) -> NoReturn: # type: ignore
         # display error messages raised by argparse in red
         errormsg = (
             f"{Fore.RED}\nERROR: {error}.{Fore.RESET}"
@@ -149,6 +149,10 @@ class CrisprHawkInputArgs:
     @property
     def no_filter(self) -> bool:
         return self._args.no_filter
+    
+    @property
+    def haplotype_table(self) -> bool:
+        return self._args.haplotype_table
 
     @property
     def verbosity(self) -> int:

@@ -1,27 +1,21 @@
 """ """
 
+from crisprhawk_error import CrisprHawkHaplotypeError
 from exception_handlers import exception_handler
 from utils import print_verbosity, flatten_list, VERBOSITYLVL
 from region import Region, RegionList
-from variant import VCF, VariantRecord, VTYPES
+from variant import VCF, VariantRecord
 from coordinate import Coordinate
 from sequence import Sequence
 from haplotype import Haplotype
 
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple
 from collections import defaultdict
 from time import time
 
-import os
+import os   
 
-
-
-
-    
-    
-
-    
-        
+HAPTABCNAMES = ["haplotype", "variants", "samples"]
 
 
 def read_vcf(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
@@ -49,7 +43,7 @@ def read_vcf(vcflist: List[str], verbosity: int, debug: bool) -> Dict[str, VCF]:
         vcfs = {vcf.contig: vcf for vcf in [VCF(f, verbosity, debug) for f in vcflist]}
     except FileNotFoundError as e:
         exception_handler(
-            Exception, "Failed parsing VCF files", os.EX_DATAERR, debug, e
+            Exception, "Failed parsing VCF files", os.EX_DATAERR, debug, e # type: ignore
         )
     print_verbosity(
         f"Loaded {len(vcfs)} VCFs in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
@@ -90,7 +84,7 @@ def fetch_variants(
         }
     except Exception as e:
         exception_handler(
-            Exception, "Failed fecthing variants", os.EX_DATAERR, debug, e
+            Exception, "Failed fecthing variants", os.EX_DATAERR, debug, e # type: ignore
         )
     print_verbosity(
         f"Fetched {sum(len(v) for v in variants.values())} variants in {time() - start:.2f}s",
@@ -133,12 +127,12 @@ def _solve_haplotypes(sequence: str, coordinates: Coordinate, phased: bool, vari
     return [h0, h1]  # return both haplotypes
 
 def _collapse_haplotypes(sequence: str, haplotypes: List[Haplotype], debug: bool) -> Haplotype:
-    hap = Haplotype(Sequence(sequence, debug), haplotypes[0].coordinates, haplotypes[0].phased, 0, debug)
-    hap.set_samples(",".join([h.samples for h in haplotypes]))
-    hap.set_variants(",".join([h.variants for h in haplotypes]))
+    hap = Haplotype(Sequence(sequence, debug, allow_lower_case=True), haplotypes[0].coordinates, haplotypes[0].phased, 0, debug)
+    hap.set_samples(",".join({h.samples for h in haplotypes}))
+    hap.set_variants(",".join(sorted({h.variants for h in haplotypes})))
+    hap.set_posmap(haplotypes[0].posmap)  # same posmap for all collapsed haplotypes
     return hap
     
-
 def collapse_haplotypes(haplotypes: List[Haplotype], debug: bool) -> List[Haplotype]:
     haplotypes_dict = [(h.sequence.sequence, h) for h in haplotypes]
     haplotypes_collapsed = defaultdict(list)
@@ -150,7 +144,7 @@ def solve_haplotypes(sample_variants: Dict[str, Tuple[List[VariantRecord], List[
     # solve haplotypes for each sample (assumes diploid samples)
     for sample, variants in sample_variants.items():
         hapseqs += _solve_haplotypes(refseq, coordinates, phased, variants, sample, debug)
-    return hapseqs
+    return collapse_haplotypes(hapseqs, debug)  # collapse haplotypes with same sequence
 
 def add_variants(vcflist: List[str], regions: RegionList, haplotypes: Dict[Region, List[Haplotype]], verbosity: int, debug: bool) -> Dict[Region, List[Haplotype]]:
     # read VCF files and extract variants located within the region
@@ -165,8 +159,25 @@ def add_variants(vcflist: List[str], regions: RegionList, haplotypes: Dict[Regio
             haplotypes[region] = solve_haplotypes(samples_variants, haplotypes[region], region.sequence.sequence, region.coordinates, phased, debug)
     return haplotypes
 
+def haplotypes_table(haplotypes: Dict[Region, List[Haplotype]], outdir: str, verbosity: int, debug: bool) -> None:
+    # write haplotypes table to file
+    print_verbosity("Writing haplotypes table", verbosity, VERBOSITYLVL[1])
+    start = time()  # track haplotypes table writing time
+    for region, haps in haplotypes.items():   
+        haptable_fname = os.path.join(outdir, f"haplotypes_table_{region.contig}_{region.start}_{region.stop}.tsv")
+        try:
+            with open(haptable_fname, "w") as outfile:
+                outfile.write("\t".join(HAPTABCNAMES) + "\n")
+                for hap in haps:
+                    outfile.write(f"{hap.sequence}\t{hap.variants}\t{hap.samples}\n")
+        except OSError as e:
+            exception_handler(CrisprHawkHaplotypeError, f"Failed writing haplotype table for region {region}", os.EX_IOERR, debug, e) # type: ignore
+    print_verbosity(
+        f"Haplotypes table written in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
+    )
+
 def reconstruct_haplotypes(
-    vcflist: List[str], regions: RegionList, verbosity: int, debug: bool
+    vcflist: List[str], regions: RegionList, store_table: bool, outdir: str, verbosity: int, debug: bool
 ) -> Dict[Region, List[Haplotype]]:
     # read input vcf files and fetch variants in each region
     print_verbosity("Reconstructing haplotypes", verbosity, VERBOSITYLVL[1])
@@ -178,4 +189,6 @@ def reconstruct_haplotypes(
     print_verbosity(
         f"Haplotypes reconstructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )
+    if store_table:  # write haplotypes table
+        haplotypes_table(haplotypes, outdir, verbosity, debug)
     return haplotypes

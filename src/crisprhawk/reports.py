@@ -15,7 +15,7 @@ from utils import (
     STRAND,
 )
 
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Any
 from time import time
 
 import pandas as pd
@@ -56,11 +56,11 @@ def compute_strand_orientation(strand: int) -> str:
 
 
 def update_report_fields(
-    report: Dict[str, List[Guide]], region: Region, guide: Guide, pamclass: str
+    report: Dict[str, List[Any]], region: Region, guide: Guide, pamclass: str
 ) -> Dict[str, List[str]]:
     # update report fields
-    report[REPORTCOLS[1]].append(guide.position)  # start and stop position
-    report[REPORTCOLS[2]].append(guide.position + guide.guidelen + guide.pamlen)
+    report[REPORTCOLS[1]].append(guide.start)  # start and stop position
+    report[REPORTCOLS[2]].append(guide.stop)
     report[REPORTCOLS[3]].append(guide.guide)  # guide sequence
     report[REPORTCOLS[4]].append(guide.pam)  # pam guide
     report[REPORTCOLS[5]].append(pamclass)  # extended pam class
@@ -142,12 +142,12 @@ def collapse_samples(samples: pd.Series) -> str:
 
 
 def parse_variant_ids(variant_ids: pd.Series) -> Set[str]:
-    return set(variant_ids.split(",")) if variant_ids else set()
+    return set(variant_ids.split(",")) if bool(variant_ids) else set()
 
 
 def check_variant_ids(variant_ids_list: List[str]) -> str:
     variant_sets = [parse_variant_ids(vid) for vid in variant_ids_list]
-    unique_variant_ids_sets = set(tuple(sorted(vs)) for vs in variant_sets)
+    unique_variant_ids_sets = {tuple(sorted(vs)) for vs in variant_sets}
     assert len(unique_variant_ids_sets) == 1
     return ",".join(sorted(unique_variant_ids_sets.pop()))
 
@@ -155,8 +155,7 @@ def check_variant_ids(variant_ids_list: List[str]) -> str:
 def collapse_report_entries(report: pd.DataFrame) -> pd.DataFrame:
     # Define the columns to group by
     group_cols = REPORTCOLS[:5] + REPORTCOLS[6:9]
-    # Group by the key columns and apply aggregation functions
-    report_collapsed = report.groupby(group_cols, as_index=False).agg(
+    return report.groupby(group_cols, as_index=False).agg(
         {
             "pam_class": "first",  # Assuming pam_class is the same across entries
             "origin": "first",  # Assuming origin does not change
@@ -165,7 +164,6 @@ def collapse_report_entries(report: pd.DataFrame) -> pd.DataFrame:
             "target": "first",  # Keep the first target entry
         }
     )
-    return report_collapsed
 
 
 def report_guides(

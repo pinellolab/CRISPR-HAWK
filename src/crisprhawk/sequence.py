@@ -310,7 +310,7 @@ class Fasta:
             )
         try:  # extract sequence in the input range from fasta file
             return Sequence(
-                self._fasta.fetch(coord.contig, coord.start, coord.stop).strip(),
+                self._fasta.fetch(coord.contig, coord.start - 1, coord.stop).strip(),
                 self._debug,
             )
         except ValueError as e:  # failed extraction

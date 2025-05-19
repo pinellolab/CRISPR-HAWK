@@ -115,7 +115,7 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         args.fasta, args.bedfile, args.fasta_idx, args.verbosity, args.debug
     )
     # reconstruct haplotypes for each input region
-    haplotypes = reconstruct_haplotypes(args.vcfs, regions, args.verbosity, args.debug)
+    haplotypes = reconstruct_haplotypes(args.vcfs, regions, args.haplotype_table, args.outdir, args.verbosity, args.debug)
     # encode pam and haplotype sequences in bit for efficient guides search
     pam = encode_pam(args.pam, args.verbosity, args.debug)
     haplotypes_bits = encode_haplotypes(haplotypes, args.verbosity, args.debug)
@@ -131,8 +131,5 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
     )
     # annotate guide candidates within each region
     guides = annotate_guides(guides, args.verbosity, args.debug)
-    for r, gs in guides.items():
-        for g in gs:
-            print(g)
     # construct reports
     report_guides(guides, args.guidelen, pam, args.outdir, args.verbosity, args.debug)

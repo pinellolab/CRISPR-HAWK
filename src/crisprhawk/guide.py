@@ -13,7 +13,8 @@ GUIDESEQPAD = 10  # upstream and downstream sequence padding for guides scoring
 class Guide:
     def __init__(
         self,
-        position: int,
+        position_start: int,
+        position_stop: int,
         sequence: str,
         guidelen: int,
         pamlen: int,
@@ -26,7 +27,8 @@ class Guide:
         self._debug = debug  # store debug mode
         self._guidelen = guidelen  # guide length
         self._pamlen = pamlen  # pam lenght
-        self._position = position if right else position - guidelen  # guide position
+        self._start = position_start  # guide start position
+        self._stop = position_stop  # guide stop position
         self._sequence = sequence  # sequence as string
         self._right = right  # guide position on the right side of pam
         self._compute_pamguide_sequences()  # compute pam and guide sequences
@@ -36,7 +38,7 @@ class Guide:
         self._initialize_scores()  # initialize scores to NAs
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} object; position={self._position} sequence={self._sequence} direction={self._direction}>"
+        return f"<{self.__class__.__name__} object; start={self._start} stop={self._stop} sequence={self._sequence} direction={self._direction}>"
 
     def __len__(self) -> int:
         return len(self._sequence)
@@ -47,7 +49,7 @@ class Guide:
             return "".join(self._sequence[idx])
         except IndexError as e:
             exception_handler(
-                CrisprHawkGuideError,
+                CrisprHawkGuideError, # type: ignore
                 f"Index {idx} out of range",
                 os.EX_DATAERR,
                 self._debug,
@@ -78,16 +80,13 @@ class Guide:
         self._right = not self._right  # update guide direction
         self._compute_pamguide_sequences()  # adjust pam and guide sequences
 
-    def set_position(self, position: int) -> None:
-        self._position = position  # set guide position
-
     def set_variants(self, variants: str) -> None:
         self._variants = variants  # set variants
 
     def set_azimuth_score(self, score: float) -> None:
         if not isinstance(score, float):
             exception_handler(
-                TypeError,
+                TypeError, # type: ignore
                 f"Expected azimuth score of type {float.__name__}, got {type(score).__name__}",
                 os.EX_DATAERR,
                 self._debug,
@@ -95,8 +94,12 @@ class Guide:
         self._azimuth_score = str(round_score(score))
 
     @property
-    def position(self) -> int:
-        return self._position
+    def start(self) -> int:
+        return self._start
+    
+    @property
+    def stop(self) -> int:
+        return self._stop
 
     @property
     def strand(self) -> int:
@@ -143,7 +146,7 @@ class GuideIterator:
     def __init__(self, guide: Guide) -> None:
         if not hasattr(guide, "_guide"):  # always trace this error
             exception_handler(
-                AttributeError,
+                AttributeError, # type: ignore
                 f"Missing _guide attribute on {self.__class__.__name__}",
                 os.EX_DATAERR,
                 True,
