@@ -1,8 +1,10 @@
 """ """
 
 from crisprhawk_argparse import CrisprHawkInputArgs
-from regions import construct_regions
-from haplotypes import reconstruct_haplotypes, reconstruct_haplotypes_ref
+from region_constructor import construct_regions
+from haplotypes import reconstruct_haplotypes
+from haplotype import Haplotype
+from region import Region
 from utils import print_verbosity, VERBOSITYLVL
 from search_guides import search
 from annotate import annotate_guides
@@ -12,16 +14,28 @@ from bitset import Bitset
 from guide import Guide
 from pam import PAM
 
-from hapsolver import Region, Haplotype
 from typing import Dict, List
 from time import time
 
 
-def encode_pam(pam: str, verbosity: int, debug: bool) -> PAM:
+def encode_pam(pamseq: str, verbosity: int, debug: bool) -> PAM:
+    """Creates and encodes a PAM object from a given sequence.
+
+    This function constructs a PAM object, encodes its sequence, and logs the 
+    process.
+
+    Args:
+        pamseq: The PAM sequence to encode.
+        verbosity: The verbosity level for logging.
+        debug: Whether to enable debug mode for error handling.
+
+    Returns:
+        PAM: The encoded PAM object.
+    """
     # construct pam object
-    print_verbosity(f"Creating PAM object for PAM {pam}", verbosity, VERBOSITYLVL[1])
+    print_verbosity(f"Creating PAM object for PAM {pamseq}", verbosity, VERBOSITYLVL[1])
     start = time()  # encoding start time
-    pam = PAM(pam, debug)
+    pam = PAM(pamseq, debug)
     pam.encode(verbosity)  # encode pam sequence
     print_verbosity(
         f"PAM object for PAM {pam} created in {time() - start:.2f}s",
@@ -34,11 +48,26 @@ def encode_pam(pam: str, verbosity: int, debug: bool) -> PAM:
 def encode_haplotypes(
     haplotypes: Dict[Region, List[Haplotype]], verbosity: int, debug: bool
 ) -> Dict[Region, List[List[Bitset]]]:
+    """Encodes haplotype sequences into lists of Bitset objects for efficient 
+    guide search.
+
+    This function processes each haplotype sequence for all regions and encodes 
+    them into bit representations.
+
+    Args:
+        haplotypes: A dictionary mapping regions to lists of Haplotype objects.
+        verbosity: The verbosity level for logging.
+        debug: Whether to enable debug mode for error handling.
+
+    Returns:
+        Dict[Region, List[List[Bitset]]]: A dictionary mapping regions to lists 
+            of encoded haplotype bitsets.
+    """
     # encode haplotypes in bit for efficient guide search
     print_verbosity("Encoding haplotypes in bits", verbosity, VERBOSITYLVL[1])
     start = time()  # encoding start time
     haplotypes_bits = {
-        region: [encode(hap.sequence, verbosity, debug) for hap in haps]
+        region: [encode(hap.sequence.sequence, verbosity, debug) for hap in haps]
         for region, haps in haplotypes.items()
     }  # encode input haplotypes as sequences of bits
     print_verbosity(
@@ -55,6 +84,8 @@ def guides_search(
     haplotypes_bits: Dict[Region, List[List[Bitset]]],
     guidelen: int,
     right: bool,
+    variants_present: bool,
+    phased: bool,
     verbosity: int,
     debug: bool,
 ) -> Dict[Region, List[Guide]]:
@@ -69,6 +100,8 @@ def guides_search(
             haplotypes_bits[region],
             guidelen,
             right,
+            variants_present,
+            phased,
             verbosity,
             debug,
         )
@@ -83,21 +116,10 @@ def guides_search(
 def crisprhawk(args: CrisprHawkInputArgs) -> None:
     # extract genomic regions defined in input bed file
     regions = construct_regions(
-        args.fasta,
-        args.bedfile,
-        args.fasta_idx,
-        args.guidelen,
-        args.verbosity,
-        args.debug,
+        args.fasta, args.bedfile, args.fasta_idx, args.verbosity, args.debug
     )
-    if args.vcfs:  # establish whether variants have been given
-        # reconstruct haplotypes in each region
-        haplotypes = reconstruct_haplotypes(
-            args.vcfs, regions, args.verbosity, args.debug
-        )
-    else:
-        # reconstruct haplotypes with reference sequence only
-        haplotypes = reconstruct_haplotypes_ref(regions, args.verbosity, args.debug)
+    # reconstruct haplotypes for each input region
+    haplotypes, variants_present, phased = reconstruct_haplotypes(args.vcfs, regions, args.haplotype_table, args.outdir, args.verbosity, args.debug)
     # encode pam and haplotype sequences in bit for efficient guides search
     pam = encode_pam(args.pam, args.verbosity, args.debug)
     haplotypes_bits = encode_haplotypes(haplotypes, args.verbosity, args.debug)
@@ -108,6 +130,8 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         haplotypes_bits,
         args.guidelen,
         args.right,
+        variants_present,
+        phased,
         args.verbosity,
         args.debug,
     )

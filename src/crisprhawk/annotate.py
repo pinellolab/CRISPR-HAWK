@@ -4,8 +4,8 @@ from exception_handlers import exception_handler
 from scores import azimuth
 from guide import Guide, GUIDESEQPAD
 from utils import print_verbosity, VERBOSITYLVL
+from region import Region
 
-from hapsolver import Region
 from typing import List, Dict
 from time import time
 
@@ -55,35 +55,19 @@ def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guid
     )
     return guides
 
-
-def compute_position(
-    guides: List[Guide], region_start: int, verbosity: int
-) -> List[Guide]:
-    print_verbosity("Computing guides genomic positions", verbosity, VERBOSITYLVL[3])
-    start = time()  # position calculation start time
-    for guide in guides:  # recover genomic position of guides
-        position = guide.position + region_start + 1  # from 0-based to 1-based
-        guide.set_position(position)
-    print_verbosity(
-        f"Genomic positions computed in {time() - start:.2f}s",
-        verbosity,
-        VERBOSITYLVL[3],
-    )
-    return guides
-
-
 def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     print_verbosity(
         "Annotating variants occurring in guides", verbosity, VERBOSITYLVL[3]
     )
     start = time()  # position calculation start time
     for guide in guides:
-        guidepamlen = guide.guidelen + guide.pamlen  # total guide length
         guide_vars = set()  # variants occurring in variant
         for variant in guide.variants.split(","):
-            if variant == "NA": # no variants
+            if variant == "NA":  # no variants
                 if guide_vars:
-                    exception_handler(ValueError, "Forbidden NA variant", os.EX_DATAERR, debug)
+                    exception_handler(
+                        ValueError, "Forbidden NA variant", os.EX_DATAERR, debug
+                    )
                 break
             try:  # retrieve each variant position
                 variant_position = int(variant.split("-")[1])
@@ -95,11 +79,8 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
                     debug,
                     e,
                 )
-            except IndexError:
-                print(variant, guide.guide, guide.variants, guide.position, guide.samples)
-                exit()
             # assess whether the snp occurs within the guide or is part of the haplotype
-            if guide.position <= variant_position <= guide.position + guidepamlen:
+            if guide.start <= variant_position < guide.stop:
                 guide_vars.add(variant)
         # set variants ids to current guide
         guide_vars = ",".join(sorted(guide_vars)) if guide_vars else "NA"
@@ -119,8 +100,6 @@ def annotate_guides(
     for region, guides_list in guides.items():
         # compute reverse complement for guides occurring on rev strand
         guides_list = reverse_guides(guides_list, verbosity)
-        # compute guides position in genome
-        guides_list = compute_position(guides_list, region.start, verbosity)
         # set variants for current guide
         guides_list = annotate_variants(guides_list, verbosity, debug)
         # annotate each guide with azimuth scores

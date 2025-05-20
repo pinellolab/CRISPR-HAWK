@@ -118,6 +118,14 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         "field are processed, while others are skipped",
     )
     group.add_argument(
+        "--haplotype-table",
+        action="store_true",
+        dest="haplotype_table",
+        default=False,
+        help="When enabled, the haplotype table is returned in the output folder "
+        "as TSV file. By default, the haplotype table is not returned",
+    )
+    group.add_argument(
         "--verbosity",
         type=int,
         metavar="VERBOSITY",
@@ -142,7 +150,7 @@ def main():
         parser = create_parser_crisprhawk()  # parse input argument using custom parser
         if not sys.argv[1:]:  # no input args -> print help and exit
             parser.error_noargs()
-        crisprhawk(CrisprHawkInputArgs(parser.parse_args(sys.argv[1:]), parser))
+        crisprhawk(CrisprHawkInputArgs(parser.parse_args(sys.argv[1:]), parser)) # type: ignore
     except KeyboardInterrupt as e:
         sigint_handler()  # catch SIGINT and exit gracefully
     sys.stdout.write(f"{TOOLNAME} - Elapsed time {(time() - start):.2f}s\n")
