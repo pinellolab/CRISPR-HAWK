@@ -6,6 +6,7 @@ from region import Region
 from sequence import Sequence
 from coordinate import Coordinate
 from variant import VariantRecord, VTYPES
+from utils import match_iupac, IUPAC_ENCODER
 
 from typing import List, Dict
 
@@ -47,30 +48,40 @@ class Haplotype(Region):
         self._posmap_reverse = {pos: posrel for posrel, pos in self._posmap.items()}
 
 
-    def _insert_variant(self, position: int, ref: str, alt: str, chain: int, offset: int, sample):
+    def _insert_variant_phased(self, position: int, ref: str, alt: str, chain: int, offset: int):
         posrel = self._posmap_reverse[position]
         posrel_stop = posrel + abs(chain) + 1 if chain < 0 else posrel + 1
         if posrel_stop > self._size:
             posrel_stop = (self._size + offset) - 1
         refnt = self.substring(posrel, posrel_stop)
         if refnt != ref and refnt.isupper():
-            raise ValueError(f"Mismatching reference alleles in VCF and reference sequence at position {position} ({refnt} - {ref}) {sample}")
+            raise ValueError(f"Mismatching reference alleles in VCF and reference sequence at position {position} ({refnt} - {ref})")
         self._update_sequence(posrel, posrel_stop, alt)
         self._update_posmap(posrel, chain)
+
+    def _insert_variant_unphased(self, position: int, ref: str, alt: str, vtype: str, chain: int, offset: int):
+        posrel = self._posmap_reverse[position]
+        posrel_stop = posrel + abs(chain) + 1 if chain < 0 else posrel + 1
+        if posrel_stop > self._size:
+            posrel_stop = (self._size + offset) - 1
+        refnt = self.substring(posrel, posrel_stop)
+        if not match_iupac(ref, refnt):
+            raise ValueError(f"Mismatching reference alleles in VCF and reference sequence at position {position} ({refnt} - {ref})")
+        if vtype == VTYPES[0]:  # if snv encode as iupac
+            alt = _encode_iupac(ref, alt)
+        self._update_sequence(posrel, posrel_stop, alt)
+        self._update_posmap(posrel, chain)
+        
     
     def add_variants(self, variants: List[VariantRecord], sample: str):
-        # print(sample)
         variants = _sort_variants(variants)
         chains = _compute_chains(variants)
         self._initialize_posmap(chains, self._coordinates.start)
-        # print(self._posmap)
-        # print()
         for i, variant in enumerate(variants):
-            # print(variant)
-            # print(chains[i])
-            self._insert_variant(variant.position, variant.ref, variant.alt[0], chains[i], sum(chains[:i]), sample)
-        # print()
-        # print(self._posmap)
+            if self._phased:
+                self._insert_variant_phased(variant.position, variant.ref, variant.alt[0], chains[i], sum(chains[:i]))
+            else:
+                self._insert_variant_unphased(variant.position, variant.ref, variant.alt[0], variant.vtype[0], chains[i], sum(chains[:i]))
         suffix = "" 
         if self._phased:
             suffix = "1|0" if self._chromcopy == 0 else "0|1"
@@ -134,4 +145,8 @@ def _sort_variants(variants: List[VariantRecord]) -> List[VariantRecord]:
 
 def _compute_chains(variants: List[VariantRecord]) -> List[int]:
     return [len(v.alt[0]) - len(v.ref) for v in variants]
+
+
+def _encode_iupac(ref: str, alt: str) -> str:
+    return IUPAC_ENCODER["".join([ref, alt])]
 

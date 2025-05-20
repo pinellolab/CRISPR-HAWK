@@ -101,7 +101,7 @@ def reverse_complement(sequence: str, debug: bool) -> str:
         return "".join([RC[nt] for nt in sequence[::-1]])
     except KeyError as e:
         exception_handler(
-            ValueError,
+            ValueError, # type: ignore
             f"Failed reverse complement on {sequence}",
             os.EX_DATAERR,
             debug,
@@ -170,3 +170,23 @@ def flatten_list(lst: List[List[Any]]) -> List[Any]:
         A new list containing all the elements of the sublists in a single flattened list.
     """
     return [e for sublist in lst for e in sublist]
+
+
+def match_iupac(seq: str, pattern: str) -> bool:
+    """Check if a nucleotide sequence matches a given IUPAC pattern.
+
+    Compares each nucleotide in the sequence to the corresponding IUPAC code in 
+    the pattern returning True if all nucleotides are compatible with the pattern.
+
+    Args:
+        seq: The nucleotide sequence to check.
+        pattern: The IUPAC pattern to match against.
+
+    Returns:
+        True if the sequence matches the IUPAC pattern, False otherwise.
+    """
+    if len(seq) != len(pattern):
+        return False
+    seq = seq.upper()  # ensure upper cases
+    pattern = pattern.upper()
+    return all(snt in list(IUPACTABLE[pnt]) for snt, pnt in zip(seq, pattern))

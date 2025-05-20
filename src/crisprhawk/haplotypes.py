@@ -9,6 +9,7 @@ from coordinate import Coordinate
 from sequence import Sequence
 from haplotype import Haplotype
 
+from itertools import product
 from typing import List, Dict, Tuple
 from collections import defaultdict
 from time import time
@@ -111,39 +112,26 @@ def compute_haplotypes_phased(variants: List[VariantRecord], samples: List[str])
             for s in variant.samples[0][chromcopy]:  # type: ignore 
                 # add variant to sample-variant map
                 sample_variants[s][chromcopy].append(variant)
+    # remove samples without variants
+    sample_variants = {s: v for s, v in sample_variants.items() if v[0] and v[1]}
     return sample_variants
 
-def _count_unphased_haplotypes(variants: List[VariantRecord], samples: List[str]) -> Dict[str, int]:
-    hapnum_samples = {s: 0 for s in samples}  # initialize sample hap counts
-    for variant in variants:
-        if variant.vtype[0] == VTYPES[1]:  # if indels, check if alt are required
-            for sample in variant.samples[0][0]: # type: ignore
-                if sample not in variant.samples[0][1]:  # type: ignore
-                    hapnum_samples[sample] += 1  # not homozygous
-    return hapnum_samples
-
-def compute_haplotypes_unphased(variants: List[VariantRecord], samples: List[str]):
-    # count number of haplotypes per sample as function of the number of indels
-    hapnum_sample = _count_unphased_haplotypes(variants, samples)
+def compute_haplotypes_unphased(variants: List[VariantRecord], samples: List[str]) -> Dict[str, List[VariantRecord]]:
     # initialize sample-variant map
-    sample_variants = {s: None for s in samples}
-    
+    sample_variants = {s: [] for s in samples}  # do not assume diploid copies
+    for variant in variants:
+        assert len(variant.samples) == 1
+        # always used first copy in unphased
+        for s in variant.samples[0][0]:  # type: ignore 
+            # add variant to sample-variant map
+            sample_variants[s].append(variant)
+    # remove samples without variants
+    sample_variants = {s: v for s, v in sample_variants.items() if v}
+    return sample_variants
         
 
 def ishomozygous(haplotypes: List[Haplotype]) -> bool:
     return len({h.sequence.sequence for h in haplotypes}) == 1
-
-def _solve_haplotypes(sequence: str, coordinates: Coordinate, phased: bool, variants: Tuple[List[VariantRecord], List[VariantRecord]], sample: str, debug: bool) -> List[Haplotype]:
-    # solve haplotypes for diploid samples
-    h0 = Haplotype(Sequence(sequence, debug), coordinates, phased, 0, debug)  # first copy
-    h0.add_variants(variants[0], sample)  # add variants to haplotype
-    h1 = Haplotype(Sequence(sequence, debug), coordinates, phased, 1, debug)  # second copy
-    h1.add_variants(variants[1], sample)  # add variants to haplotype
-    # check for homozygous haplotypes
-    if ishomozygous([h0, h1]):
-        h0.homozygous_samples()
-        return [h0]  # return only one haplotype (homozygous sample)
-    return [h0, h1]  # return both haplotypes
 
 def _collapse_haplotypes(sequence: str, haplotypes: List[Haplotype], debug: bool) -> Haplotype:
     hap = Haplotype(Sequence(sequence, debug, allow_lower_case=True), haplotypes[0].coordinates, haplotypes[0].phased, 0, debug)
@@ -159,13 +147,62 @@ def collapse_haplotypes(haplotypes: List[Haplotype], debug: bool) -> List[Haplot
         haplotypes_collapsed[seq].append(hap)
     return [_collapse_haplotypes(seq, haplist, debug) for seq, haplist in haplotypes_collapsed.items()]
 
-def solve_haplotypes(sample_variants: Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]], hapseqs: List[Haplotype], refseq: str, coordinates: Coordinate, phased: bool, debug: bool) -> List[Haplotype]:
+def _solve_haplotypes_phased(sequence: str, coordinates: Coordinate, phased: bool, variants: Tuple[List[VariantRecord], List[VariantRecord]], sample: str, debug: bool) -> List[Haplotype]:
+    # solve haplotypes for diploid samples
+    h0 = Haplotype(Sequence(sequence, debug), coordinates, phased, 0, debug)  # first copy
+    h0.add_variants(variants[0], sample)  # add variants to haplotype
+    h1 = Haplotype(Sequence(sequence, debug), coordinates, phased, 1, debug)  # second copy
+    h1.add_variants(variants[1], sample)  # add variants to haplotype
+    # check for homozygous haplotypes
+    if ishomozygous([h0, h1]):
+        h0.homozygous_samples()
+        return [h0]  # return only one haplotype (homozygous sample)
+    return [h0, h1]  # return both haplotypes
+
+def solve_haplotypes_phased(sample_variants: Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]], hapseqs: List[Haplotype], refseq: str, coordinates: Coordinate, phased: bool, debug: bool) -> List[Haplotype]:
     # solve haplotypes for each sample (assumes diploid samples)
     for sample, variants in sample_variants.items():
-        hapseqs += _solve_haplotypes(refseq, coordinates, phased, variants, sample, debug)
+        hapseqs += _solve_haplotypes_phased(refseq, coordinates, phased, variants, sample, debug)
     return collapse_haplotypes(hapseqs, debug)  # collapse haplotypes with same sequence
 
-def add_variants(vcflist: List[str], regions: RegionList, haplotypes: Dict[Region, List[Haplotype]], verbosity: int, debug: bool) -> Dict[Region, List[Haplotype]]:
+def _split_id(vid: str) -> str:
+    chrom, pos, ref_alt = vid.split("-")  # retrieve variant ids fields
+    ref, alt = ref_alt.split("/")
+    return f"{chrom}-{pos}-{ref}"  # to recover origin of multiallelic sites
+
+def generate_variants_combinations(variants: List[VariantRecord], sample: str) -> List[List[VariantRecord]]:
+    variant_groups = {}  # groups of alternative variants
+    for variant in variants:
+        vid = _split_id(variant.id[0])  # retrieve variant id to match multiallelic sites
+        is_snv = variant.vtype[0] == VTYPES[0]
+        is_homozygous = all(sample in call for call in variant.samples[0])
+        if is_snv or is_homozygous:  # only one option available
+            variant_groups[vid] = [variant]
+        elif vid in variant_groups:
+            # remove reference allele for alternatives in multiallelic site
+            variant_groups[vid] = [v for v in variant_groups[vid] if v is not None]
+            variant_groups[vid].append(variant)  # add alt to multiallelic
+        else:  # new indel
+            variant_groups[vid] = [variant, None]  # add reference (None)
+    return [list(comb) for comb in product(*variant_groups.values())]
+
+def _solve_haplotypes_unphased(sequence: str, coordinates: Coordinate, phased: bool, variants: List[VariantRecord], sample: str, debug: bool) -> List[Haplotype]:
+    variants_combinations = generate_variants_combinations(variants, sample)
+    haps = []  # haplotype list
+    for variant_combination in variants_combinations:
+        variant_combination = [v for v in variant_combination if v is not None]
+        h = Haplotype(Sequence(sequence, debug), coordinates, phased, 0, debug)
+        h.add_variants(variant_combination, sample)  # add variants to sample haplotypes
+        haps.append(h)  # insert haplotype to haplotypes list
+    return [haps[0]] if ishomozygous(haps) else haps
+
+def solve_haplotypes_unphased(sample_variants: Dict[str, List[VariantRecord]], hapseqs: List[Haplotype], refseq: str, coordinates: Coordinate, phased: bool, debug: bool):
+    # solve haplotypes for each sample
+    for sample, variants in sample_variants.items():
+        hapseqs += _solve_haplotypes_unphased(refseq, coordinates, phased, variants, sample, debug)
+    return collapse_haplotypes(hapseqs, debug)
+
+def add_variants(vcflist: List[str], regions: RegionList, haplotypes: Dict[Region, List[Haplotype]], verbosity: int, debug: bool) -> Tuple[Dict[Region, List[Haplotype]], bool]:
     # read VCF files and extract variants located within the region
     vcfs = read_vcf(vcflist, verbosity, debug)  
     variants = fetch_variants(vcfs, regions, verbosity, debug)  
@@ -175,10 +212,11 @@ def add_variants(vcflist: List[str], regions: RegionList, haplotypes: Dict[Regio
             # recover variants combinations on each chromosome copy
             samples_variants = compute_haplotypes_phased(variants[region], vcfs[regions[0].contig].samples)
             # solve haplotypes for each sample
-            haplotypes[region] = solve_haplotypes(samples_variants, haplotypes[region], region.sequence.sequence, region.coordinates, phased, debug)
+            haplotypes[region] = solve_haplotypes_phased(samples_variants, haplotypes[region], region.sequence.sequence, region.coordinates, phased, debug)
         else:  # unphased VCFs
             samples_variants = compute_haplotypes_unphased(variants[region], vcfs[regions[0].contig].samples)
-    return haplotypes
+            haplotypes[region] = solve_haplotypes_unphased(samples_variants, haplotypes[region], region.sequence.sequence, region.coordinates, phased, debug)
+    return haplotypes, phased
 
 def generate_haplotype_ids(haplotypes: Dict[Region, List[Haplotype]]) -> Dict[Region, List[Haplotype]]:
     chars = string.ascii_letters + string.digits  # generate random characters
@@ -210,14 +248,16 @@ def haplotypes_table(haplotypes: Dict[Region, List[Haplotype]], outdir: str, ver
         
 def reconstruct_haplotypes(
     vcflist: List[str], regions: RegionList, store_table: bool, outdir: str, verbosity: int, debug: bool
-) -> Dict[Region, List[Haplotype]]:
+) -> Tuple[Dict[Region, List[Haplotype]], bool, bool]:
     # read input vcf files and fetch variants in each region
     print_verbosity("Reconstructing haplotypes", verbosity, VERBOSITYLVL[1])
     start = time()  # track haplotypes reconstruction time
     # initialize haplotypes list with reference sequence haplotype
     haplotypes = initialize_haplotypes(regions, debug)
+    phased, variants_present = False, False  # default values 
     if vcflist:  # add variants to regions and solve haplotypes
-        haplotypes = add_variants(vcflist, regions, haplotypes, verbosity, debug)
+        variants_present = True  # variants added
+        haplotypes, phased = add_variants(vcflist, regions, haplotypes, verbosity, debug)
     # generate random haplotype IDs
     haplotypes = generate_haplotype_ids(haplotypes)
     print_verbosity(
@@ -225,4 +265,4 @@ def reconstruct_haplotypes(
     )
     if store_table:  # write haplotypes table
         haplotypes_table(haplotypes, outdir, verbosity, debug)
-    return haplotypes
+    return haplotypes, variants_present, phased

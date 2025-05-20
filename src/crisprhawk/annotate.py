@@ -61,7 +61,6 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
     )
     start = time()  # position calculation start time
     for guide in guides:
-        guidepamlen = guide.guidelen + guide.pamlen  # total guide length
         guide_vars = set()  # variants occurring in variant
         for variant in guide.variants.split(","):
             if variant == "NA":  # no variants
@@ -81,7 +80,7 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
                     e,
                 )
             # assess whether the snp occurs within the guide or is part of the haplotype
-            if guide.start <= variant_position <= guide.stop:
+            if guide.start <= variant_position < guide.stop:
                 guide_vars.add(variant)
         # set variants ids to current guide
         guide_vars = ",".join(sorted(guide_vars)) if guide_vars else "NA"

@@ -2,7 +2,7 @@
 
 from exception_handlers import exception_handler
 from coordinate import Coordinate
-from utils import DNA, warning
+from utils import IUPAC, warning
 
 from typing import Optional, Union
 
@@ -39,7 +39,7 @@ class Sequence:
         """
         self._debug = debug  # store debug flag
         sequence = sequence if allow_lower_case else sequence.upper()  # force sequence nucleotides to upper case
-        if any(nt.upper() not in DNA for nt in set(sequence)):
+        if any(nt.upper() not in IUPAC for nt in set(sequence)):
             exception_handler(
                 ValueError,
                 "The input string is not a DNA string",

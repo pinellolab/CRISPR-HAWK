@@ -84,6 +84,8 @@ def guides_search(
     haplotypes_bits: Dict[Region, List[List[Bitset]]],
     guidelen: int,
     right: bool,
+    variants_present: bool,
+    phased: bool,
     verbosity: int,
     debug: bool,
 ) -> Dict[Region, List[Guide]]:
@@ -98,6 +100,8 @@ def guides_search(
             haplotypes_bits[region],
             guidelen,
             right,
+            variants_present,
+            phased,
             verbosity,
             debug,
         )
@@ -115,7 +119,7 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         args.fasta, args.bedfile, args.fasta_idx, args.verbosity, args.debug
     )
     # reconstruct haplotypes for each input region
-    haplotypes = reconstruct_haplotypes(args.vcfs, regions, args.haplotype_table, args.outdir, args.verbosity, args.debug)
+    haplotypes, variants_present, phased = reconstruct_haplotypes(args.vcfs, regions, args.haplotype_table, args.outdir, args.verbosity, args.debug)
     # encode pam and haplotype sequences in bit for efficient guides search
     pam = encode_pam(args.pam, args.verbosity, args.debug)
     haplotypes_bits = encode_haplotypes(haplotypes, args.verbosity, args.debug)
@@ -126,6 +130,8 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         haplotypes_bits,
         args.guidelen,
         args.right,
+        variants_present,
+        phased,
         args.verbosity,
         args.debug,
     )

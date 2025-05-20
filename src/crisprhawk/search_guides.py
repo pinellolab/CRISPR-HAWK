@@ -1,8 +1,8 @@
 """ """
 
 from exception_handlers import exception_handler
-from crisprhawk_error import CrisprHawkBitsetError
-from utils import print_verbosity, flatten_list, VERBOSITYLVL
+from crisprhawk_error import CrisprHawkBitsetError, CrisprHawkIupacTableError
+from utils import print_verbosity, flatten_list, VERBOSITYLVL, IUPACTABLE
 from guide import Guide, GUIDESEQPAD
 from bitset import Bitset
 from pam import PAM
@@ -11,6 +11,7 @@ from region import Region
 from haplotype import Haplotype
 
 from typing import List, Tuple, Dict
+from itertools import product
 from time import time
 
 import os
@@ -153,6 +154,26 @@ def extract_guide_sequence(
         haplotype[position - guidelen - GUIDESEQPAD : position + pamlen + GUIDESEQPAD]
     )
 
+def _valid_guide(pamguide: str, pam: PAM, direction: int, debug: bool) -> bool:
+    p = PAM(pamguide, debug)
+    p.encode(0)
+    if direction == 0:  # positive
+        return all((ntbit & pam.bits[i]).to_bool() for i, ntbit in enumerate(p.bits))
+    return all((ntbit & pam.bitsrc[i]).to_bool() for i, ntbit in enumerate(p.bits))
+
+def _decode_iupac(nt: str, debug: bool) -> str:
+    try:
+        ntiupac = IUPACTABLE[nt.upper()]
+    except KeyError as e:
+        exception_handler(CrisprHawkIupacTableError, f"Invalid IUPAC character ({nt})", os.EX_DATAERR, debug, e) # type: ignore
+    return ntiupac.lower() if nt.islower() else ntiupac
+
+def resolve_guide(guideseq: str, pam: PAM, direction: int, right: bool, debug: bool) -> List[str]:
+    guide_alts = ["".join(g) for g in product(*[list(_decode_iupac(nt, debug)) for nt in guideseq])]
+    idx = GUIDESEQPAD if right else (len(guideseq) - GUIDESEQPAD - len(pam))
+    return [guide for guide in guide_alts if _valid_guide(guide[idx:idx + len(pam)], pam, direction, debug)]
+
+
 def adjust_guide_position(posmap: Dict[int, int], posrel: int, guidelen: int, pamlen: int, right: bool) -> Tuple[int, int]:
     start = posmap[posrel] if right else posmap[posrel - guidelen]
     stop = posmap[posrel + guidelen + pamlen] + 1 if right else posmap[posrel + pamlen]
@@ -162,9 +183,11 @@ def retrieve_guides(
     pam_hits: List[int],
     haplotype: Haplotype,
     guidelen: int,
-    pamlen: int,
+    pam: PAM,
     direction: int,
     right: bool,
+    variants_present: bool,
+    phased: bool,
     verbosity: int,
     debug: bool,
 ) -> List[Guide]:
@@ -177,28 +200,32 @@ def retrieve_guides(
     start = time()
     for pos in pam_hits:
         # retrieve guide sequence from haplotype
-        guideseq = extract_guide_sequence(haplotype, pos, pamlen, guidelen, right)
+        guideseq = extract_guide_sequence(haplotype, pos, len(pam), guidelen, right)
         if (
             haplotype.samples != "REF" and guideseq[GUIDESEQPAD:-GUIDESEQPAD].isupper()
         ):  # reference guide
             continue
-        # compute guide's start and stop positions
-        guide_start, guide_stop = adjust_guide_position(haplotype.posmap, pos, guidelen, pamlen, right)
-        guides.append(
-            Guide(
-                guide_start,
-                guide_stop,
-                guideseq,
-                guidelen,
-                pamlen,
-                direction,
-                haplotype.samples,
-                haplotype.variants,
-                debug,
-                right,
-                haplotype.id,
+        guideseqs = [guideseq]
+        if variants_present and not phased:  # handle guides with iupac 
+            guideseqs = resolve_guide(guideseq, pam, direction, right, debug)
+        for guideseq in guideseqs:
+            # compute guide's start and stop positions
+            guide_start, guide_stop = adjust_guide_position(haplotype.posmap, pos, guidelen, len(pam), right)
+            guides.append(
+                Guide(
+                    guide_start,
+                    guide_stop,
+                    guideseq,
+                    guidelen,
+                    len(pam),
+                    direction,
+                    haplotype.samples,
+                    haplotype.variants,
+                    debug,
+                    right,
+                    haplotype.id,
+                )
             )
-        )
     print_verbosity(
         f"Guides retrieved in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
@@ -212,6 +239,8 @@ def search(
     haplotypes_bits: List[List[Bitset]],
     guidelen: int,
     right: bool,
+    variants_present: bool,
+    phased: bool,
     verbosity: int,
     debug: bool,
 ) -> List[Guide]:
@@ -229,9 +258,11 @@ def search(
                 pam_hits[i][strand],
                 haplotype,
                 guidelen,
-                len(pam),
+                pam,
                 strand,
                 (not right if strand == 1 else right),
+                variants_present,
+                phased,
                 verbosity,
                 debug,
             )

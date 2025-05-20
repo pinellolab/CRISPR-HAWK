@@ -45,6 +45,22 @@ class PAM:
             int: The length of the PAM sequence.
         """
         return len(self._sequence)
+    
+    def __eq__(self, pam: object) -> bool:
+        """Checks equality between this PAM object and another.
+
+        Compares the stored PAM sequence with another PAM object's sequence to 
+        determine equality.
+
+        Args:
+            pam: The object to compare with this PAM instance.
+
+        Returns:
+            bool: True if the sequences are equal and the object is a PAM instance, 
+                False otherwise.
+        """
+        return self._sequence == pam.pam if isinstance(pam, PAM) else NotImplemented
+
 
     def __repr__(self) -> str:
         """Returns a string representation of the PAM object for debugging.
