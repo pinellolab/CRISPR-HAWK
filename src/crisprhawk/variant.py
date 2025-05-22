@@ -711,7 +711,7 @@ class VCF:
         try:  # extract variants in the input range from vcf file
             return [
                 _create_variant_record(
-                    v.strip().split("\t"), self._samples, self._phased, self._debug
+                    v.strip().split(), self._samples, self._phased, self._debug
                 )
                 for v in self._vcf.fetch(
                     self._contig, coordinate.start, coordinate.stop

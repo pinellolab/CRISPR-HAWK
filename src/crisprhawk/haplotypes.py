@@ -135,8 +135,10 @@ def ishomozygous(haplotypes: List[Haplotype]) -> bool:
 
 def _collapse_haplotypes(sequence: str, haplotypes: List[Haplotype], debug: bool) -> Haplotype:
     hap = Haplotype(Sequence(sequence, debug, allow_lower_case=True), haplotypes[0].coordinates, haplotypes[0].phased, 0, debug)
-    hap.set_samples(",".join({h.samples for h in haplotypes}))
-    hap.set_variants(",".join(sorted({h.variants for h in haplotypes})))
+    samples = "REF" if sequence.isupper() else ",".join({h.samples for h in haplotypes})
+    hap.set_samples(samples)
+    variants = "NA" if sequence.isupper() else ",".join(sorted({h.variants for h in haplotypes}))
+    hap.set_variants(variants)
     hap.set_posmap(haplotypes[0].posmap)  # same posmap for all collapsed haplotypes
     return hap
     
