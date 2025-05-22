@@ -150,7 +150,6 @@ def parse_variant_ids(variant_ids: str) -> Set[str]:
 def check_variant_ids(variant_ids_list: List[str]) -> str:
     variant_sets = [parse_variant_ids(vid) for vid in variant_ids_list]
     unique_variant_ids_sets = {tuple(sorted(vs)) for vs in variant_sets}
-    assert len(unique_variant_ids_sets) == 1
     return ",".join(sorted(unique_variant_ids_sets.pop()))
 
 def collapse_haplotype_ids(hapids: pd.Series) -> str:

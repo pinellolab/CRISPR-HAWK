@@ -1,6 +1,6 @@
 """ """
 
-from crisprhawk_error import CrisprHawkHaplotypeError
+from crisprhawk_error import CrisprHawkHaplotypeError, CrisprHawkIupacTableError
 from exception_handlers import exception_handler
 from region import Region
 from sequence import Sequence
@@ -60,7 +60,10 @@ class Haplotype(Region):
         self._update_posmap(posrel, chain)
 
     def _insert_variant_unphased(self, position: int, ref: str, alt: str, vtype: str, chain: int, offset: int):
-        posrel = self._posmap_reverse[position]
+        try:
+            posrel = self._posmap_reverse[position]
+        except KeyError:  # position may be deleted by previous deletion
+            return 
         posrel_stop = posrel + abs(chain) + 1 if chain < 0 else posrel + 1
         if posrel_stop > self._size:
             posrel_stop = (self._size + offset) - 1
@@ -68,7 +71,7 @@ class Haplotype(Region):
         if not match_iupac(ref, refnt):
             raise ValueError(f"Mismatching reference alleles in VCF and reference sequence at position {position} ({refnt} - {ref})")
         if vtype == VTYPES[0]:  # if snv encode as iupac
-            alt = _encode_iupac(ref, alt)
+            alt = _encode_iupac(ref, alt, position, self._debug)
         self._update_sequence(posrel, posrel_stop, alt)
         self._update_posmap(posrel, chain)
         
@@ -147,6 +150,9 @@ def _compute_chains(variants: List[VariantRecord]) -> List[int]:
     return [len(v.alt[0]) - len(v.ref) for v in variants]
 
 
-def _encode_iupac(ref: str, alt: str) -> str:
-    return IUPAC_ENCODER["".join([ref, alt])]
+def _encode_iupac(ref: str, alt: str, position: int, debug: bool) -> str:
+    try:
+        return IUPAC_ENCODER["".join({ref, alt})]
+    except KeyError as e:
+        exception_handler(CrisprHawkIupacTableError, f"An error occurred while encoding {ref}>{alt} at position {position} as IUPAC character", os.EX_DATAERR, debug, e) # type: ignore
 

@@ -384,7 +384,8 @@ def _adjust_multiallelic(ref: str, alt: str, pos: int) -> Tuple[str, str, int]:
     Adjusts the reference and alternative alleles, and the variant position for
     multiallelic sites based on the lengths of the original reference and
     alternative alleles.  This function helps normalize variant representation
-    for easier comparison and processing.
+    for easier comparison and processing. The function assumes multiallelic
+    variants are left-aligned.
 
     Args:
         ref: The original reference allele.
@@ -397,8 +398,8 @@ def _adjust_multiallelic(ref: str, alt: str, pos: int) -> Tuple[str, str, int]:
     """
 
     if len(ref) == len(alt):  # likely snp
-        ref_new, alt_new = ref[-1], alt[-1]  # adjust ref/alt alleles
-        pos_new = pos + len(ref) - 1  # ref/alt have same length
+        ref_new, alt_new = ref[0], alt[0]  # adjust ref/alt alleles
+        pos_new = pos  # ref/alt have same length
     elif len(ref) > len(alt):  # deletion
         ref_new = ref[len(alt) - 1 :]  # adjust ref allele
         alt_new = alt[-1]  # adjust alt allele
@@ -710,7 +711,7 @@ class VCF:
         try:  # extract variants in the input range from vcf file
             return [
                 _create_variant_record(
-                    v.strip().split(), self._samples, self._phased, self._debug
+                    v.strip().split("\t"), self._samples, self._phased, self._debug
                 )
                 for v in self._vcf.fetch(
                     self._contig, coordinate.start, coordinate.stop
