@@ -1,12 +1,12 @@
 """ """
 
-from crisprhawk_error import CrisprHawkHaplotypeError, CrisprHawkIupacTableError
-from exception_handlers import exception_handler
-from region import Region
-from sequence import Sequence
-from coordinate import Coordinate
-from variant import VariantRecord, VTYPES
-from utils import match_iupac, IUPAC_ENCODER
+from .crisprhawk_error import CrisprHawkHaplotypeError, CrisprHawkIupacTableError
+from .exception_handlers import exception_handler
+from .region import Region
+from .sequence import Sequence
+from .coordinate import Coordinate
+from .variant import VariantRecord, VTYPES
+from .utils import match_iupac, IUPAC_ENCODER
 
 from typing import List, Dict
 

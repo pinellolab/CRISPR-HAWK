@@ -1,8 +1,8 @@
 """ """
 
-from exception_handlers import exception_handler
-from coordinate import Coordinate
-from utils import IUPAC, warning
+from .exception_handlers import exception_handler
+from .coordinate import Coordinate
+from .utils import IUPAC, warning
 
 from typing import Optional, Union
 
@@ -50,7 +50,7 @@ class Sequence:
         # cast str to list for fast index access
         self._sequence_raw = list(self._sequence)
 
-    def __eq__(self, sequence: "Sequence") -> bool:
+    def __eq__(self, sequence: object) -> bool:
         """Compare two Sequence objects for equality.
 
         Compares the DNA sequences of two Sequence objects.
@@ -61,6 +61,8 @@ class Sequence:
         Returns:
             True if the sequences are identical, False otherwise.
         """
+        if not isinstance(sequence, Sequence):
+            return NotImplemented
         return self._sequence == sequence.sequence
 
     def __len__(self) -> int:
@@ -114,7 +116,7 @@ class Sequence:
                 f"Missing _sequence_raw attribute on {self.__class__.__name__}"
             )
         try:
-            return self._sequence_raw[idx]
+            return self._sequence_raw[idx]  # type: ignore
         except IndexError as e:
             raise IndexError(f"Index {idx} out of range") from e
 

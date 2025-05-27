@@ -1,7 +1,7 @@
 """
 CRISPR-HAWK {version}
 
-Copyright (C) 2024 Manuel Tognon <manu.tognon@gmail.com> <manuel.tognon@univr.it> <mtognon@mgh.harvard.edu>
+Copyright (C) 2025 Manuel Tognon <manu.tognon@gmail.com> <manuel.tognon@univr.it> <mtognon@mgh.harvard.edu>
 
 Usage:
     crisprhawk -f <fasta> -r <bedfile> -v <vcf>
@@ -9,11 +9,11 @@ Usage:
 Run 'crisprhawk -h/--help' to display the complete help
 """
 
-from crisprhawk_argparse import CrisprHawkArgumentParser, CrisprHawkInputArgs
-from exception_handlers import sigint_handler
-from crisprhawk_version import __version__
-from crisprhawk import crisprhawk
-from utils import TOOLNAME
+from .crisprhawk_argparse import CrisprHawkArgumentParser, CrisprHawkInputArgs
+from .exception_handlers import sigint_handler
+from .crisprhawk_version import __version__
+from .crisprhawk import crisprhawk
+from .utils import TOOLNAME
 
 from time import time
 

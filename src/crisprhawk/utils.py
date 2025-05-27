@@ -1,6 +1,6 @@
 """ """
 
-from exception_handlers import exception_handler
+from .exception_handlers import exception_handler
 
 from typing import Any, List
 from itertools import permutations
@@ -24,6 +24,7 @@ RC = {
     "C": "G",
     "G": "C",
     "T": "A",
+    "U": "A",
     "R": "Y",
     "Y": "R",
     "M": "K",
@@ -39,6 +40,7 @@ RC = {
     "c": "g",
     "g": "c",
     "t": "a",
+    "u": "a",
     "r": "y",
     "y": "r",
     "m": "k",
@@ -190,3 +192,17 @@ def match_iupac(seq: str, pattern: str) -> bool:
     seq = seq.upper()  # ensure upper cases
     pattern = pattern.upper()
     return all(snt in list(IUPACTABLE[pnt]) for snt, pnt in zip(seq, pattern))
+
+def dna2rna(sequence: str) -> str:
+    """Convert a DNA sequence to its RNA equivalent.
+
+    Replaces all occurrences of thymine ('T' or 't') with uracil ('U' or 'u') in 
+    the input sequence.
+
+    Args:
+        sequence: The DNA sequence to convert.
+
+    Returns:
+        The RNA sequence as a string.
+    """
+    return sequence.replace("T", "U").replace("t", "u")

@@ -1,8 +1,8 @@
 """ """
 
-from exception_handlers import exception_handler
-from coordinate import Coordinate
-from utils import warning
+from .exception_handlers import exception_handler
+from .coordinate import Coordinate
+from .utils import warning
 
 from typing import Optional, List, Tuple, Set
 from pysam import TabixFile, tabix_index

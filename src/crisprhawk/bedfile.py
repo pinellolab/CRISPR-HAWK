@@ -6,11 +6,10 @@ manipulating, and extracting regions from BED files, and integrating with FASTA
 files for sequence retrieval.
 """
 
-from coordinate import Coordinate
-from sequence import Fasta
-from exception_handlers import exception_handler
-
-from region import Region, RegionList
+from .coordinate import Coordinate
+from .sequence import Fasta
+from .exception_handlers import exception_handler
+from .region import Region, RegionList
 
 
 from typing import List, Union

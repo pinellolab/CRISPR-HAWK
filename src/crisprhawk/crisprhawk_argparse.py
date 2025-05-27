@@ -1,7 +1,7 @@
 """ """
 
-from utils import COMMAND, IUPAC, VERBOSITYLVL
-from crisprhawk_version import __version__
+from .utils import COMMAND, IUPAC, VERBOSITYLVL
+from .crisprhawk_version import __version__
 
 from argparse import (
     SUPPRESS,

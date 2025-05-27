@@ -1,13 +1,13 @@
 """ """
 
-from crisprhawk_error import CrisprHawkHaplotypeError
-from exception_handlers import exception_handler
-from utils import print_verbosity, flatten_list, VERBOSITYLVL
-from region import Region, RegionList
-from variant import VCF, VariantRecord, VTYPES
-from coordinate import Coordinate
-from sequence import Sequence
-from haplotype import Haplotype
+from .crisprhawk_error import CrisprHawkHaplotypeError
+from .exception_handlers import exception_handler
+from .utils import print_verbosity, flatten_list, VERBOSITYLVL
+from .region import Region, RegionList
+from .variant import VCF, VariantRecord, VTYPES
+from .coordinate import Coordinate
+from .sequence import Sequence
+from .haplotype import Haplotype
 
 from itertools import product
 from typing import List, Dict, Tuple

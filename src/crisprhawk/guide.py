@@ -1,8 +1,8 @@
 """ """
 
-from exception_handlers import exception_handler
-from crisprhawk_error import CrisprHawkGuideError
-from utils import round_score, RC
+from .exception_handlers import exception_handler
+from .crisprhawk_error import CrisprHawkGuideError
+from .utils import round_score, RC
 
 from typing import List, Union, Set
 import os
@@ -88,12 +88,17 @@ class Guide:
     def set_azimuth_score(self, score: float) -> None:
         if not isinstance(score, float):
             exception_handler(
-                TypeError, # type: ignore
+                TypeError, 
                 f"Expected azimuth score of type {float.__name__}, got {type(score).__name__}",
                 os.EX_DATAERR,
                 self._debug,
             )
         self._azimuth_score = str(round_score(score))
+
+    def set_cfdon_score(self, score: float) -> None:
+        if not isinstance(score, float):
+            exception_handler(TypeError, f"Expected cfdon score of type {float.__name__}, got {type(score).__name__}", os.EX_DATAERR, self._debug)
+        self._cfdon_score = str(round_score(score))
 
     @property
     def start(self) -> int:
@@ -142,6 +147,10 @@ class Guide:
     @property
     def azimuth_score(self) -> str:
         return self._azimuth_score
+    
+    @property
+    def cfdon_score(self) -> str:
+        return self._cfdon_score
     
     @property
     def hapid(self) -> str:

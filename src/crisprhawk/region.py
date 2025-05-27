@@ -1,7 +1,7 @@
 """ """
 
-from coordinate import Coordinate
-from sequence import Sequence
+from .coordinate import Coordinate
+from .sequence import Sequence
 
 from typing import List, Union
 

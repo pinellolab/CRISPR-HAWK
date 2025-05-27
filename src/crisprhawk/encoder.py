@@ -1,9 +1,9 @@
 """ """
 
-from exception_handlers import exception_handler
-from utils import IUPAC, VERBOSITYLVL, print_verbosity
-from crisprhawk_error import CrisprHawkIupacTableError
-from bitset import Bitset, SIZE
+from .exception_handlers import exception_handler
+from .utils import IUPAC, VERBOSITYLVL, print_verbosity
+from .crisprhawk_error import CrisprHawkIupacTableError
+from .bitset import Bitset, SIZE
 
 from typing import List
 from time import time

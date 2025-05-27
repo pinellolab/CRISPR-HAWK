@@ -1,14 +1,14 @@
 """ """
 
-from exception_handlers import exception_handler
-from crisprhawk_error import CrisprHawkBitsetError, CrisprHawkIupacTableError
-from utils import print_verbosity, flatten_list, VERBOSITYLVL, IUPACTABLE
-from guide import Guide, GUIDESEQPAD
-from bitset import Bitset
-from pam import PAM
-from region_constructor import PADDING
-from region import Region
-from haplotype import Haplotype
+from .exception_handlers import exception_handler
+from .crisprhawk_error import CrisprHawkBitsetError, CrisprHawkIupacTableError
+from .utils import print_verbosity, flatten_list, VERBOSITYLVL, IUPACTABLE
+from .guide import Guide, GUIDESEQPAD
+from .bitset import Bitset
+from .pam import PAM
+from .region_constructor import PADDING
+from .region import Region
+from .haplotype import Haplotype
 
 from typing import List, Tuple, Dict
 from itertools import product

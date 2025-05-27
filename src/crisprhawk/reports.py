@@ -1,12 +1,12 @@
 """ """
 
-from crisprhawk_error import CrisprHawkGuidesReportError
-from exception_handlers import exception_handler
-from pam import PAM
-from guide import Guide
-from region_constructor import PADDING
-from region import Region
-from utils import (
+from .crisprhawk_error import CrisprHawkGuidesReportError
+from .exception_handlers import exception_handler
+from .pam import PAM
+from .guide import Guide
+from .region_constructor import PADDING
+from .region import Region
+from .utils import (
     print_verbosity,
     VERBOSITYLVL,
     GUIDESREPORTPREFIX,
@@ -32,6 +32,7 @@ REPORTCOLS = [
     "pam_class",
     "strand",
     "score_azimuth",
+    "score_cfdon",
     "origin",
     "samples",
     "variant_id",
@@ -68,11 +69,12 @@ def update_report_fields(
     # strand orientation
     report[REPORTCOLS[6]].append(compute_strand_orientation(guide.strand))
     report[REPORTCOLS[7]].append(guide.azimuth_score)  # azimuth score
-    report[REPORTCOLS[8]].append(compute_guide_origin(guide.samples))  # genome
-    report[REPORTCOLS[9]].append(guide.samples)  # samples list
-    report[REPORTCOLS[10]].append(guide.variants)  # variant ids
-    report[REPORTCOLS[11]].append(str(region.coordinates))  # region
-    report[REPORTCOLS[12]].append(guide.hapid)  # haplotype id
+    report[REPORTCOLS[8]].append(guide.cfdon_score)  # cfdon score
+    report[REPORTCOLS[9]].append(compute_guide_origin(guide.samples))  # genome
+    report[REPORTCOLS[10]].append(guide.samples)  # samples list
+    report[REPORTCOLS[11]].append(guide.variants)  # variant ids
+    report[REPORTCOLS[12]].append(str(region.coordinates))  # region
+    report[REPORTCOLS[13]].append(guide.hapid)  # haplotype id
     return report
 
 

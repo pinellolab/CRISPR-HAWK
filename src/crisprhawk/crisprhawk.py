@@ -1,18 +1,18 @@
 """ """
 
-from crisprhawk_argparse import CrisprHawkInputArgs
-from region_constructor import construct_regions
-from haplotypes import reconstruct_haplotypes
-from haplotype import Haplotype
-from region import Region
-from utils import print_verbosity, VERBOSITYLVL
-from search_guides import search
-from annotate import annotate_guides
-from encoder import encode
-from reports import report_guides
-from bitset import Bitset
-from guide import Guide
-from pam import PAM
+from .crisprhawk_argparse import CrisprHawkInputArgs
+from .region_constructor import construct_regions
+from .haplotypes import reconstruct_haplotypes
+from .haplotype import Haplotype
+from .region import Region
+from .utils import print_verbosity, VERBOSITYLVL
+from .search_guides import search
+from .annotate import annotate_guides
+from .encoder import encode
+from .reports import report_guides
+from .bitset import Bitset
+from .guide import Guide
+from .pam import PAM
 
 from typing import Dict, List
 from time import time

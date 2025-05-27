@@ -1,10 +1,10 @@
 """ """
 
-from exception_handlers import exception_handler
-from utils import print_verbosity, VERBOSITYLVL
-from region import RegionList
-from sequence import Fasta
-from bedfile import Bed
+from .exception_handlers import exception_handler
+from .utils import print_verbosity, VERBOSITYLVL
+from .region import RegionList
+from .sequence import Fasta
+from .bedfile import Bed
 
 
 from time import time

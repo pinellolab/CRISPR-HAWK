@@ -5,11 +5,11 @@ This module defines the PAM class, which validates, stores, and encodes PAM
 sequences and their reverse complements for efficient sequence matching.
 """
 
-from exception_handlers import exception_handler
-from crisprhawk_error import CrisprHawkPamError
-from utils import reverse_complement, IUPAC
-from encoder import encode
-from bitset import Bitset
+from .exception_handlers import exception_handler
+from .crisprhawk_error import CrisprHawkPamError
+from .utils import reverse_complement, IUPAC
+from .encoder import encode
+from .bitset import Bitset
 
 from typing import Optional, List
 
