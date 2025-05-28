@@ -32,6 +32,7 @@ REPORTCOLS = [
     "pam_class",
     "strand",
     "score_azimuth",
+    "score_rs3",
     "score_cfdon",
     "origin",
     "samples",
@@ -69,12 +70,13 @@ def update_report_fields(
     # strand orientation
     report[REPORTCOLS[6]].append(compute_strand_orientation(guide.strand))
     report[REPORTCOLS[7]].append(guide.azimuth_score)  # azimuth score
-    report[REPORTCOLS[8]].append(guide.cfdon_score)  # cfdon score
-    report[REPORTCOLS[9]].append(compute_guide_origin(guide.samples))  # genome
-    report[REPORTCOLS[10]].append(guide.samples)  # samples list
-    report[REPORTCOLS[11]].append(guide.variants)  # variant ids
-    report[REPORTCOLS[12]].append(str(region.coordinates))  # region
-    report[REPORTCOLS[13]].append(guide.hapid)  # haplotype id
+    report[REPORTCOLS[8]].append(guide.rs3_score)  # rs3 score
+    report[REPORTCOLS[9]].append(guide.cfdon_score)  # cfdon score
+    report[REPORTCOLS[10]].append(compute_guide_origin(guide.samples))  # genome
+    report[REPORTCOLS[11]].append(guide.samples)  # samples list
+    report[REPORTCOLS[12]].append(guide.variants)  # variant ids
+    report[REPORTCOLS[13]].append(str(region.coordinates))  # region
+    report[REPORTCOLS[14]].append(guide.hapid)  # haplotype id
     return report
 
 
@@ -115,7 +117,7 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
         report.to_csv(guidesreport, sep="\t", index=False)  # store report
     except FileNotFoundError as e:
         exception_handler(
-            CrisprHawkGuidesReportError, # type: ignore
+            CrisprHawkGuidesReportError,  # type: ignore
             f"Unable to write to {guidesreport}",
             os.EX_OSERR,
             debug,
@@ -123,7 +125,7 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
         )
     except PermissionError as e:
         exception_handler(
-            CrisprHawkGuidesReportError, # type: ignore
+            CrisprHawkGuidesReportError,  # type: ignore
             f"Permission denied to write {guidesreport}",
             os.EX_OSERR,
             debug,
@@ -131,7 +133,7 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
         )
     except Exception as e:
         exception_handler(
-            CrisprHawkGuidesReportError, # type: ignore
+            CrisprHawkGuidesReportError,  # type: ignore
             f"An unexpected error occurred while writing {guidesreport}",
             os.EX_OSERR,
             debug,
@@ -140,9 +142,7 @@ def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
 
 
 def collapse_samples(samples: pd.Series) -> str:
-    return (
-        "" if samples.empty else ",".join(sorted(set(",".join(samples).split(","))))
-    )
+    return "" if samples.empty else ",".join(sorted(set(",".join(samples).split(","))))
 
 
 def parse_variant_ids(variant_ids: str) -> Set[str]:
@@ -154,15 +154,14 @@ def check_variant_ids(variant_ids_list: List[str]) -> str:
     unique_variant_ids_sets = {tuple(sorted(vs)) for vs in variant_sets}
     return ",".join(sorted(unique_variant_ids_sets.pop()))
 
+
 def collapse_haplotype_ids(hapids: pd.Series) -> str:
-    return (
-        "" if hapids.empty else ",".join(sorted(set(",".join(hapids).split(","))))
-    )
+    return "" if hapids.empty else ",".join(sorted(set(",".join(hapids).split(","))))
 
 
 def collapse_report_entries(report: pd.DataFrame) -> pd.DataFrame:
     # Define the columns to group by
-    group_cols = REPORTCOLS[:5] + REPORTCOLS[6:9]
+    group_cols = REPORTCOLS[:5] + REPORTCOLS[6:11]
     return report.groupby(group_cols, as_index=False).agg(
         {
             "pam_class": "first",  # Assuming pam_class is the same across entries

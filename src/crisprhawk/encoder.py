@@ -12,10 +12,10 @@ import os
 
 
 def _encoder(nt: str, position: int, debug: bool) -> Bitset:
-    """Encodes a nucleotide character into a Bitset representation using IUPAC 
+    """Encodes a nucleotide character into a Bitset representation using IUPAC
     codes.
-    
-    This function converts a nucleotide at a given position into its corresponding 
+
+    This function converts a nucleotide at a given position into its corresponding
     bitset, handling ambiguous IUPAC codes.
 
     Args:
@@ -62,7 +62,7 @@ def _encoder(nt: str, position: int, debug: bool) -> Bitset:
         bitset.set_bits("0111")
     else:  # default case
         exception_handler(
-            CrisprHawkIupacTableError, # type: ignore
+            CrisprHawkIupacTableError,  # type: ignore
             f"The nucleotide {nt} at {position} is not a IUPAC character",
             os.EX_DATAERR,
             debug,

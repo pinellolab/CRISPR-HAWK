@@ -1,8 +1,10 @@
 """ """
 
 from .azimuth.model_comparison import predict
+from rs3.seq import predict_seq
 from .cfdscore.cfdscore import compute_cfd, load_mismatch_pam_scores
 from ..guide import Guide
+from ..utils import suppress_stdout, suppress_stderr
 
 from typing import List
 
@@ -36,11 +38,23 @@ def azimuth(guides: np.ndarray) -> List[float]:
     # wrapper for azimuth predict function
     return list(predict(guides))
 
+
+def rs3(guides: List[str]) -> List[float]:
+    # wrapper for ruleset3 predict function
+    with suppress_stdout(), suppress_stderr():
+        rs3scores = predict_seq(guides, sequence_tracr="Hsu2013")
+    return list(rs3scores)
+
+
 def cfdon(guide_ref: Guide, guides: List[Guide], debug: bool) -> List[float]:
     if not guide_ref:
         return [np.nan] * len(guides)
     mmscores, pamscores = load_mismatch_pam_scores(debug)  # load scoring models
-    return [compute_cfd(guide_ref.guide, sg.guide, sg.pam[-2:], mmscores, pamscores, debug) for sg in guides]  # compute cfd score for on-targets
+    return [
+        compute_cfd(guide_ref.guide, sg.guide, sg.pam[-2:], mmscores, pamscores, debug)
+        for sg in guides
+    ]  # compute cfd score for on-targets
+
 
 # def mit_score(guide: str, sequence: str) -> float:
 #     assert len(guide) == len(sequence) == 20

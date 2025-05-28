@@ -749,7 +749,7 @@ class VCF:
     @property
     def phased(self) -> bool:
         return self._phased
-    
+
     @property
     def samples(self) -> List[str]:
         return self._samples

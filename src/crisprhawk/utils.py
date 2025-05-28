@@ -6,7 +6,9 @@ from typing import Any, List
 from itertools import permutations
 from colorama import Fore
 
+import contextlib
 import sys
+import io
 import os
 
 # define static variables shared across software modules
@@ -103,7 +105,7 @@ def reverse_complement(sequence: str, debug: bool) -> str:
         return "".join([RC[nt] for nt in sequence[::-1]])
     except KeyError as e:
         exception_handler(
-            ValueError, # type: ignore
+            ValueError,  # type: ignore
             f"Failed reverse complement on {sequence}",
             os.EX_DATAERR,
             debug,
@@ -144,6 +146,20 @@ def print_verbosity(message: str, verbosity: int, verbosity_threshold: int) -> N
 
 
 def adjust_guide_position(pos: int, guidelen: int, pamlen: int, right: bool) -> int:
+    """Adjust the guide position based on orientation.
+
+    Returns the original position if right is True, otherwise subtracts the 
+    guide length.
+
+    Args:
+        pos: The original position.
+        guidelen: The length of the guide.
+        pamlen: The length of the PAM sequence (unused).
+        right: Boolean indicating orientation.
+
+    Returns:
+        The adjusted guide position as an integer.
+    """
     return pos if right else pos - guidelen
 
 
@@ -177,7 +193,7 @@ def flatten_list(lst: List[List[Any]]) -> List[Any]:
 def match_iupac(seq: str, pattern: str) -> bool:
     """Check if a nucleotide sequence matches a given IUPAC pattern.
 
-    Compares each nucleotide in the sequence to the corresponding IUPAC code in 
+    Compares each nucleotide in the sequence to the corresponding IUPAC code in
     the pattern returning True if all nucleotides are compatible with the pattern.
 
     Args:
@@ -193,10 +209,11 @@ def match_iupac(seq: str, pattern: str) -> bool:
     pattern = pattern.upper()
     return all(snt in list(IUPACTABLE[pnt]) for snt, pnt in zip(seq, pattern))
 
+
 def dna2rna(sequence: str) -> str:
     """Convert a DNA sequence to its RNA equivalent.
 
-    Replaces all occurrences of thymine ('T' or 't') with uracil ('U' or 'u') in 
+    Replaces all occurrences of thymine ('T' or 't') with uracil ('U' or 'u') in
     the input sequence.
 
     Args:
@@ -206,3 +223,37 @@ def dna2rna(sequence: str) -> str:
         The RNA sequence as a string.
     """
     return sequence.replace("T", "U").replace("t", "u")
+
+
+@contextlib.contextmanager
+def suppress_stdout():
+    """Context manager to suppress standard output.
+
+    Temporarily redirects sys.stdout to an in-memory buffer.
+
+    Returns:
+        None
+    """
+    stdout_channel = sys.stdout
+    sys.stdout = io.StringIO()
+    try:
+        yield
+    finally:
+        sys.stdout = stdout_channel
+
+
+@contextlib.contextmanager
+def suppress_stderr():
+    """Context manager to suppress standard error output.
+
+    Temporarily redirects sys.stderr to an in-memory buffer.
+
+    Returns:
+        None
+    """
+    stderr_channel = sys.stderr
+    sys.stderr = io.StringIO()
+    try:
+        yield
+    finally:
+        sys.stderr = stderr_channel

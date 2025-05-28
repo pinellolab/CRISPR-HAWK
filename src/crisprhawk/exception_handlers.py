@@ -1,9 +1,9 @@
 """Exception handling utilities for CRISPR-HAWK.
 
-This module provides functions to handle system interrupts and exceptions in a 
+This module provides functions to handle system interrupts and exceptions in a
 consistent manner.
 
-It includes handlers for SIGINT signals and for printing error messages and 
+It includes handlers for SIGINT signals and for printing error messages and
 exiting the program gracefully.
 """
 
@@ -17,7 +17,7 @@ import os
 def sigint_handler() -> None:
     """Handle SIGINT (interrupt signal) to exit the program gracefully.
 
-    Prints a message to standard error and exits the program with an OS error 
+    Prints a message to standard error and exits the program with an OS error
     code when SIGINT is received.
     """
     # print message when SIGINT is caught to exit gracefully from the execution
@@ -34,7 +34,7 @@ def exception_handler(
 ) -> NoReturn:
     """Handle exceptions by printing an error message and exiting the program.
 
-    Raises the specified exception with a formatted message in debug mode, or 
+    Raises the specified exception with a formatted message in debug mode, or
     prints an error and exits with the given code otherwise.
 
     Args:
@@ -45,7 +45,7 @@ def exception_handler(
         e: An optional previous exception to chain.
 
     Returns:
-        This function does not return; it exits the program or raises an 
+        This function does not return; it exits the program or raises an
             exception.
     """
     init()  # initialize colorama render

@@ -39,7 +39,7 @@ def read_fasta(fastafile: str, fasta_idx: str, verbosity: int, debug: bool) -> F
         fasta = Fasta(fastafile, verbosity, debug, faidx=fasta_idx)
     except Exception as e:
         exception_handler(
-            Exception, # type: ignore
+            Exception,  # type: ignore
             f"Failed parsing Fasta file ({fastafile})",
             os.EX_DATAERR,
             debug,
@@ -75,7 +75,7 @@ def read_bed(bedfile: str, verbosity: int, debug: bool) -> Bed:
         bed = Bed(bedfile, PADDING, debug)  # guidelen used to pad regions
     except Exception as e:
         exception_handler(
-            Exception, f"Failed parsing BED file ({bedfile})", os.EX_DATAERR, debug, e # type: ignore
+            Exception, f"Failed parsing BED file ({bedfile})", os.EX_DATAERR, debug, e  # type: ignore
         )
     print_verbosity(
         f"Parsed {len(bed)} regions in {(time() - start):.2f}s",
@@ -113,7 +113,7 @@ def extract_regions(bed: Bed, fasta: Fasta, verbosity: int, debug: bool) -> Regi
         regions = bed.extract_regions(fasta)
     except AttributeError as e:
         exception_handler(
-            Exception, # type: ignore
+            Exception,  # type: ignore
             f"Failed region extraction from {fasta.fname}",
             os.EX_DATAERR,
             debug,

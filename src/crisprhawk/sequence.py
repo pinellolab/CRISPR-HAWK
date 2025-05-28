@@ -25,7 +25,9 @@ class Sequence:
         _sequence_bits: The encoded DNA sequence as a list of bits.
     """
 
-    def __init__(self, sequence: str, debug: bool, allow_lower_case: Optional[bool] = False) -> None:
+    def __init__(
+        self, sequence: str, debug: bool, allow_lower_case: Optional[bool] = False
+    ) -> None:
         """Initialize a Sequence object with a DNA string.
 
         Validates and stores the DNA sequence, converting it to uppercase and preparing it for efficient access.
@@ -38,7 +40,9 @@ class Sequence:
             ValueError: If the input string contains non-DNA characters.
         """
         self._debug = debug  # store debug flag
-        sequence = sequence if allow_lower_case else sequence.upper()  # force sequence nucleotides to upper case
+        sequence = (
+            sequence if allow_lower_case else sequence.upper()
+        )  # force sequence nucleotides to upper case
         if any(nt.upper() not in IUPAC for nt in set(sequence)):
             exception_handler(
                 ValueError,

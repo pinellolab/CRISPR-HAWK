@@ -21,7 +21,7 @@ from time import time
 def encode_pam(pamseq: str, verbosity: int, debug: bool) -> PAM:
     """Creates and encodes a PAM object from a given sequence.
 
-    This function constructs a PAM object, encodes its sequence, and logs the 
+    This function constructs a PAM object, encodes its sequence, and logs the
     process.
 
     Args:
@@ -48,10 +48,10 @@ def encode_pam(pamseq: str, verbosity: int, debug: bool) -> PAM:
 def encode_haplotypes(
     haplotypes: Dict[Region, List[Haplotype]], verbosity: int, debug: bool
 ) -> Dict[Region, List[List[Bitset]]]:
-    """Encodes haplotype sequences into lists of Bitset objects for efficient 
+    """Encodes haplotype sequences into lists of Bitset objects for efficient
     guide search.
 
-    This function processes each haplotype sequence for all regions and encodes 
+    This function processes each haplotype sequence for all regions and encodes
     them into bit representations.
 
     Args:
@@ -60,7 +60,7 @@ def encode_haplotypes(
         debug: Whether to enable debug mode for error handling.
 
     Returns:
-        Dict[Region, List[List[Bitset]]]: A dictionary mapping regions to lists 
+        Dict[Region, List[List[Bitset]]]: A dictionary mapping regions to lists
             of encoded haplotype bitsets.
     """
     # encode haplotypes in bit for efficient guide search
@@ -119,7 +119,14 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         args.fasta, args.bedfile, args.fasta_idx, args.verbosity, args.debug
     )
     # reconstruct haplotypes for each input region
-    haplotypes, variants_present, phased = reconstruct_haplotypes(args.vcfs, regions, args.haplotype_table, args.outdir, args.verbosity, args.debug)
+    haplotypes, variants_present, phased = reconstruct_haplotypes(
+        args.vcfs,
+        regions,
+        args.haplotype_table,
+        args.outdir,
+        args.verbosity,
+        args.debug,
+    )
     # encode pam and haplotype sequences in bit for efficient guides search
     pam = encode_pam(args.pam, args.verbosity, args.debug)
     haplotypes_bits = encode_haplotypes(haplotypes, args.verbosity, args.debug)

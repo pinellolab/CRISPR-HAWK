@@ -1,8 +1,8 @@
 """Provides a Bitset class for efficient manipulation of fixed-size binary data.
 
-This module defines the Bitset class, which allows for setting, resetting, testing, 
+This module defines the Bitset class, which allows for setting, resetting, testing,
 and performing bitwise operations on individual bits.
-It is designed for compact storage and manipulation of binary data, with error 
+It is designed for compact storage and manipulation of binary data, with error
 handling for invalid operations.
 """
 
@@ -17,8 +17,8 @@ SIZE = 4  # bit size
 class Bitset(object):
     """A class for representing and manipulating a fixed-size set of bits.
 
-    Bitset provides methods to set, reset, test, and perform bitwise operations 
-    on individual bits. It is useful for efficient storage and manipulation of 
+    Bitset provides methods to set, reset, test, and perform bitwise operations
+    on individual bits. It is useful for efficient storage and manipulation of
     binary data in a compact form.
 
     Attributes:
@@ -26,10 +26,11 @@ class Bitset(object):
         _bits (int): The integer value representing the bits.
         _debug (bool): Flag to enable debug mode for error handling.
     """
+
     def __init__(self, size: int, debug: bool) -> None:
         """Initialize a Bitset with a specified size and debug mode.
 
-        Creates a bitset of the given size, initializing all bits to zero and 
+        Creates a bitset of the given size, initializing all bits to zero and
         setting the debug flag.
 
         Args:
@@ -53,7 +54,7 @@ class Bitset(object):
     def __str__(self) -> str:
         """Return the bitset as a zero-padded binary string.
 
-        Converts the internal integer representation to a binary string, padded 
+        Converts the internal integer representation to a binary string, padded
         to the bitset's size.
 
         Returns:
@@ -68,7 +69,7 @@ class Bitset(object):
     def __repr__(self) -> str:
         """Return a string representation of the Bitset object.
 
-        Provides a detailed string showing the class name, binary value, and 
+        Provides a detailed string showing the class name, binary value, and
         size of the bitset.
 
         Returns:
@@ -80,7 +81,7 @@ class Bitset(object):
     def __and__(self, bitset: "Bitset") -> "Bitset":
         """Perform a bitwise AND operation with another Bitset.
 
-        Returns a new Bitset that is the result of the bitwise AND between this 
+        Returns a new Bitset that is the result of the bitwise AND between this
         bitset and another of the same size.
 
         Args:
@@ -114,7 +115,7 @@ class Bitset(object):
     def set(self, index: int) -> None:
         """Set the bit at the specified index to 1.
 
-        Updates the bit at the given index to 1, raising an error if the index 
+        Updates the bit at the given index to 1, raising an error if the index
         is out of bounds.
 
         Args:
@@ -138,7 +139,7 @@ class Bitset(object):
     def reset(self, index: int) -> None:
         """Reset the bit at the specified index to 0.
 
-        Sets the bit at the given index to 0, raising an error if the index is 
+        Sets the bit at the given index to 0, raising an error if the index is
         out of bounds.
 
         Args:
@@ -160,15 +161,15 @@ class Bitset(object):
     def set_bits(self, bits: str) -> None:
         """Set the bits of the bitset using a binary string.
 
-        Updates the bitset to match the provided string of '0's and '1's, 
+        Updates the bitset to match the provided string of '0's and '1's,
         raising an error for invalid input.
 
         Args:
-            bits: A string representing the bits to set, consisting only of '0' 
+            bits: A string representing the bits to set, consisting only of '0'
                 and '1'.
 
         Raises:
-            CrisprHawkBitsetError: If the input string contains characters other 
+            CrisprHawkBitsetError: If the input string contains characters other
                 than '0' or '1'.
         """
         if any(bit not in "01" for bit in bits):
@@ -199,7 +200,7 @@ class Bitset(object):
     def test(self, index: int) -> bool:
         """Test whether the bit at the specified index is set to 1.
 
-        Checks if the bit at the given index is set, raising an error if the 
+        Checks if the bit at the given index is set, raising an error if the
         index is out of bounds.
 
         Args:

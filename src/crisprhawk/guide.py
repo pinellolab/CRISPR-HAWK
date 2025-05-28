@@ -51,7 +51,7 @@ class Guide:
             return "".join(self._sequence[idx])
         except IndexError as e:
             exception_handler(
-                CrisprHawkGuideError, # type: ignore
+                CrisprHawkGuideError,  # type: ignore
                 f"Index {idx} out of range",
                 os.EX_DATAERR,
                 self._debug,
@@ -88,22 +88,37 @@ class Guide:
     def set_azimuth_score(self, score: float) -> None:
         if not isinstance(score, float):
             exception_handler(
-                TypeError, 
+                TypeError,
                 f"Expected azimuth score of type {float.__name__}, got {type(score).__name__}",
                 os.EX_DATAERR,
                 self._debug,
             )
         self._azimuth_score = str(round_score(score))
 
+    def set_rs3_score(self, score: float) -> None:
+        if not isinstance(score, float):
+            exception_handler(
+                TypeError,
+                f"Expected rs3 score of type {float.__name__}, got {type(score).__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
+        self._rs3_score = str(round_score(score))
+
     def set_cfdon_score(self, score: float) -> None:
         if not isinstance(score, float):
-            exception_handler(TypeError, f"Expected cfdon score of type {float.__name__}, got {type(score).__name__}", os.EX_DATAERR, self._debug)
+            exception_handler(
+                TypeError,
+                f"Expected cfdon score of type {float.__name__}, got {type(score).__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
         self._cfdon_score = str(round_score(score))
 
     @property
     def start(self) -> int:
         return self._start
-    
+
     @property
     def stop(self) -> int:
         return self._stop
@@ -147,11 +162,15 @@ class Guide:
     @property
     def azimuth_score(self) -> str:
         return self._azimuth_score
-    
+
+    @property
+    def rs3_score(self) -> str:
+        return self._rs3_score
+
     @property
     def cfdon_score(self) -> str:
         return self._cfdon_score
-    
+
     @property
     def hapid(self) -> str:
         return self._hapid
@@ -161,7 +180,7 @@ class GuideIterator:
     def __init__(self, guide: Guide) -> None:
         if not hasattr(guide, "_guide"):  # always trace this error
             exception_handler(
-                AttributeError, # type: ignore
+                AttributeError,  # type: ignore
                 f"Missing _guide attribute on {self.__class__.__name__}",
                 os.EX_DATAERR,
                 True,

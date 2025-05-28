@@ -2,7 +2,7 @@
 
 from .crisprhawk_error import CrisprHawkCfdScoreError
 from .exception_handlers import exception_handler
-from .scores import azimuth, cfdon
+from .scores import azimuth, cfdon, rs3
 from .guide import Guide, GUIDESEQPAD
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL
 from .region import Region
@@ -56,17 +56,48 @@ def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guid
     )
     return guides
 
-def group_guides_position(guides: List[Guide], debug: bool) -> Dict[str, Dict[int, Union[Guide, List[Guide]]]]:
+
+def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    print_verbosity("Computing RS3 score", verbosity, VERBOSITYLVL[3])
+    start = time()  # azimuth score start time
+    guides_seqs = [
+        guide.sequence[(GUIDESEQPAD - 4) : (-GUIDESEQPAD + 3)].upper()
+        for guide in guides
+    ]
+    try:  # compute azimuth scores
+        rs3_scores = rs3(guides_seqs)
+    except Exception as e:
+        exception_handler(
+            ValueError, "RS3 score calculation failed", os.EX_DATAERR, debug, e
+        )
+    assert len(rs3_scores) == len(guides)  # should match
+    for i, score in enumerate(rs3_scores):
+        guides[i].set_rs3_score(score)  # assign score to each guide
+    print_verbosity(
+        f"RS3 scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+    )
+    return guides
+
+
+def group_guides_position(
+    guides: List[Guide], debug: bool
+) -> Dict[str, Dict[int, Union[Guide, List[Guide]]]]:
     # dictionary to map guides to positions (0 -> ref; 1 -> alt)
     pos_guide = defaultdict(lambda: {0: None, 1: []})
     for guide in guides:
         poskey = f"{guide.start}_{guide.strand}"
         if guide.samples == "REF":  # reference guide
             if pos_guide[poskey][0] is not None:
-                exception_handler(CrisprHawkCfdScoreError, f"Duplicate REF guide at position {guide.start}? CFDon calculation failed", os.EX_DATAERR, debug)
+                exception_handler(
+                    CrisprHawkCfdScoreError,
+                    f"Duplicate REF guide at position {guide.start}? CFDon calculation failed",
+                    os.EX_DATAERR,
+                    debug,
+                )
             pos_guide[poskey][0] = guide  # type: ignore
-        pos_guide[poskey][1].append(guide) # type: ignore
-    return pos_guide # type: ignore
+        pos_guide[poskey][1].append(guide)  # type: ignore
+    return pos_guide  # type: ignore
+
 
 def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     print_verbosity("Computing CFDon score", verbosity, VERBOSITYLVL[3])
@@ -74,17 +105,24 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
     guide_groups = group_guides_position(guides, debug)  # group guides by positions
     for _, gg in guide_groups.items():
         try:
-            cfdon_scores = cfdon(gg[0], gg[1], debug) # type: ignore
+            cfdon_scores = cfdon(gg[0], gg[1], debug)  # type: ignore
         except Exception as e:
-            exception_handler(CrisprHawkCfdScoreError, "CFDon score calculation failed", os.EX_DATAERR, debug, e)
+            exception_handler(
+                CrisprHawkCfdScoreError,
+                "CFDon score calculation failed",
+                os.EX_DATAERR,
+                debug,
+                e,
+            )
         for i, score in enumerate(cfdon_scores):
-            gg[1][i].set_cfdon_score(score) # type: ignore
+            gg[1][i].set_cfdon_score(score)  # type: ignore
     # revert grouped guides by position into list
-    guides = flatten_list([gg[1] for _, gg in guide_groups.items()]) # type: ignore
+    guides = flatten_list([gg[1] for _, gg in guide_groups.items()])  # type: ignore
     print_verbosity(
         f"CFDon scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
     return guides
+
 
 def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     print_verbosity(
@@ -135,6 +173,8 @@ def annotate_guides(
         guides_list = annotate_variants(guides_list, verbosity, debug)
         # annotate each guide with azimuth scores
         guides[region] = azimuth_score(guides_list, verbosity, debug)
+        # annotate each guide with rs3 scores
+        guides[region] = rs3_score(guides_list, verbosity, debug)
         # annotate each guide with CFDon scores
         guides[region] = cfdon_score(guides_list, verbosity, debug)
     print_verbosity(

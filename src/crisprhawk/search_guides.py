@@ -17,10 +17,12 @@ from time import time
 import os
 
 
-def match(bitset1: List[Bitset], bitset2: List[Bitset], position: int, debug: bool) -> bool:
+def match(
+    bitset1: List[Bitset], bitset2: List[Bitset], position: int, debug: bool
+) -> bool:
     """Performs a bitwise match between two Bitset objects at a given position.
 
-    This function checks if all corresponding bits match between two bitsets, 
+    This function checks if all corresponding bits match between two bitsets,
     raising an exception if the operation fails.
 
     Args:
@@ -41,7 +43,7 @@ def match(bitset1: List[Bitset], bitset2: List[Bitset], position: int, debug: bo
         return all((ntbit & bitset2[i]).to_bool() for i, ntbit in enumerate(bitset1))
     except ValueError as e:
         exception_handler(
-            CrisprHawkBitsetError, # type: ignore
+            CrisprHawkBitsetError,  # type: ignore
             f"PAM bitwise matching failed at position {position}",
             os.EX_DATAERR,
             debug,
@@ -54,7 +56,7 @@ def scan_haplotype(
 ) -> Tuple[List[int], List[int]]:
     """Scans a haplotype for PAM matches on both forward and reverse strands.
 
-    This function returns the positions of all matches for the PAM and its 
+    This function returns the positions of all matches for the PAM and its
     reverse complement within the specified range.
 
     Args:
@@ -65,7 +67,7 @@ def scan_haplotype(
         debug: Whether to enable debug mode for error handling.
 
     Returns:
-        Tuple[List[int], List[int]]: Lists of match positions for forward and 
+        Tuple[List[int], List[int]]: Lists of match positions for forward and
             reverse strands.
     """
     # lists storing hits for input pam on forward and reverse strands
@@ -88,7 +90,7 @@ def pam_search(
 ) -> List[Tuple[List[int], List[int]]]:
     """Searches for PAM occurrences in each haplotype within a genomic region.
 
-    This function scans all haplotypes for matches to the PAM and its reverse 
+    This function scans all haplotypes for matches to the PAM and its reverse
     complement, returning the positions of all matches.
 
     Args:
@@ -100,7 +102,7 @@ def pam_search(
         debug: Whether to enable debug mode for error handling.
 
     Returns:
-        List[Tuple[List[int], List[int]]]: A list of tuples containing forward and 
+        List[Tuple[List[int], List[int]]]: A list of tuples containing forward and
             reverse strand match positions for each haplotype.
     """
     pam_hits = []  # list of pam hits
@@ -112,7 +114,9 @@ def pam_search(
         )
         # define scan stop position for each haplotype
         scan_stop = hap.posmap_rev[region.stop - PADDING] - len(pam) + 1
-        scan_start = hap.posmap_rev[region.start + PADDING]  # start position for guides search
+        scan_start = hap.posmap_rev[
+            region.start + PADDING
+        ]  # start position for guides search
         # scan haplotype for pam occurrences
         matches_fwd, matches_rev = scan_haplotype(
             pam, haplotypes_bits[i], scan_start, scan_stop, debug
@@ -131,7 +135,7 @@ def extract_guide_sequence(
 ) -> str:
     """Extracts the guide RNA sequence from a haplotype at a specified position.
 
-    This function returns the guide sequence including the PAM and optional 
+    This function returns the guide sequence including the PAM and optional
     padding, depending on the strand direction.
 
     Args:
@@ -154,6 +158,7 @@ def extract_guide_sequence(
         haplotype[position - guidelen - GUIDESEQPAD : position + pamlen + GUIDESEQPAD]
     )
 
+
 def _valid_guide(pamguide: str, pam: PAM, direction: int, debug: bool) -> bool:
     p = PAM(pamguide, debug)
     p.encode(0)
@@ -161,23 +166,37 @@ def _valid_guide(pamguide: str, pam: PAM, direction: int, debug: bool) -> bool:
         return all((ntbit & pam.bits[i]).to_bool() for i, ntbit in enumerate(p.bits))
     return all((ntbit & pam.bitsrc[i]).to_bool() for i, ntbit in enumerate(p.bits))
 
+
 def _decode_iupac(nt: str, debug: bool) -> str:
     try:
         ntiupac = IUPACTABLE[nt.upper()]
     except KeyError as e:
-        exception_handler(CrisprHawkIupacTableError, f"Invalid IUPAC character ({nt})", os.EX_DATAERR, debug, e) # type: ignore
+        exception_handler(CrisprHawkIupacTableError, f"Invalid IUPAC character ({nt})", os.EX_DATAERR, debug, e)  # type: ignore
     return ntiupac.lower() if nt.islower() else ntiupac
 
-def resolve_guide(guideseq: str, pam: PAM, direction: int, right: bool, debug: bool) -> List[str]:
-    guide_alts = ["".join(g) for g in product(*[list(_decode_iupac(nt, debug)) for nt in guideseq])]
+
+def resolve_guide(
+    guideseq: str, pam: PAM, direction: int, right: bool, debug: bool
+) -> List[str]:
+    guide_alts = [
+        "".join(g)
+        for g in product(*[list(_decode_iupac(nt, debug)) for nt in guideseq])
+    ]
     idx = GUIDESEQPAD if right else (len(guideseq) - GUIDESEQPAD - len(pam))
-    return [guide for guide in guide_alts if _valid_guide(guide[idx:idx + len(pam)], pam, direction, debug)]
+    return [
+        guide
+        for guide in guide_alts
+        if _valid_guide(guide[idx : idx + len(pam)], pam, direction, debug)
+    ]
 
 
-def adjust_guide_position(posmap: Dict[int, int], posrel: int, guidelen: int, pamlen: int, right: bool) -> Tuple[int, int]:
+def adjust_guide_position(
+    posmap: Dict[int, int], posrel: int, guidelen: int, pamlen: int, right: bool
+) -> Tuple[int, int]:
     start = posmap[posrel] if right else posmap[posrel - guidelen]
     stop = posmap[posrel + guidelen + pamlen] + 1 if right else posmap[posrel + pamlen]
     return start, stop
+
 
 def retrieve_guides(
     pam_hits: List[int],
@@ -206,11 +225,13 @@ def retrieve_guides(
         ):  # reference guide
             continue
         guideseqs = [guideseq]
-        if variants_present and not phased:  # handle guides with iupac 
+        if variants_present and not phased:  # handle guides with iupac
             guideseqs = resolve_guide(guideseq, pam, direction, right, debug)
         for guideseq in guideseqs:
             # compute guide's start and stop positions
-            guide_start, guide_stop = adjust_guide_position(haplotype.posmap, pos, guidelen, len(pam), right)
+            guide_start, guide_stop = adjust_guide_position(
+                haplotype.posmap, pos, guidelen, len(pam), right
+            )
             guides.append(
                 Guide(
                     guide_start,
