@@ -126,6 +126,14 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         "as TSV file. By default, the haplotype table is not returned",
     )
     group.add_argument(
+        "--estimate-offtargets",
+        action="store_true",
+        dest="estimate_offtargets",
+        default=False,
+        help="When enabled, the off-targets are estimated for each guide RNA "
+        "candidate. By default, off-targets are not estimated",
+    )
+    group.add_argument(
         "--verbosity",
         type=int,
         metavar="VERBOSITY",

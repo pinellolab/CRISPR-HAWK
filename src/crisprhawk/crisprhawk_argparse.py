@@ -231,6 +231,10 @@ class CrisprHawkInputArgs:
     @property
     def haplotype_table(self) -> bool:
         return self._args.haplotype_table
+    
+    @property
+    def estimate_offtargets(self) -> bool:
+        return self._args.estimate_offtargets
 
     @property
     def verbosity(self) -> int:

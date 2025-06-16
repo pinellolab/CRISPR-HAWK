@@ -37,6 +37,7 @@ class Guide:
         self._samples = samples  # samples carrying guide variants
         self._variants = variants  # variants overlapping guide
         self._hapid = hapid  # haplotype ID
+        self._compute_guide_id()  # compute unique guide ID
         self._initialize_scores()  # initialize scores to NAs
 
     def __repr__(self) -> str:
@@ -70,6 +71,10 @@ class Guide:
         else:  # guide on the left side of pam
             self._pamseq = sequence[-self._pamlen :]
             self._guideseq = sequence[: -self._pamlen]
+
+    def _compute_guide_id(self) -> None:
+        assert hasattr(self, "_start") and hasattr(self, "_stop") and hasattr(self, "_direction") and hasattr(self, "_hapid") and hasattr(self, "_guideseq")
+        self._guide_id = f"{self._start}_{self._stop}_{self._direction}_{self._hapid}_{self._guideseq}"  # unique identifier for the guide
 
     def _initialize_scores(self) -> None:
         # initialize scores for guide to NA
@@ -158,6 +163,10 @@ class Guide:
     @property
     def right(self) -> bool:
         return self._right
+    
+    @property
+    def guide_id(self) -> str:
+        return self._guide_id
 
     @property
     def azimuth_score(self) -> str:
