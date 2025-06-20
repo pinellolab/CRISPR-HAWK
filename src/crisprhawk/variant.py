@@ -582,7 +582,7 @@ class VCF:
         if not os.path.isfile(fname):
             exception_handler(
                 FileNotFoundError,
-                f"Connot find input VCF {fname}",
+                f"Cannot find input VCF {fname}",
                 os.EX_DATAERR,
                 self._debug,
             )

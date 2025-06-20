@@ -118,6 +118,25 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         "field are processed, while others are skipped",
     )
     group.add_argument(
+        "--functional-annotation",
+        type=str,
+        metavar="FUNC-ANN-BED",
+        dest="functional_annotation",
+        nargs="?",
+        default="",
+        help="BED file specifying functional genomic regions to functionally "
+        "annotate guide candidates"
+    )
+    group.add_argument(
+        "--gene-annotation",
+        type=str,
+        metavar="GENE-ANN-BED",
+        dest="gene_annotation",
+        nargs="?",
+        default="",
+        help="BED file specifying gene regions to annotate guide candidates"
+    )
+    group.add_argument(
         "--haplotype-table",
         action="store_true",
         dest="haplotype_table",

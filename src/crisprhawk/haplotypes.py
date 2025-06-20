@@ -123,7 +123,7 @@ def compute_haplotypes_phased(
                 # add variant to sample-variant map
                 sample_variants[s][chromcopy].append(variant)
     # remove samples without variants
-    sample_variants = {s: v for s, v in sample_variants.items() if v[0] and v[1]}
+    sample_variants = {s: v for s, v in sample_variants.items() if v[0] or v[1]}
     return sample_variants
 
 

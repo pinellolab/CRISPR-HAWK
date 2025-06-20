@@ -4,8 +4,9 @@ from .crisprhawk_error import CrisprHawkCfdScoreError, CrisprHawkAzimuthScoreErr
 from .exception_handlers import exception_handler
 from .scores import azimuth, cfdon, rs3
 from .guide import Guide, GUIDESEQPAD
-from .utils import print_verbosity, flatten_list, suppress_stderr, suppress_stdout, VERBOSITYLVL
+from .utils import print_verbosity, flatten_list, suppress_stderr, suppress_stdout, VERBOSITYLVL, IUPACTABLE
 from .region import Region
+from .pam import PAM
 
 from pybedtools import BedTool
 from collections import defaultdict
@@ -290,7 +291,49 @@ def sam2bed(guide_fa: str, guide_sa: str, genome: str, position: int, pamlen: in
     return f"{guide_bed}.sorted"
 
 
-def search_offtargets(guides: List[Guide], genome: str, debug: bool):
+def offtarget_sequence(guide_bed: str, genome: str) -> List[Tuple[str, str]]:
+    bed = BedTool(guide_bed) # load bed file
+    sequences = bed.sequence(fi=genome, s=True, name=True)  # extract offtargets sequences
+    # construct a list of offtarget sequences
+    sequences = open(sequences.seqfn).read().split()
+    return [(sequences[i], sequences[i + 1]) for i in range(0, len(sequences), 2)]
+
+
+def matchpam(pam: str, otpam: str) -> bool:
+    assert len(pam) == len(otpam)
+    for i, nt in enumerate(pam):
+        if otpam[i] not in IUPACTABLE[nt]:
+            return False
+    return True
+ 
+        
+
+def filter_offtargets(sequences: List[Tuple[str, str]], pam: PAM, pamlen: int, right: bool) -> List[Tuple[str, str, str, str, str]]:
+    offtargets = []
+    for otname, ot in sequences:
+        fields = otname.split("|")  # retrieve offtarget annotation fields
+        skip = True
+        if bool(int(fields[7][:1])):  # ignore repetitive alignments
+            skip = False
+        else:
+            pamot = ot[:pamlen] if right else ot[-pamlen:]
+            skip = not matchpam(pam.pam, pamot) # check pam validity
+        if not skip:
+            offtargets.append((fields[1], fields[2], fields[3], fields[4], ot, fields[5]))
+    return offtargets
+        
+            
+
+
+
+
+def retrieve_offtargets(guide_bed: str, genome: str, pam: PAM, pamlen: int, right: bool) -> List[Tuple[str, str, str, str, str]]:
+    offtargets = offtarget_sequence(guide_bed, genome)  # retrieve offtargets sequence
+    return filter_offtargets(offtargets, pam, pamlen, right)
+
+
+
+def search_offtargets(guides: List[Guide], pam: PAM, genome: str, debug: bool):
     workingdir = tempfile.mkdtemp(prefix="crisprhawk_")  # create temp dir
     print(workingdir)
     try:
@@ -298,6 +341,9 @@ def search_offtargets(guides: List[Guide], genome: str, debug: bool):
             guide_fa = create_guide_fa(guide, workingdir, debug)  # guide fasta
             guide_sa = search(guide_fa, genome, guide.guidelen, debug)
             guide_bed = sam2bed(guide_fa, guide_sa, genome, guide.start, guide.pamlen, guide.guidelen, guide.right, debug)  # convert sam to bed
+            x = retrieve_offtargets(guide_bed, genome, pam, guide.pamlen, guide.right)
+            print(len(x))
+            print("\n".join(["\t".join(e) for e in x]))
             break
     
     except Exception:
@@ -308,7 +354,7 @@ def search_offtargets(guides: List[Guide], genome: str, debug: bool):
 
 
 def annotate_guides(
-    guides: Dict[Region, List[Guide]], genome: str, estimate_offtargets: bool, verbosity: int, debug: bool
+    guides: Dict[Region, List[Guide]], pam: PAM, genome: str, estimate_offtargets: bool, verbosity: int, debug: bool
 ) -> Dict[Region, List[Guide]]:
     # annotate guides with scores, variants and adjust positions
     print_verbosity("Annotating guides", verbosity, VERBOSITYLVL[1])
@@ -326,7 +372,7 @@ def annotate_guides(
         guides[region] = cfdon_score(guides_list, verbosity, debug)
         if estimate_offtargets:  # estimate off-targets for each guide
             print("estimating off-targets")
-            search_offtargets(guides_list, genome, debug)
+            search_offtargets(guides_list, pam, genome, debug)
             exit()
     print_verbosity(
         f"Annotation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]

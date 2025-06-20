@@ -186,6 +186,16 @@ class CrisprHawkInputArgs:
             self._args.outdir
         ):
             self._parser.error(f"Cannot find output folder {self._args.outdir}")
+        # functional annotation bed
+        if self._args.functional_annotation and (not os.path.exists(self._args.functional_annotation) or not os.path.isfile(self._args.functional_annotations)):
+            self._parser.error(f"Cannot find functional annotation BED {self._args.functional_annotation}")
+        if self._args.functional_annotation and os.stat(self._args.functional_annotation).st_size <= 0:
+            self._parser.error(f"{self._args.functional_annotation} is empty")
+        # gene annotation bed
+        if self._args.gene_annotation and (not os.path.exists(self._args.gene_annotation) or not os.path.isfile(self._args.gene_annotations)):
+            self._parser.error(f"Cannot find functional annotation BED {self._args.functional_annotation}")
+        if self._args.gene_annotation and os.stat(self._args.gene_annotation).st_size <= 0:
+            self._parser.error(f"{self._args.gene_annotation} is empty")
         # verbosity
         if self._args.verbosity not in VERBOSITYLVL:
             self._parser.error(
@@ -227,6 +237,14 @@ class CrisprHawkInputArgs:
     @property
     def no_filter(self) -> bool:
         return self._args.no_filter
+
+    @property
+    def functional_annotation(self) -> str:
+        return self._args.functional_annotation
+
+    @property
+    def gene_annotation(self) -> str:
+        return self._args.gene_annotation
 
     @property
     def haplotype_table(self) -> bool:
