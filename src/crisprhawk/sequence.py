@@ -1,4 +1,9 @@
-""" """
+"""Module for handling DNA sequence and FASTA file operations.
+
+This module provides classes and functions for representing DNA sequences,
+iterating over sequence data, and interacting with FASTA files. It includes
+utilities for sequence validation, efficient access, and FASTA indexing and fetching.
+"""
 
 from .exception_handlers import exception_handler
 from .coordinate import Coordinate

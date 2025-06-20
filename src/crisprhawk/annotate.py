@@ -317,7 +317,7 @@ def filter_offtargets(sequences: List[Tuple[str, str]], pam: PAM, pamlen: int, r
             skip = False
         else:
             pamot = ot[:pamlen] if right else ot[-pamlen:]
-            skip = not matchpam(pam.pam, pamot) # check pam validity
+            skip = not matchpam(pam.pam, pamot.upper()) # check pam validity
         if not skip:
             offtargets.append((fields[1], fields[2], fields[3], fields[4], ot, fields[5]))
     return offtargets

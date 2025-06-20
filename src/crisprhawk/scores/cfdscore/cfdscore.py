@@ -34,5 +34,5 @@ def compute_cfd(wildtype: str, sg: str, pam: str, mmscores: Dict[str, float], pa
         # build mismatch dictionary key
         key = f"r{wildtype[i].upper()}:d{reverse_complement(ntsg.upper(), debug)},{i + 1}"
         score *= mmscores[key]
-    score *= pamscores[pam]  # multiply by PAM score
+    score *= pamscores[pam.upper()]  # multiply by PAM score
     return score

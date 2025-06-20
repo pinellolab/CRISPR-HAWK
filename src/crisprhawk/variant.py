@@ -1,4 +1,9 @@
-""" """
+"""Module for handling variant records and VCF file operations.
+
+This module provides classes and functions for parsing, representing, and fetching
+genomic variant data from VCF files. It includes utilities for variant type
+assignment, ID computation, genotype parsing, and Tabix indexing.
+"""
 
 from .exception_handlers import exception_handler
 from .coordinate import Coordinate
@@ -16,6 +21,24 @@ VTYPES = ["snp", "indel"]  # variant types
 
 
 class VariantRecord:
+    """Represents a single variant record from a VCF file.
+
+    This class provides methods for parsing, representing, and manipulating variant
+    records, including support for multi-allelic variants and variant type assignment.
+
+    Attributes:
+        _debug (bool): Debug mode flag for exception handling.
+        _chrom (str): Chromosome name.
+        _position (int): Variant position.
+        _ref (str): Reference allele.
+        _alt (List[str]): List of alternative alleles.
+        _allelesnum (int): Number of alternative alleles.
+        _vtype (List[str]): List of variant types for each alternative allele.
+        _filter (str): Filter status from the VCF.
+        _vid (List[str]): List of variant IDs.
+        _samples (List[Tuple[Set[str], Set[str]]]): Sample genotype information.
+    """
+    
     def __init__(self, debug: bool) -> None:
         """Initialize a VariantRecord object.
 
@@ -49,7 +72,7 @@ class VariantRecord:
         altalleles = ",".join(self._alt)
         return f"{self._chrom}\t{self._position}\t{self._ref}\t{altalleles}"
 
-    def __eq__(self, vrecord: "VariantRecord") -> bool:
+    def __eq__(self, vrecord: object) -> bool:
         """Check if two VariantRecord objects are equal.
 
         Two VariantRecord objects are considered equal if they have the same
@@ -64,6 +87,8 @@ class VariantRecord:
         Raises:
             AttributeError: If the comparison fails due to missing attributes.
         """
+        if not isinstance(vrecord, VariantRecord):
+            return NotImplemented
         if not hasattr(vrecord, "_chrom"):  # always trace this error
             raise AttributeError(
                 f"Comparison between {self.__class__.__name__} object failed"
@@ -329,7 +354,7 @@ class VariantRecord:
         return self._vtype
 
     @property
-    def samples(self) -> Tuple[Set[str], Set[str]]:
+    def samples(self) -> List[Tuple[Set[str], Set[str]]]:
         return self._samples
 
     @property
@@ -341,7 +366,7 @@ class VariantRecord:
         return self._allelesnum
 
 
-def _assign_vtype(ref: str, alt: str) -> bool:
+def _assign_vtype(ref: str, alt: str) -> str:
     """Determine the variant type.
 
     Determines if a variant is an indel or a SNP based on the lengths of the
@@ -412,7 +437,7 @@ def _adjust_multiallelic(ref: str, alt: str, pos: int) -> Tuple[str, str, int]:
 
 
 def _parse_genotype_phased(
-    gt_alleles: Tuple[str, str],
+    gt_alleles: List[str],
     sample: str,
     sampleshap: List[Tuple[Set[str], Set[str]]],
     debug: bool,
@@ -424,7 +449,7 @@ def _parse_genotype_phased(
     on the genotype.
 
     Args:
-        gt_alleles: A tuple containing the alleles for the two haplotypes.
+        gt_alleles: A list containing the alleles for the two haplotypes.
         sample: The sample name.
         sampleshap: A list of tuples of sets, tracking samples for each allele
             and haplotype.
@@ -452,7 +477,7 @@ def _parse_genotype_phased(
 
 
 def _parse_genotype_unphased(
-    gt_alleles: Tuple[str, str],
+    gt_alleles: List[str],
     sample: str,
     sampleshap: List[Tuple[Set[str], Set[str]]],
 ) -> List[Tuple[Set[str], Set[str]]]:
@@ -463,7 +488,7 @@ def _parse_genotype_unphased(
     allele present in the genotype.
 
     Args:
-        gt_alleles: A tuple containing the alleles for the two haplotypes or more.
+        gt_alleles: A list containing the alleles for the two haplotypes or more.
         sample: The sample name.
         sampleshap: A list of tuples of sets, tracking samples for each allele
             and haplotype.
@@ -490,7 +515,7 @@ def _parse_genotype_unphased(
 
 def _genotypes_to_samples(
     genotypes: List[str], samples: List[str], allelesnum: int, phased: bool, debug: bool
-) -> Tuple[Set[str], Set[str]]:
+) -> List[Tuple[Set[str], Set[str]]]:
     """Extract sample information from genotypes.
 
     Parses genotype strings to determine which samples carry each alternative allele.
@@ -503,10 +528,10 @@ def _genotypes_to_samples(
         phased: True if the genotypes are phased, False otherwise.
 
     Returns:
-        A tuple containing two lists of sets. The first list contains sets of samples
-        with the variant on the left copy (or the only copy if unphased), and the
-        second list contains sets of samples with the variant on the right copy (only
-        relevant for phased data).
+        A list of tuples containing two lists of sets. The first list contains sets of 
+        samples with the variant on the left copy (or the only copy if unphased), and 
+        the second list contains sets of samples with the variant on the right copy 
+        (only relevant for phased data).
 
     Raises:
         TypeError: If the genotype string cannot be split.
@@ -670,11 +695,11 @@ class VCF:
         assert hasattr(self, "_vcf")  # otherwise we couldn't establish phasing
         for variant in self._vcf.fetch():  # fecth only the first variant
             gt = variant.strip().split()[9]
+            # establish from genotype whther the vcf is phased or not
+            if "|" in gt:
+                self._phased = True
             break  # no further iterations required
-        # establish from genotype whther the vcf is phased or not
-        if "|" in gt:
-            self._phased = True
-
+        
     def fetch(self, coordinate: Coordinate) -> List[VariantRecord]:
         """Fetch variants within a specified genomic interval.
 
