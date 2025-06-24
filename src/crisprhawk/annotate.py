@@ -162,8 +162,8 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
                 )
             # assess whether the snp occurs within the guide or is part of the haplotype
             if guide.start <= variant_position < guide.stop:
-                guidepamseq = guide.guide + guide.pam
-                if check_guide_variants(variant, variant_position, guidepamseq, guide.start)
+                guideseq = guide.sequence[GUIDESEQPAD:-GUIDESEQPAD]
+                if check_guide_variants(variant, variant_position, guideseq, guide.start, guide.stop, guide.strand):
                     guide_vars.add(variant)
         if guide_vars:
             guide.set_variants(",".join(sorted(guide_vars)))

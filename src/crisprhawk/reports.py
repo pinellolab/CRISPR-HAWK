@@ -34,13 +34,13 @@ REPORTCOLS = [
     "score_azimuth",
     "score_rs3",
     "score_cfdon",
-    "functional_annotation",
-    "gene_annotation",
     "origin",
     "samples",
     "variant_id",
     "target",
     "haplotype_id",
+    "functional_annotation",
+    "gene_annotation",
 ]
 
 
@@ -74,19 +74,19 @@ def update_report_fields(
     report[REPORTCOLS[7]].append(guide.azimuth_score)  # azimuth score
     report[REPORTCOLS[8]].append(guide.rs3_score)  # rs3 score
     report[REPORTCOLS[9]].append(guide.cfdon_score)  # cfdon score
-    report[REPORTCOLS[12]].append(compute_guide_origin(guide.samples))  # genome
-    report[REPORTCOLS[13]].append(guide.samples)  # samples list
-    report[REPORTCOLS[14]].append(guide.variants)  # variant ids
-    report[REPORTCOLS[15]].append(str(region.coordinates))  # region
-    report[REPORTCOLS[16]].append(guide.hapid)  # haplotype id
+    report[REPORTCOLS[10]].append(compute_guide_origin(guide.samples))  # genome
+    report[REPORTCOLS[11]].append(guide.samples)  # samples list
+    report[REPORTCOLS[12]].append(guide.variants)  # variant ids
+    report[REPORTCOLS[13]].append(str(region.coordinates))  # region
+    report[REPORTCOLS[14]].append(guide.hapid)  # haplotype id
     return report
 
 def update_optional_report_fields(report: Dict[str, List[Any]], guide: Guide, funcann: bool, geneann: bool) -> Dict[str, List[str]]:
     # update report optional fields
     if funcann:
-        report[REPORTCOLS[10]].append(guide.funcann)
+        report[REPORTCOLS[15]].append(guide.funcann)
     if geneann:
-        report[REPORTCOLS[11]].append(guide.geneann)
+        report[REPORTCOLS[16]].append(guide.geneann)
     return report
 
 
@@ -111,7 +111,7 @@ def construct_report(
     }
 
 
-def format_report(report: pd.DataFrame) -> pd.DataFrame:
+def format_report(report: pd.DataFrame, funcann: bool, geneann: bool) -> pd.DataFrame:
     # reset dataframe index and sort by genomic coordinates
     report = report.reset_index(drop=True)
     report = report.sort_values([REPORTCOLS[7]], ascending=False)
@@ -119,13 +119,20 @@ def format_report(report: pd.DataFrame) -> pd.DataFrame:
     # concatenated with empty dataframe (e.g. no guide found on + or - strand)
     report[REPORTCOLS[1]] = report[REPORTCOLS[1]].astype(int)
     report[REPORTCOLS[2]] = report[REPORTCOLS[2]].astype(int)
-    report = report[REPORTCOLS]
+    # sort the report columns
+    report_cols = REPORTCOLS[:10]
+    if funcann:
+        report_cols.append(REPORTCOLS[15])
+    if geneann:
+        report_cols.append(REPORTCOLS[16])
+    report_cols += REPORTCOLS[10:15]
+    report = report[report_cols]
     return report
 
 
-def store_report(report: pd.DataFrame, guidesreport: str, debug: bool) -> None:
+def store_report(report: pd.DataFrame, guidesreport: str, funcann: bool, geneann: bool, debug: bool) -> None:
     try:
-        report = format_report(report)  # format report
+        report = format_report(report, funcann, geneann)  # format report
         report.to_csv(guidesreport, sep="\t", index=False)  # store report
     except FileNotFoundError as e:
         exception_handler(
@@ -193,6 +200,10 @@ def collapsed_fields(funcann: bool, geneann: bool) -> Dict[str, str]:
 def collapse_report_entries(report: pd.DataFrame, funcann: bool, geneann: bool) -> pd.DataFrame:
     # Define the columns to group by
     group_cols = REPORTCOLS[:5] + REPORTCOLS[6:11]
+    if funcann:
+        group_cols.append(REPORTCOLS[15])
+    if geneann:
+        group_cols.append(REPORTCOLS[16])
     return report.groupby(group_cols, as_index=False).agg(
         collapsed_fields(funcann, geneann)
     )
@@ -219,7 +230,7 @@ def report_guides(
             outdir, f"{GUIDESREPORTPREFIX}__{region_name}_{pam}_{guidelen}.tsv"
         )
         report = collapse_report_entries(report, funcann, geneann)
-        store_report(report, guidesreport, debug)  # write report
+        store_report(report, guidesreport, funcann, geneann, debug)  # write report
     print_verbosity(
         f"Reports constructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )
