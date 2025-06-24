@@ -120,6 +120,12 @@ class Guide:
             )
         self._cfdon_score = str(round_score(score))
 
+    def set_func_ann(self, annotation: str) -> None:
+        self._funcann = annotation
+
+    def set_gene_ann(self, annotation: str) -> None:
+        self._geneann = annotation
+
     @property
     def start(self) -> int:
         return self._start
@@ -163,7 +169,7 @@ class Guide:
     @property
     def right(self) -> bool:
         return self._right
-    
+
     @property
     def guide_id(self) -> str:
         return self._guide_id
@@ -183,6 +189,18 @@ class Guide:
     @property
     def hapid(self) -> str:
         return self._hapid
+
+    @property
+    def funcann(self) -> str:
+        if not hasattr(self, "_funcann"):  # always trace this error
+            exception_handler(AttributeError, f"Missing _funcann attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
+        return self._funcann
+
+    @property
+    def geneann(self) -> str:
+        if not hasattr(self, "_geneann"):  # always trace this error
+            exception_handler(AttributeError, f"Missing _geneann attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
+        return self._geneann
 
 
 class GuideIterator:

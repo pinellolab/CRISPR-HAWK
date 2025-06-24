@@ -3,6 +3,7 @@
 from .crisprhawk_error import CrisprHawkCfdScoreError, CrisprHawkAzimuthScoreError, CrisprHawkRs3ScoreError, CrisprHawkOffTargetsError
 from .exception_handlers import exception_handler
 from .scores import azimuth, cfdon, rs3
+from .bedfile import BedAnnotation
 from .guide import Guide, GUIDESEQPAD
 from .utils import print_verbosity, flatten_list, suppress_stderr, suppress_stdout, VERBOSITYLVL, IUPACTABLE
 from .region import Region
@@ -134,6 +135,7 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
 
 
 def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    guides_lst = []  # reported guides
     print_verbosity(
         "Annotating variants occurring in guides", verbosity, VERBOSITYLVL[3]
     )
@@ -146,6 +148,7 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
                     exception_handler(
                         ValueError, "Forbidden NA variant", os.EX_DATAERR, debug
                     )
+                guide_vars.add("NA")
                 break
             try:  # retrieve each variant position
                 variant_position = int(variant.split("-")[1])
@@ -159,14 +162,20 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
                 )
             # assess whether the snp occurs within the guide or is part of the haplotype
             if guide.start <= variant_position < guide.stop:
-                guide_vars.add(variant)
+                guidepamseq = guide.guide + guide.pam
+                if variant.split("-")[2].split("/")[0] != guidepamseq[variant_position - guide.start].upper():
+                    guide_vars.add(variant)
+        if guide_vars:
+            guide.set_variants(",".join(sorted(guide_vars)))
+            guides_lst.append(guide)
+
         # set variants ids to current guide
-        guide_vars = ",".join(sorted(guide_vars)) if guide_vars else "NA"
-        guide.set_variants(guide_vars)
+        # guide_vars = ",".join(sorted(guide_vars)) if guide_vars else "NA"
+        # guide.set_variants(guide_vars)
     print_verbosity(
         f"Variants annotated in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
-    return guides
+    return guides_lst
 
 def create_guide_fa(guide: Guide, workingdir: str, debug: bool) -> str:
     fname = os.path.join(workingdir, f"{guide.guide_id}.fa")
@@ -199,7 +208,7 @@ def search(guide_fa: str, genome: str, guide_len: int, debug: bool) -> str:
 
 def _samse(guide_fa: str, guide_sa: str, genome: str, debug: bool) -> str:
     guide_sam = f"{guide_fa}.sam"  # sam guide file
-    script_bin = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scripts/xa2multi.pl") 
+    script_bin = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scripts/xa2multi.pl")
     try:
         cmd = f"bwa samse -n {MAXOCC} {genome} {guide_sa} {guide_fa} | perl {script_bin} > {guide_sam}"
         with suppress_stdout(), suppress_stderr():
@@ -213,20 +222,20 @@ def _samse(guide_fa: str, guide_sa: str, genome: str, debug: bool) -> str:
             debug,
             e,
         )
-    return guide_sam  # return sam file with off-targets  
+    return guide_sam  # return sam file with off-targets
 
 
 def _parse_tags(tags: List[str]) -> Tuple[int, int, bool]:
-    x0score, x1score = 0, 0  # initialize alignment scores 
+    x0score, x1score = 0, 0  # initialize alignment scores
     mm = None  # initialize number of mismatches
     hasalt = False  # flag to check if alternative alignments are present
     for tag in tags:
         tagname, dtype, value = tag.split(":")  # retrieve tag name, type and value
-        if tagname == "NM":  
+        if tagname == "NM":
             mm = int(value)  # number of mismatches
-        elif tagname == "X0":  
+        elif tagname == "X0":
             x0score = int(value)  # primary alignment score
-        elif tagname == "X1": 
+        elif tagname == "X1":
             x1score = int(value)   # alternative alignment score
         elif tagname == "XA":
             hasalt = True  # alternative alignments are present
@@ -305,8 +314,8 @@ def matchpam(pam: str, otpam: str) -> bool:
         if otpam[i] not in IUPACTABLE[nt]:
             return False
     return True
- 
-        
+
+
 
 def filter_offtargets(sequences: List[Tuple[str, str]], pam: PAM, pamlen: int, right: bool) -> List[Tuple[str, str, str, str, str]]:
     offtargets = []
@@ -321,8 +330,8 @@ def filter_offtargets(sequences: List[Tuple[str, str]], pam: PAM, pamlen: int, r
         if not skip:
             offtargets.append((fields[1], fields[2], fields[3], fields[4], ot, fields[5]))
     return offtargets
-        
-            
+
+
 
 
 
@@ -345,16 +354,31 @@ def search_offtargets(guides: List[Guide], pam: PAM, genome: str, debug: bool):
             print(len(x))
             print("\n".join(["\t".join(e) for e in x]))
             break
-    
+
     except Exception:
         subprocess.call(f"rm -r {workingdir}", shell=True)  # remove temp dir
         raise Exception("Off-target search failed")
 
 
+def _funcann(guide: Guide, bedannotation: BedAnnotation, contig: str, atype: str, idx: int) -> Guide:
+    if not (annotation := bedannotation.fetch_features(contig, guide.start, guide.stop, idx)):
+        annotation = "NA"
+    if atype == "gene":
+        guide.set_gene_ann(annotation)
+    else:
+        guide.set_func_ann(annotation)
+    return guide
+
+
+def funcann_guides(guides: List[Guide], contig: str, annotation: str, atype: str, verbosity: int, debug: bool) -> List[Guide]:
+    assert atype in {"func", "gene"}  # used to set the proper field in guides
+    idx = 22 if atype == "gene" else 9
+    bedann = BedAnnotation(annotation, verbosity, debug)  # load annotation bed
+    return [_funcann(guide, bedann, contig, atype, idx) for guide in guides]
 
 
 def annotate_guides(
-    guides: Dict[Region, List[Guide]], pam: PAM, genome: str, estimate_offtargets: bool, verbosity: int, debug: bool
+    guides: Dict[Region, List[Guide]], functional_annotation: str, gene_annotation: str, pam: PAM, genome: str, estimate_offtargets: bool, verbosity: int, debug: bool
 ) -> Dict[Region, List[Guide]]:
     # annotate guides with scores, variants and adjust positions
     print_verbosity("Annotating guides", verbosity, VERBOSITYLVL[1])
@@ -365,15 +389,24 @@ def annotate_guides(
         # set variants for current guide
         guides_list = annotate_variants(guides_list, verbosity, debug)
         # annotate each guide with azimuth scores
-        guides[region] = azimuth_score(guides_list, verbosity, debug)
+        guides_list = azimuth_score(guides_list, verbosity, debug)
         # annotate each guide with rs3 scores
-        guides[region] = rs3_score(guides_list, verbosity, debug)
+        guides_list = rs3_score(guides_list, verbosity, debug)
         # annotate each guide with CFDon scores
-        guides[region] = cfdon_score(guides_list, verbosity, debug)
-        if estimate_offtargets:  # estimate off-targets for each guide
-            print("estimating off-targets")
-            search_offtargets(guides_list, pam, genome, debug)
-            exit()
+        guides_list = cfdon_score(guides_list, verbosity, debug)
+        # annotate each guide functionally
+        # if functional_annotation:
+        #     guides_list = funcann_guides(guides_list, region.contig, functional_annotation, "func", verbosity, debug)
+        # # annotate each guide with gene data
+        # if gene_annotation:
+        #     guides_list = funcann_guides(guides_list, region.contig, gene_annotation, "gene", verbosity, debug)
+        #
+        #
+        # if estimate_offtargets:  # estimate off-targets for each guide
+        #     print("estimating off-targets")
+        #     search_offtargets(guides_list, pam, genome, debug)
+        #     exit()
+        guides[region] = guides_list  # store annotated guides
     print_verbosity(
         f"Annotation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )

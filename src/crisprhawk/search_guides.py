@@ -194,7 +194,7 @@ def adjust_guide_position(
     posmap: Dict[int, int], posrel: int, guidelen: int, pamlen: int, right: bool
 ) -> Tuple[int, int]:
     start = posmap[posrel] if right else posmap[posrel - guidelen]
-    stop = posmap[posrel + guidelen + pamlen] + 1 if right else posmap[posrel + pamlen]
+    stop = posmap[posrel + guidelen + pamlen] if right else posmap[posrel + pamlen]
     return start, stop
 
 
@@ -232,21 +232,20 @@ def retrieve_guides(
             guide_start, guide_stop = adjust_guide_position(
                 haplotype.posmap, pos, guidelen, len(pam), right
             )
-            guides.append(
-                Guide(
-                    guide_start,
-                    guide_stop,
-                    guideseq,
-                    guidelen,
-                    len(pam),
-                    direction,
-                    haplotype.samples,
-                    haplotype.variants,
-                    debug,
-                    right,
-                    haplotype.id,
-                )
+            guide = Guide(
+                guide_start,
+                guide_stop,
+                guideseq,
+                guidelen,
+                len(pam),
+                direction,
+                haplotype.samples,
+                haplotype.variants,
+                debug,
+                right,
+                haplotype.id,
             )
+            guides.append(guide)  # report guide
     print_verbosity(
         f"Guides retrieved in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )

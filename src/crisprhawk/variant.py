@@ -38,7 +38,7 @@ class VariantRecord:
         _vid (List[str]): List of variant IDs.
         _samples (List[Tuple[Set[str], Set[str]]]): Sample genotype information.
     """
-    
+
     def __init__(self, debug: bool) -> None:
         """Initialize a VariantRecord object.
 
@@ -528,9 +528,9 @@ def _genotypes_to_samples(
         phased: True if the genotypes are phased, False otherwise.
 
     Returns:
-        A list of tuples containing two lists of sets. The first list contains sets of 
-        samples with the variant on the left copy (or the only copy if unphased), and 
-        the second list contains sets of samples with the variant on the right copy 
+        A list of tuples containing two lists of sets. The first list contains sets of
+        samples with the variant on the left copy (or the only copy if unphased), and
+        the second list contains sets of samples with the variant on the right copy
         (only relevant for phased data).
 
     Raises:
@@ -699,7 +699,7 @@ class VCF:
             if "|" in gt:
                 self._phased = True
             break  # no further iterations required
-        
+
     def fetch(self, coordinate: Coordinate) -> List[VariantRecord]:
         """Fetch variants within a specified genomic interval.
 

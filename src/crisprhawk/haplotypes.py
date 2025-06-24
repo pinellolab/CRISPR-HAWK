@@ -236,14 +236,12 @@ def generate_variants_combinations(
         )  # retrieve variant id to match multiallelic sites
         is_snv = variant.vtype[0] == VTYPES[0]
         is_homozygous = all(sample in call for call in variant.samples[0])
-        if is_snv or is_homozygous:  # only one option available
-            variant_groups[vid] = [variant]
-        elif vid in variant_groups:
+        if vid in variant_groups:
             # remove reference allele for alternatives in multiallelic site
             variant_groups[vid] = [v for v in variant_groups[vid] if v is not None]
             variant_groups[vid].append(variant)  # add alt to multiallelic
-        else:  # new indel
-            variant_groups[vid] = [variant, None]  # add reference (None)
+        else:
+            variant_groups[vid] = [variant] if is_snv or is_homozygous else [variant, None]
     return [list(comb) for comb in product(*variant_groups.values())]
 
 
