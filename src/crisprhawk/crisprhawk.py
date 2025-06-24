@@ -143,6 +143,6 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         args.debug,
     )
     # annotate guide candidates within each region
-    guides = annotate_guides(guides, pam, args.functional_annotation, args.gene_annotation, args.fasta, args.estimate_offtargets, args.verbosity, args.debug)
+    guides = annotate_guides(guides, args.functional_annotation, args.gene_annotation, pam, args.fasta, args.estimate_offtargets, args.verbosity, args.debug)
     # construct reports
-    report_guides(guides, args.guidelen, pam, args.outdir, args.verbosity, args.debug)
+    report_guides(guides, args.guidelen, pam, bool(args.functional_annotation), bool(args.gene_annotation), args.outdir, args.verbosity, args.debug)

@@ -148,7 +148,7 @@ def print_verbosity(message: str, verbosity: int, verbosity_threshold: int) -> N
 def adjust_guide_position(pos: int, guidelen: int, pamlen: int, right: bool) -> int:
     """Adjust the guide position based on orientation.
 
-    Returns the original position if right is True, otherwise subtracts the 
+    Returns the original position if right is True, otherwise subtracts the
     guide length.
 
     Args:
@@ -257,3 +257,12 @@ def suppress_stderr():
         yield
     finally:
         sys.stderr = stderr_channel
+
+def check_guide_variants(variant_id: str, pos: int, guideseq: str, start: int) -> bool:
+    # retrieve variant reference allele
+    refnt = variant_id.split("-")[2].split("/")[0]
+    # retrieve guide nt at variant position
+    posrel = pos - start  # variant position in guide sequence
+    if refnt not in [guideseq[posrel].upper(), RC[guideseq[posrel].upper()]]:
+        return True  # guide is OK
+    return False  # guide already reported
