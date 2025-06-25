@@ -5,7 +5,7 @@ from .exception_handlers import exception_handler
 from .scores import azimuth, cfdon, rs3
 from .bedfile import BedAnnotation
 from .guide import Guide, GUIDESEQPAD
-from .utils import print_verbosity, flatten_list, suppress_stderr, suppress_stdout, check_guide_variants, VERBOSITYLVL, IUPACTABLE
+from .utils import print_verbosity, flatten_list, suppress_stderr, suppress_stdout, VERBOSITYLVL, IUPACTABLE
 from .region import Region
 from .pam import PAM
 
@@ -162,9 +162,7 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
                 )
             # assess whether the snp occurs within the guide or is part of the haplotype
             if guide.start <= variant_position < guide.stop:
-                guideseq = guide.sequence[GUIDESEQPAD:-GUIDESEQPAD]
-                if check_guide_variants(variant, variant_position, guideseq, guide.start, guide.stop, guide.strand):
-                    guide_vars.add(variant)
+                guide_vars.add(variant)
         if guide_vars:
             guide.set_variants(",".join(sorted(guide_vars)))
             guides_lst.append(guide)

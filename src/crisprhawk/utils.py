@@ -257,12 +257,3 @@ def suppress_stderr():
         yield
     finally:
         sys.stderr = stderr_channel
-
-def check_guide_variants(variant_id: str, pos: int, guideseq: str, start: int, stop: int, strand: bool) -> bool:
-    # retrieve variant reference allele
-    refnt = variant_id.split("-")[2].split("/")[0]
-    # retrieve guide nt at variant position
-    posrel = (stop - pos - 1) if strand == 1 else pos - start
-    if refnt not in [guideseq[posrel].upper(), RC[guideseq[posrel].upper()]]:
-        return True  # guide is OK
-    return False  # guide already reported

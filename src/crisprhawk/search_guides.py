@@ -10,7 +10,9 @@ from .region_constructor import PADDING
 from .region import Region
 from .haplotype import Haplotype
 
-from typing import List, Tuple, Dict
+from collections import defaultdict
+
+from typing import List, Tuple, Dict, Union
 from itertools import product
 from time import time
 
@@ -198,6 +200,41 @@ def adjust_guide_position(
     return start, stop
 
 
+def group_guides_position(
+    guides: List[Guide], debug: bool
+) -> Dict[str, Dict[int, Union[Guide, List[Guide]]]]:
+    # dictionary to map guides to positions (0 -> ref; 1 -> alt)
+    pos_guide = defaultdict(lambda: {0: None, 1: []})
+    for guide in guides:
+        poskey = f"{guide.start}_{guide.strand}"
+        if guide.samples == "REF":  # reference guide
+            if pos_guide[poskey][0] is not None:
+                exception_handler(
+                    CrisprHawkCfdScoreError,
+                    f"Duplicate REF guide at position {guide.start}? CFDon calculation failed",
+                    os.EX_DATAERR,
+                    debug,
+                )
+            pos_guide[poskey][0] = guide  # type: ignore
+        pos_guide[poskey][1].append(guide)  # type: ignore
+    return pos_guide  # type: ignore
+
+
+def remove_redundant_guides(guides: List[Guide], debug: bool) -> List[Guide]:
+    filtered_guides = []  # list containing non-redundant guides
+    grouped_guides = group_guides_position(guides, debug)  # group guides by position
+    for pos, guide_group in grouped_guides.items():
+        refguide, altguides = guide_group[0], guide_group[1]
+        if refguide is None:  # only alt guides, redundancy not possible
+            filtered_guides += altguides
+            continue
+        for guide in altguides:  # remove redundant guides
+            refguide_seq = refguide.sequence[GUIDESEQPAD:-GUIDESEQPAD].upper()
+            guide_seq = guide.sequence[GUIDESEQPAD:-GUIDESEQPAD].upper()
+            if (guide.samples != "REF" and guide_seq != refguide_seq) or (guide.samples == "REF" and guide_seq == refguide_seq):
+                filtered_guides.append(guide)
+    return filtered_guides
+
 def retrieve_guides(
     pam_hits: List[int],
     haplotype: Haplotype,
@@ -272,7 +309,7 @@ def search(
     # search pam occurrences on forward and reverse strand of the input sequence
     pam_hits = pam_search(pam, region, haplotypes, haplotypes_bits, verbosity, debug)
     # retrieve guide candidates sequence for each haplotype
-    return flatten_list(
+    guides = flatten_list(
         [
             retrieve_guides(
                 pam_hits[i][strand],
@@ -290,3 +327,4 @@ def search(
             for strand in [0, 1]
         ]
     )
+    return remove_redundant_guides(guides, debug)  # remove redundant guides
