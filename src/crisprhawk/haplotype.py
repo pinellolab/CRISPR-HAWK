@@ -65,7 +65,7 @@ class Haplotype(Region):
 
     def _insert_variant_phased(
         self, position: int, ref: str, alt: str, chain: int, offset: int
-    ):
+    ) -> None:
         posrel = self._posmap_reverse[position]
         posrel_stop = posrel + abs(chain) + 1 if chain < 0 else posrel + 1
         if posrel_stop > self._size:
@@ -77,6 +77,48 @@ class Haplotype(Region):
             )
         self._update_sequence(posrel, posrel_stop, alt)
         self._update_posmap(posrel, chain)
+
+    def add_variants_unphased(self, variants: List[VariantRecord], sample: str):
+        variants = _sort_variants(variants)
+        chains = _compute_chains(variants)
+        self._initialize_posmap(chains, self._coordinates.start)
+        for i, variant in enumerate(variants):
+            self._insert_variant_unphased(
+                variant.position,
+                variant.ref,
+                variant.alt[0],
+                variant.vtype[0],
+                chains[i],
+                sum(chains[:i]),
+            )
+        self._sequence = Sequence(
+            "".join(self._sequence._sequence_raw), self._debug, allow_lower_case=True
+        )
+        self._samples = sample
+        self._variants = ",".join([v.id[0] for v in variants])
+
+    def add_variants_phased(self, variants: List[VariantRecord], sample: str) -> None:
+        if not self._phased:
+            exception_handler(ValueError, "Unphased haplotype, unable to add phased variants", os.EX_DATAERR, True) # always trace this error
+        variants = _sort_variants(variants)
+        chains = _compute_chains(variants) # retrieve original sequence positions
+        # position map to handle indels' presence
+        self._initialize_posmap(chains, self._coordinates.start)
+        for i, variant in enumerate(variants): # add variants to haplotype
+            self._insert_variant_phased(
+                variant.position,
+                variant.ref,
+                variant.alt[0],
+                chains[i],
+                sum(chains[:i]),
+            )
+        # add chromcopy as suffix to haplotype's samples
+        suffix = "1|0" if self._chromcopy == 0 else "0|1"
+        self._sequence = Sequence(
+            "".join(self._sequence._sequence_raw), self._debug, allow_lower_case=True
+        ) # reconstruct haplotype sequence
+        self._samples = f"{sample}:{suffix}" if self._phased else sample
+        self._variants = ",".join([v.id[0] for v in variants])
 
     def _insert_variant_unphased(
         self, position: int, ref: str, alt: str, vtype: str, chain: int, offset: int
@@ -98,36 +140,12 @@ class Haplotype(Region):
         self._update_sequence(posrel, posrel_stop, alt)
         self._update_posmap(posrel, chain)
 
-    def add_variants(self, variants: List[VariantRecord], sample: str):
-        variants = _sort_variants(variants)
-        chains = _compute_chains(variants)
-        self._initialize_posmap(chains, self._coordinates.start)
-        for i, variant in enumerate(variants):
-            if self._phased:
-                self._insert_variant_phased(
-                    variant.position,
-                    variant.ref,
-                    variant.alt[0],
-                    chains[i],
-                    sum(chains[:i]),
-                )
-            else:
-                self._insert_variant_unphased(
-                    variant.position,
-                    variant.ref,
-                    variant.alt[0],
-                    variant.vtype[0],
-                    chains[i],
-                    sum(chains[:i]),
-                )
-        suffix = ""
-        if self._phased:
-            suffix = "1|0" if self._chromcopy == 0 else "0|1"
-        self._sequence = Sequence(
-            "".join(self._sequence._sequence_raw), self._debug, allow_lower_case=True
-        )
-        self._samples = f"{sample}:{suffix}" if self._phased else sample
-        self._variants = ",".join([v.id[0] for v in variants])
+    # def _insert_variant_unphased(self, position: int, variants: List[VariantRecord]):
+    #     posrel = self._posmap_reverse[position]
+
+    # def add_variants_unphased(self, position: int, variants: Dict[int, List[VariantRecord]]) -> None:
+    #     for position, varlist in variants.items():
+
 
     def homozygous_samples(self) -> None:
         # if samples are homozygous, change their phasing value (support diploid)

@@ -16,6 +16,7 @@ from .utils import (
 )
 
 from typing import List, Dict, Set, Any
+from collections import defaultdict
 from time import time
 
 import pandas as pd
@@ -132,7 +133,8 @@ def format_report(report: pd.DataFrame, funcann: bool, geneann: bool) -> pd.Data
 
 def store_report(report: pd.DataFrame, guidesreport: str, funcann: bool, geneann: bool, debug: bool) -> None:
     try:
-        report = format_report(report, funcann, geneann)  # format report
+        if not report.empty:
+            report = format_report(report, funcann, geneann)  # format report
         report.to_csv(guidesreport, sep="\t", index=False)  # store report
     except FileNotFoundError as e:
         exception_handler(
@@ -159,9 +161,21 @@ def store_report(report: pd.DataFrame, guidesreport: str, funcann: bool, geneann
             e,
         )
 
+def _polish_samples_phased(samples: str) -> str:
+    if "|" not in samples:  # unphased genotype, no need for polishing
+        return samples
+    samplesmap = defaultdict(lambda: [0, 0]) # initialize samples map
+    for e in samples.split(","):  # retrive samples with genotypes 
+        sample, genotype = e.split(":")
+        allele1, allele2 = map(int, genotype.split("|")) # retrieve allele
+        # combine using max (equivalent to OR for binary values)
+        samplesmap[sample][0] = max(samplesmap[sample][0], allele1)
+        samplesmap[sample][1] = max(samplesmap[sample][1], allele2)
+    return ",".join([f"{sample}:{a1}|{a2}" for sample, (a1, a2) in samplesmap.items()])
+    
 
 def collapse_samples(samples: pd.Series) -> str:
-    return "" if samples.empty else ",".join(sorted(set(",".join(samples).split(","))))
+    return "" if samples.empty else _polish_samples_phased(",".join(sorted(set(",".join(samples).split(",")))))
 
 
 def parse_variant_ids(variant_ids: str) -> Set[str]:
@@ -229,7 +243,8 @@ def report_guides(
         guidesreport = os.path.join(
             outdir, f"{GUIDESREPORTPREFIX}__{region_name}_{pam}_{guidelen}.tsv"
         )
-        report = collapse_report_entries(report, funcann, geneann)
+        if not report.empty:
+            report = collapse_report_entries(report, funcann, geneann)
         store_report(report, guidesreport, funcann, geneann, debug)  # write report
     print_verbosity(
         f"Reports constructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]

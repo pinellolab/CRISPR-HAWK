@@ -130,6 +130,7 @@ def compute_haplotypes_phased(
 def compute_haplotypes_unphased(
     variants: List[VariantRecord], samples: List[str]
 ) -> Dict[str, List[VariantRecord]]:
+    variants = [v for v in variants if v.vtype[0] == VTYPES[0]]
     # initialize sample-variant map
     sample_variants = {s: [] for s in samples}  # do not assume diploid copies
     for variant in variants:
@@ -192,11 +193,11 @@ def _solve_haplotypes_phased(
     h0 = Haplotype(
         Sequence(sequence, debug), coordinates, phased, 0, debug
     )  # first copy
-    h0.add_variants(variants[0], sample)  # add variants to haplotype
+    h0.add_variants_phased(variants[0], sample)  # add variants to haplotype
     h1 = Haplotype(
         Sequence(sequence, debug), coordinates, phased, 1, debug
     )  # second copy
-    h1.add_variants(variants[1], sample)  # add variants to haplotype
+    h1.add_variants_phased(variants[1], sample)  # add variants to haplotype
     # check for homozygous haplotypes
     if ishomozygous([h0, h1]):
         h0.homozygous_samples()
@@ -259,7 +260,7 @@ def _solve_haplotypes_unphased(
     for variant_combination in variants_combinations:
         variant_combination = [v for v in variant_combination if v is not None]
         h = Haplotype(Sequence(sequence, debug), coordinates, phased, 0, debug)
-        h.add_variants(variant_combination, sample)  # add variants to sample haplotypes
+        h.add_variants_unphased(variant_combination, sample)  # add variants to sample haplotypes
         haps.append(h)  # insert haplotype to haplotypes list
     return [haps[0]] if ishomozygous(haps) else haps
 
@@ -290,6 +291,13 @@ def add_variants(
     # read VCF files and extract variants located within the region
     vcfs = read_vcf(vcflist, verbosity, debug)
     variants = fetch_variants(vcfs, regions, verbosity, debug)
+    
+    # for r, vars in variants.items():
+    #     print(r)
+    #     for v in vars:
+    #         print(v, v.samples, v.vtype)
+    # print()
+
     phased = vcfs[regions[0].contig].phased  # assess VCF phasing
     for region in regions:  # reconstruct haplotypes for each region
         if phased:  # phased VCFs
@@ -307,17 +315,111 @@ def add_variants(
                 debug,
             )
         else:  # unphased VCFs
-            samples_variants = compute_haplotypes_unphased(
-                variants[region], vcfs[regions[0].contig].samples
-            )
-            haplotypes[region] = solve_haplotypes_unphased(
-                samples_variants,
-                haplotypes[region],
-                region.sequence.sequence,
-                region.coordinates,
-                phased,
-                debug,
-            )
+            # Split variants into SNVs and indels
+            snvs, indels = [], [] 
+            for v in variants[region]:
+                if v.vtype[0] == VTYPES[0]:  # assuming VTYPES[0] is "snp"
+                    snvs.append(v)
+                else:
+                    indels.append(v)
+            
+            # Create haplotype with all SNVs
+            if snvs:
+                samples_variants_snvs = compute_haplotypes_unphased(
+                    snvs, vcfs[regions[0].contig].samples
+                )
+                snv_haplotypes = solve_haplotypes_unphased(
+                    samples_variants_snvs,
+                    [],  # start with empty list instead of reference
+                    region.sequence.sequence,
+                    region.coordinates,
+                    phased,
+                    debug,
+                )
+                haplotypes[region].extend(snv_haplotypes)
+            
+            # Create separate haplotype for each indel
+            for indel in indels:
+                # Calculate indel window: 23bp upstream and downstream
+                indel_pos = indel.position  # assuming this gives the position
+                indel_length = len(indel.alt[0]) - len(indel.ref) if indel.alt else 0
+                
+                # Calculate window boundaries
+                window_start = max(region.coordinates.start, indel_pos - 50)
+                window_end = min(region.coordinates.stop, indel_pos - (indel_length) + 50)
+                
+                # Create coordinate object for the indel window
+                indel_window_coords = Coordinate(
+                    region.contig, 
+                    window_start, 
+                    window_end,
+                    debug
+                )
+
+                print(indel)
+                print(indel_window_coords)
+
+                # Extract sequence for the indel window
+                # Calculate relative positions within the region sequence
+                rel_start = window_start - region.coordinates.start - 1
+                rel_end = window_end - region.coordinates.start
+                indel_window_sequence = region.sequence.sequence[rel_start:rel_end]
+
+                print(region.coordinates, len(region))
+                print(rel_start, rel_end)
+                print(indel_window_sequence, len(indel_window_sequence))
+
+                # Apply the indel to the sequence before creating haplotype
+                indel_rel_pos = indel_pos - window_start  # position relative to window start
+                ref_seq = indel.ref[0] if indel.ref else ""
+                alt_seq = indel.alt[0] if indel.alt else ""
+                
+                # Apply indel: replace ref with alt at the relative position
+                offset = 0 if indel_length > 0 else abs(indel_length)
+                indel_applied_sequence = (
+                    indel_window_sequence[:51] + 
+                    alt_seq + 
+                    indel_window_sequence[51 + 1 + offset:]
+                )
+                
+                # Find SNVs that overlap with this indel window
+                overlapping_snvs = [
+                    snv for snv in snvs 
+                    if window_start <= snv.position <= window_end
+                ]
+                
+                # Combine indel with overlapping SNVs
+                indel_variants = [indel] + overlapping_snvs
+                
+                # Create haplotype for this indel + overlapping SNVs
+                samples_variants_indel = compute_haplotypes_unphased(
+                    indel_variants, vcfs[regions[0].contig].samples
+                )
+                
+                indel_haplotypes = solve_haplotypes_unphased(
+                    samples_variants_indel,
+                    [],  # start with empty list
+                    indel_applied_sequence,
+                    indel_window_coords,
+                    phased,
+                    debug,
+                )
+                
+                haplotypes[region].extend(indel_haplotypes)
+    
+
+            # samples_variants = compute_haplotypes_unphased(
+            #     variants[region], vcfs[regions[0].contig].samples
+            # )
+            # haplotypes[region] = solve_haplotypes_unphased(
+            #     samples_variants,
+            #     haplotypes[region],
+            #     region.sequence.sequence,
+            #     region.coordinates,
+            #     phased,
+            #     debug,
+            # )
+            # pass
     return haplotypes, phased
 
 
@@ -385,4 +487,5 @@ def reconstruct_haplotypes(
     )
     if store_table:  # write haplotypes table
         haplotypes_table(haplotypes, outdir, verbosity, debug)
+    exit()
     return haplotypes, variants_present, phased
