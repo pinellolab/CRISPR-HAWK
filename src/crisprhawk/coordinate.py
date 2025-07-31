@@ -98,3 +98,11 @@ class Coordinate:
     @property
     def stop(self) -> int:
         return self._stopp
+    
+    @property
+    def startp(self) -> int:
+        return self._start
+    
+    @property
+    def stopp(self) -> int:
+        return self._stop

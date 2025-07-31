@@ -1,7 +1,7 @@
 """ """
 
 from .exception_handlers import exception_handler
-from .crisprhawk_error import CrisprHawkBitsetError, CrisprHawkIupacTableError
+from .crisprhawk_error import CrisprHawkBitsetError, CrisprHawkIupacTableError, CrisprHawkCfdScoreError
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL, IUPACTABLE
 from .guide import Guide, GUIDESEQPAD
 from .bitset import Bitset
@@ -12,7 +12,7 @@ from .haplotype import Haplotype
 
 from collections import defaultdict
 
-from typing import List, Tuple, Dict, Union
+from typing import List, Tuple, Dict, Union, Optional, DefaultDict
 from itertools import product
 from time import time
 
@@ -115,9 +115,9 @@ def pam_search(
             VERBOSITYLVL[3],
         )
         # define scan stop position for each haplotype
-        scan_stop = hap.posmap_rev[region.stop - PADDING] - len(pam) + 1
+        scan_stop = hap.posmap_rev[min(region.stop - PADDING, hap.stop)] - len(pam) + 1
         scan_start = hap.posmap_rev[
-            region.start + PADDING
+            max(region.start + PADDING, hap.start)
         ]  # start position for guides search
         # scan haplotype for pam occurrences
         matches_fwd, matches_rev = scan_haplotype(
@@ -169,20 +169,43 @@ def _valid_guide(pamguide: str, pam: PAM, direction: int, debug: bool) -> bool:
     return all((ntbit & pam.bitsrc[i]).to_bool() for i, ntbit in enumerate(p.bits))
 
 
-def _decode_iupac(nt: str, debug: bool) -> str:
+def _decode_iupac(nt: str, pos: int, h: Haplotype, debug: bool) -> str:
     try:
         ntiupac = IUPACTABLE[nt.upper()]
     except KeyError as e:
         exception_handler(CrisprHawkIupacTableError, f"Invalid IUPAC character ({nt})", os.EX_DATAERR, debug, e)  # type: ignore
-    return ntiupac.lower() if nt.islower() else ntiupac
+    if len(ntiupac) == 1:  # A, C, G, or T (reference / indel / homozygous)
+        return ntiupac.lower() if nt.islower() else ntiupac
+    print(pos, nt, ntiupac)
+    print(h.variant_alleles)
+    print(h)
+    print(h.variants)
+    print(h.coordinates.start, h.coordinates.stop)
+    print(h.posmap)
+    print(h.posmap_rev)
+    print()
+    return "".join([n if n == h.variant_alleles[pos][0] else n.lower() for n in list(ntiupac)])
+    
 
 
 def resolve_guide(
-    guideseq: str, pam: PAM, direction: int, right: bool, debug: bool
+    guideseq: str, pam: PAM, direction: int, right: bool, pos: int, guidelen: int, h: Haplotype, debug: bool
 ) -> List[str]:
+    
+    p = pos - h.coordinates.start - GUIDESEQPAD
+
+    # if not right:
+    #     x = p + GUIDESEQPAD + guidelen
+    # else:
+    #     x = p + GUIDESEQPAD
+    
+    # p2 = pos - h.coordinates.start - GUIDESEQPAD
+    # print(f"pos: {p} {x}")
+    # print(f"guide: {guideseq}\n{s}")
+    # print(f"offset: {(len(guideseq) - len(s))}")
     guide_alts = [
         "".join(g)
-        for g in product(*[list(_decode_iupac(nt, debug)) for nt in guideseq])
+        for g in product(*[list(_decode_iupac(nt, p + i, h, debug)) for i, nt in enumerate(guideseq)])
     ]
     idx = GUIDESEQPAD if right else (len(guideseq) - GUIDESEQPAD - len(pam))
     return [
@@ -202,7 +225,7 @@ def adjust_guide_position(
 
 def group_guides_position(
     guides: List[Guide], debug: bool
-) -> Dict[str, Dict[int, Union[Guide, List[Guide]]]]:
+) -> DefaultDict[str, Dict[int, Union[Optional[Guide], List[Guide]]]]:
     # dictionary to map guides to positions (0 -> ref; 1 -> alt)
     pos_guide = defaultdict(lambda: {0: None, 1: []})
     for guide in guides:
@@ -226,14 +249,21 @@ def remove_redundant_guides(guides: List[Guide], debug: bool) -> List[Guide]:
     for pos, guide_group in grouped_guides.items():
         refguide, altguides = guide_group[0], guide_group[1]
         if refguide is None:  # only alt guides, redundancy not possible
-            filtered_guides += altguides
+            filtered_guides.extend(altguides) # type: ignore
             continue
-        for guide in altguides:  # remove redundant guides
-            refguide_seq = refguide.sequence[GUIDESEQPAD:-GUIDESEQPAD].upper()
+        altguides_list: List[Guide] = altguides # type: ignore
+        for guide in altguides_list:  # remove redundant guides 
+            refguide_seq = refguide.sequence[GUIDESEQPAD:-GUIDESEQPAD].upper() # type: ignore
             guide_seq = guide.sequence[GUIDESEQPAD:-GUIDESEQPAD].upper()
             if (guide.samples != "REF" and guide_seq != refguide_seq) or (guide.samples == "REF" and guide_seq == refguide_seq):
                 filtered_guides.append(guide)
     return filtered_guides
+
+def is_pamhit_valid(pamhit_pos: int, haplen: int, guidelen: int, pamlen: int, right: bool) -> bool:
+    if right:
+        return pamhit_pos + guidelen + pamlen + GUIDESEQPAD < haplen
+    return pamhit_pos - guidelen - GUIDESEQPAD >= 0
+
 
 def retrieve_guides(
     pam_hits: List[int],
@@ -263,12 +293,26 @@ def retrieve_guides(
             continue
         guideseqs = [guideseq]
         if variants_present and not phased:  # handle guides with iupac
-            guideseqs = resolve_guide(guideseq, pam, direction, right, debug)
+            # print(haplotype)
+            # print(haplotype.variants)
+            # print(haplotype.posmap)
+            # print(pos)
+            # print(guidelen) 
+            # print(len(pam)) 
+            # print(right)
+            if is_pamhit_valid(pos, len(haplotype), guidelen, len(pam), right):
+                p, _ = adjust_guide_position(
+                    haplotype.posmap, pos, guidelen, len(pam), right
+                )
+                print(pos, p)
+                guideseqs = resolve_guide(guideseq, pam, direction, right, p, guidelen, haplotype, debug)
+            else:
+                guideseqs = []
         for guideseq in guideseqs:
             # compute guide's start and stop positions
             guide_start, guide_stop = adjust_guide_position(
                 haplotype.posmap, pos, guidelen, len(pam), right
-            )
+            ) # TODO: remove redundant variants (snvs)
             guide = Guide(
                 guide_start,
                 guide_stop,
@@ -283,6 +327,7 @@ def retrieve_guides(
                 haplotype.id,
             )
             guides.append(guide)  # report guide
+    # exit()
     print_verbosity(
         f"Guides retrieved in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
