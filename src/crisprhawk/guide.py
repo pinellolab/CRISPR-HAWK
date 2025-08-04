@@ -161,6 +161,12 @@ class Guide:
     @property
     def guide(self) -> str:
         return self._guideseq
+    
+    @property
+    def guidepam(self) -> str:
+        if self._right:
+            return self._pamseq + self._guideseq
+        return self._guideseq + self._pamseq
 
     @property
     def guidelen(self) -> int:

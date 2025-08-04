@@ -11,7 +11,7 @@ from .pam import PAM
 
 from pybedtools import BedTool
 from collections import defaultdict
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple, Set
 from time import time
 
 import numpy as np
@@ -135,6 +135,27 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
     return guides
 
 
+def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
+    # map variant positions to variant strings for quick lookup
+    varposmap = {int(variant.split("-")[1]): variant for variant in variants}
+    validated_variants = set()
+    # check ach nucleotide position in the guide sequence
+    for seqidx, nt in enumerate(guide.guidepam):  
+        pos = guide.start + seqidx
+        if pos not in varposmap:
+            continue
+        # parse variant information: "chrom-pos-ref/alt"
+        variant_id = varposmap[pos]
+        ref, alt = variant_id.split("-")[2].split("/")
+        # calculate sequence length difference (indel offset)
+        offset = max(0, len(alt) - len(ref))
+        # validate: lowercase sequence in guide should match uppercase alt allele
+        guide_segment = guide.guidepam[seqidx:seqidx + offset + 1]
+        if guide_segment.islower() and guide_segment.upper() == alt:
+            validated_variants.add(variant_id)
+    return validated_variants
+
+
 def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     guides_lst = []  # reported guides
     print_verbosity(
@@ -143,13 +164,15 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
     start = time()  # position calculation start time
     for guide in guides:
         guide_vars = set()  # variants occurring in variant
+        is_reference = False
         for variant in guide.variants.split(","):
-            if variant == "NA":  # no variants
-                if guide_vars:
+            if variant == "NA":  # reference sequence (no variants)
+                if guide_vars:  # shouldn't have both NA and actual variants
                     exception_handler(
                         ValueError, "Forbidden NA variant", os.EX_DATAERR, debug
                     )
                 guide_vars.add("NA")
+                is_reference = True
                 break
             try:  # retrieve each variant position
                 variant_position = int(variant.split("-")[1])
@@ -164,7 +187,9 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
             # assess whether the snp occurs within the guide or is part of the haplotype
             if guide.start <= variant_position < guide.stop:
                 guide_vars.add(variant)
-        if guide_vars:
+        if guide_vars:  # process guides with variants
+            if not is_reference:  # polish variants to validate sequence matches
+                guide_vars = polish_variants_annotation(guide, guide_vars)
             guide.set_variants(",".join(sorted(guide_vars)))
             guides_lst.append(guide)
     print_verbosity(
@@ -259,10 +284,12 @@ def annotate_guides(
     print_verbosity("Annotating guides", verbosity, VERBOSITYLVL[1])
     start = time()  # annotation start time
     for region, guides_list in guides.items():
-        # compute reverse complement for guides occurring on rev strand
-        guides_list = reverse_guides(guides_list, verbosity)
         # set variants for current guide
         guides_list = annotate_variants(guides_list, verbosity, debug)
+        # compute reverse complement for guides occurring on rev strand
+        guides_list = reverse_guides(guides_list, verbosity)
+        # # set variants for current guide
+        # guides_list = annotate_variants(guides_list, verbosity, debug)
         # annotate each guide with azimuth scores
         guides_list = azimuth_score(guides_list, verbosity, debug)
         # annotate each guide with rs3 scores

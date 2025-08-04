@@ -8,7 +8,7 @@ from .bitset import Bitset
 from .pam import PAM
 from .region_constructor import PADDING
 from .region import Region
-from .haplotype import Haplotype
+from .haplotype import Haplotype, HaplotypeIndel
 
 from collections import defaultdict
 
@@ -51,6 +51,25 @@ def match(
             debug,
             e,
         )
+
+def compute_scan_start_stop(hap: Haplotype, region_start: int, region_stop: int, pamlen: int) -> Tuple[int, int]:
+    stop_p = min(region_stop - PADDING, hap.stop)  # stop position with padding
+    # handle indels overlapping the end of region
+    if (stop_p == region_stop - PADDING and stop_p not in hap.posmap_rev):
+        # find the highest available position in the mapping
+        upperbound_p = max(hap.posmap_rev.keys())
+        # search for next available position in the mapping
+        search_range = upperbound_p - stop_p + 1
+        for offset in range(search_range):
+            p = stop_p + offset
+            if p in hap.posmap_rev:
+                stop_p = p
+                break
+    # convert genomic coordinates to sequence coordinates
+    scan_stop = hap.posmap_rev[stop_p] - pamlen + 1
+    start_p = max(region_start + PADDING, hap.start)
+    scan_start = hap.posmap_rev[start_p]
+    return scan_start, scan_stop
 
 
 def scan_haplotype(
@@ -115,10 +134,7 @@ def pam_search(
             VERBOSITYLVL[3],
         )
         # define scan stop position for each haplotype
-        scan_stop = hap.posmap_rev[min(region.stop - PADDING, hap.stop)] - len(pam) + 1
-        scan_start = hap.posmap_rev[
-            max(region.start + PADDING, hap.start)
-        ]  # start position for guides search
+        scan_start, scan_stop = compute_scan_start_stop(hap, region.start, region.stop, len(pam))
         # scan haplotype for pam occurrences
         matches_fwd, matches_rev = scan_haplotype(
             pam, haplotypes_bits[i], scan_start, scan_stop, debug
@@ -176,14 +192,6 @@ def _decode_iupac(nt: str, pos: int, h: Haplotype, debug: bool) -> str:
         exception_handler(CrisprHawkIupacTableError, f"Invalid IUPAC character ({nt})", os.EX_DATAERR, debug, e)  # type: ignore
     if len(ntiupac) == 1:  # A, C, G, or T (reference / indel / homozygous)
         return ntiupac.lower() if nt.islower() else ntiupac
-    print(pos, nt, ntiupac)
-    print(h.variant_alleles)
-    print(h)
-    print(h.variants)
-    print(h.coordinates.start, h.coordinates.stop)
-    print(h.posmap)
-    print(h.posmap_rev)
-    print()
     return "".join([n if n == h.variant_alleles[pos][0] else n.lower() for n in list(ntiupac)])
     
 
@@ -191,22 +199,12 @@ def _decode_iupac(nt: str, pos: int, h: Haplotype, debug: bool) -> str:
 def resolve_guide(
     guideseq: str, pam: PAM, direction: int, right: bool, pos: int, guidelen: int, h: Haplotype, debug: bool
 ) -> List[str]:
-    
-    p = pos - h.coordinates.start - GUIDESEQPAD
-
-    # if not right:
-    #     x = p + GUIDESEQPAD + guidelen
-    # else:
-    #     x = p + GUIDESEQPAD
-    
-    # p2 = pos - h.coordinates.start - GUIDESEQPAD
-    # print(f"pos: {p} {x}")
-    # print(f"guide: {guideseq}\n{s}")
-    # print(f"offset: {(len(guideseq) - len(s))}")
+    # retrieve guide sequence relative start position
+    p = pos - GUIDESEQPAD if right else pos - guidelen - GUIDESEQPAD
     guide_alts = [
         "".join(g)
         for g in product(*[list(_decode_iupac(nt, p + i, h, debug)) for i, nt in enumerate(guideseq)])
-    ]
+    ]  # decode iupac string 
     idx = GUIDESEQPAD if right else (len(guideseq) - GUIDESEQPAD - len(pam))
     return [
         guide
@@ -264,6 +262,12 @@ def is_pamhit_valid(pamhit_pos: int, haplen: int, guidelen: int, pamlen: int, ri
         return pamhit_pos + guidelen + pamlen + GUIDESEQPAD < haplen
     return pamhit_pos - guidelen - GUIDESEQPAD >= 0
 
+def is_pamhit_in_range(poshit: int, guidelen: int, pamlen: int, haplen: int, right: bool) -> bool:
+    # compute left and right boundaries for current guide
+    lbound = poshit - GUIDESEQPAD if right else poshit - guidelen - GUIDESEQPAD
+    rbound = poshit + guidelen + pamlen + GUIDESEQPAD if right else poshit + pamlen + GUIDESEQPAD
+    return lbound >= 0 and rbound <= haplen  # check whether guide sequence is in range
+
 
 def retrieve_guides(
     pam_hits: List[int],
@@ -285,6 +289,8 @@ def retrieve_guides(
     )
     start = time()
     for pos in pam_hits:
+        if not is_pamhit_in_range(pos, guidelen, len(pam), len(haplotype), right):
+            continue  # if guide sequence not in range skip the hit
         # retrieve guide sequence from haplotype
         guideseq = extract_guide_sequence(haplotype, pos, len(pam), guidelen, right)
         if (
@@ -293,19 +299,8 @@ def retrieve_guides(
             continue
         guideseqs = [guideseq]
         if variants_present and not phased:  # handle guides with iupac
-            # print(haplotype)
-            # print(haplotype.variants)
-            # print(haplotype.posmap)
-            # print(pos)
-            # print(guidelen) 
-            # print(len(pam)) 
-            # print(right)
             if is_pamhit_valid(pos, len(haplotype), guidelen, len(pam), right):
-                p, _ = adjust_guide_position(
-                    haplotype.posmap, pos, guidelen, len(pam), right
-                )
-                print(pos, p)
-                guideseqs = resolve_guide(guideseq, pam, direction, right, p, guidelen, haplotype, debug)
+                guideseqs = resolve_guide(guideseq, pam, direction, right, pos, guidelen, haplotype, debug)
             else:
                 guideseqs = []
         for guideseq in guideseqs:
@@ -327,7 +322,6 @@ def retrieve_guides(
                 haplotype.id,
             )
             guides.append(guide)  # report guide
-    # exit()
     print_verbosity(
         f"Guides retrieved in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
