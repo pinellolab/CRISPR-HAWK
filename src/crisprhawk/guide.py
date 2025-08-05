@@ -126,6 +126,12 @@ class Guide:
     def set_gene_ann(self, annotation: str) -> None:
         self._geneann = annotation
 
+    def set_offtargets(self, offtargets_num: int) -> None:
+        self._offtargets_num = offtargets_num
+
+    def set_cfd(self, cfd: float) -> None:
+        self._cfd = cfd
+
     @property
     def start(self) -> int:
         return self._start
@@ -207,7 +213,18 @@ class Guide:
         if not hasattr(self, "_geneann"):  # always trace this error
             exception_handler(AttributeError, f"Missing _geneann attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
         return self._geneann
-
+    
+    @property
+    def offtargets(self) -> int:
+        if not hasattr(self, "_offtargets_num"):  # always trace this error
+            exception_handler(AttributeError, f"Missing _offtargets_num attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
+        return self._offtargets_num
+    
+    @property
+    def cfd(self) -> float:
+        if not hasattr(self, "_cfd"):  # always trace this error
+            exception_handler(AttributeError, f"Missing _cfd attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
+        return self._cfd
 
 class GuideIterator:
     def __init__(self, guide: Guide) -> None:

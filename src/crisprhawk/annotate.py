@@ -1,23 +1,21 @@
 """ """
 
-from .crisprhawk_error import CrisprHawkCfdScoreError, CrisprHawkAzimuthScoreError, CrisprHawkRs3ScoreError, CrisprHawkAnnotationError, CrisprHawkOffTargetsError
+from .crisprhawk_error import CrisprHawkCfdScoreError, CrisprHawkAzimuthScoreError, CrisprHawkRs3ScoreError, CrisprHawkAnnotationError
 from .exception_handlers import exception_handler
 from .scores import azimuth, cfdon, rs3
 from .bedfile import BedAnnotation
 from .guide import Guide, GUIDESEQPAD
-from .utils import print_verbosity, flatten_list, suppress_stderr, suppress_stdout, VERBOSITYLVL, IUPACTABLE
+from .utils import print_verbosity, flatten_list, VERBOSITYLVL
 from .region import Region
 from .pam import PAM
+from .offtargets import search_offtargets
 
-from pybedtools import BedTool
 from collections import defaultdict
-from typing import List, Dict, Union, Tuple, Set
+from typing import List, Dict, Union, Set
 from time import time
 
 import numpy as np
 
-import subprocess
-import tempfile
 import os
 
 ANNDIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "annotations")  # annotation data directory
@@ -198,59 +196,6 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
     return guides_lst
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def matchpam(pam: str, otpam: str) -> bool:
-    assert len(pam) == len(otpam)
-    for i, nt in enumerate(pam):
-        if otpam[i] not in IUPACTABLE[nt]:
-            return False
-    return True
-
-
-
-def filter_offtargets(sequences: List[Tuple[str, str]], pam: PAM, pamlen: int, right: bool) -> List[Tuple[str, str, str, str, str]]:
-    offtargets = []
-    for otname, ot in sequences:
-        fields = otname.split("|")  # retrieve offtarget annotation fields
-        skip = True
-        if bool(int(fields[7][:1])):  # ignore repetitive alignments
-            skip = False
-        else:
-            pamot = ot[:pamlen] if right else ot[-pamlen:]
-            skip = not matchpam(pam.pam, pamot.upper()) # check pam validity
-        if not skip:
-            offtargets.append((fields[1], fields[2], fields[3], fields[4], ot, fields[5]))
-    return offtargets
-
-
-
-
-
-
-
-
-
-
-
-
 def _funcann(guide: Guide, bedannotation: BedAnnotation, contig: str, atype: str, idx: int) -> Guide:
     # fetch annotation features overlapped by input guide
     if not (annotation := bedannotation.fetch_features(contig, guide.start, guide.stop, idx)):
@@ -302,12 +247,8 @@ def annotate_guides(
         # annotate each guide with gene data
         if gene_annotation:
             guides_list = funcann_guides(guides_list, region.contig, gene_annotation, "gene", verbosity, debug)
-        #
-        #
-        # if estimate_offtargets:  # estimate off-targets for each guide
-        #     print("estimating off-targets")
-        #     search_offtargets(guides_list, pam, genome, debug)
-        #     exit()
+        if estimate_offtargets:  # estimate off-targets for each guide
+            guides_list = search_offtargets(guides_list, pam, genome, functional_annotation, gene_annotation, verbosity, debug)
         guides[region] = guides_list  # store annotated guides
     print_verbosity(
         f"Annotation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]

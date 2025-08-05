@@ -307,7 +307,7 @@ def retrieve_guides(
             # compute guide's start and stop positions
             guide_start, guide_stop = adjust_guide_position(
                 haplotype.posmap, pos, guidelen, len(pam), right
-            ) # TODO: remove redundant variants (snvs)
+            ) 
             guide = Guide(
                 guide_start,
                 guide_stop,
