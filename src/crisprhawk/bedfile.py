@@ -374,7 +374,14 @@ class BedAnnotation:
         self._bedidx = f"{self._fname}.{TBI}"
 
     def fetch_features(self, contig: str, start: int, stop: int, fieldidx: int) -> str:
+        if contig not in self._bed.contigs:
+            return "NA"
         return ",".join({e.split()[fieldidx] for e in self._bed.fetch(contig, start, stop)})
+    
+
+    @property
+    def contigs(self) -> List[str]:
+        return self._bed.contigs
 
 
 

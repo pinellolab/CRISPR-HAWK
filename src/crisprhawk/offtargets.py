@@ -6,6 +6,7 @@ from .utils import print_verbosity, suppress_stdout, suppress_stderr, IUPACTABLE
 from .scores.cfdscore.cfdscore import load_mismatch_pam_scores
 from .offtarget import Offtarget
 from .bedfile import BedAnnotation
+from .region import Region
 from .guide import Guide
 from .pam import PAM
 
@@ -26,6 +27,7 @@ import functools
 MAXMM = 4  # maximum number of mismatches allowed when searching offtargets
 MAXENTRIES = 2000000  # maximum entries (bwa param)
 MAXOCC = 60000  # maximum number of occurrences (bwa param)
+OTREPCNAMES = ["guide", "chrom", "start", "stop", "strand", "spacer", "pam", "mm", "cfd", "functional_annotation", "gene_annotation"]
 
 def create_guide_fa(guide: Guide, workingdir: str, debug: bool) -> str:
     fname = os.path.join(workingdir, f"{guide.guide_id}.fa")
@@ -214,18 +216,33 @@ def annotate_offtargets(wildtype: Guide, offtargets: List[Offtarget], functional
             offtarget.annotate_gene(geneann) # type: ignore
     return offtargets
 
-# TODO: write off-targets report
-
-def compute_cfd(offtargets: List[Offtarget]) -> float:
+def compute_cfd_round(offtargets: List[Offtarget]) -> float:
     cfdscores = [ot.cfd for ot in offtargets]
-    return 100. * 100.0 / sum(cfdscores)
+    cfd = 100 / (100 + sum(cfdscores))
+    return int(round(cfd * 100))
 
 # TODO: compute elevation score
 
+def report_offtargets(offtargets: List[str], region: Region, outdir: str, verbosity: int, debug: bool) -> None:
+    # write haplotypes table to file
+    print_verbosity("Writing off-targets report", verbosity, VERBOSITYLVL[1])
+    start = time()  # track haplotypes table writing time
+    report_fname = os.path.join(outdir, f"offtargets_{region.contig}_{region.start}_{region.stop}.tsv")
+    try:
+        with open(report_fname, mode="w") as outfile:
+            outfile.write("\t".join(OTREPCNAMES) + "\n")
+            outfile.write("\n".join(offtargets))
+    except OSError as e:
+            exception_handler(CrisprHawkOffTargetsError, f"Failed writing off-targets report for region {region}", os.EX_IOERR, debug, e)  
+    print_verbosity(
+        f"Off-targets report written in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
+    )
 
-def search_offtargets(guides: List[Guide], pam: PAM, genome: str, functional_annotation: str, gene_annotation: str, verbosity: int, debug: bool) -> List[Guide]:
+
+def search_offtargets(guides: List[Guide], pam: PAM, genome: str, region: Region, functional_annotation: str, gene_annotation: str, write_offtargets_report: bool, outdir: str, verbosity: int, debug: bool) -> List[Guide]:
     print_verbosity(f"Estimating off-targets for {len(guides)} guides", verbosity, VERBOSITYLVL[3])
     start = time()
+    offtargets = []  # list storing the all off-targets for writing ots report
     workingdir = tempfile.mkdtemp(prefix="crisprhawk_")  # create temp dir
     try:
         for guide in guides:
@@ -235,12 +252,14 @@ def search_offtargets(guides: List[Guide], pam: PAM, genome: str, functional_ann
             guide_bed = sam2bed(guide_fa, guide_sa, genome, guide.start, guide.pamlen, guide.guidelen, guide.right, debug)  # convert sam to bed
             offtargets_guide = retrieve_offtargets(guide_bed, genome, pam, guide.pamlen, guide.right, debug)
             offtargets_guide = annotate_offtargets(guide, offtargets_guide, functional_annotation, gene_annotation, verbosity, debug)
+            if write_offtargets_report:
+                offtargets += [offtarget.report_line(guide) for offtarget in offtargets_guide]
             # set number of offtragets and guide's cfd
             if len(offtargets_guide) > 0:
                 guide.set_offtargets(len(offtargets_guide))
-                guide.set_cfd(compute_cfd(offtargets_guide))
+                guide.set_cfd(compute_cfd_round(offtargets_guide))
             else:
-                guide.set_offtargets(np.inf)  # type: ignore
+                guide.set_offtargets(-1)  # type: ignore
                 guide.set_cfd(0.)
             # clean folder from tmp files 
             tmpfiles = os.path.join(workingdir, f"{guide.guide_id}.*")
@@ -248,6 +267,8 @@ def search_offtargets(guides: List[Guide], pam: PAM, genome: str, functional_ann
     except Exception:
         subprocess.call(f"rm -r {workingdir}", shell=True)  # remove temp dir
         raise Exception("Off-target search failed")
+    if write_offtargets_report:  # write offtargets report analyzed guides
+        report_offtargets(offtargets, region, outdir, verbosity, debug)
     print_verbosity(
         f"Off-targets estimation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )

@@ -196,6 +196,9 @@ class CrisprHawkInputArgs:
             self._parser.error(f"Cannot find functional annotation BED {self._args.functional_annotation}")
         if self._args.gene_annotation and os.stat(self._args.gene_annotation).st_size <= 0:
             self._parser.error(f"{self._args.gene_annotation} is empty")
+        # off-targets estimation
+        if self._args.write_offtargets_report and not self._args.estimate_offtargets:
+            self._parser.error("Cannot write off-targets report if off-target estimation not enabled")
         # verbosity
         if self._args.verbosity not in VERBOSITYLVL:
             self._parser.error(
@@ -253,6 +256,10 @@ class CrisprHawkInputArgs:
     @property
     def estimate_offtargets(self) -> bool:
         return self._args.estimate_offtargets
+    
+    @property
+    def write_offtargets_report(self) -> bool:
+        return self._args.write_offtargets_report
 
     @property
     def verbosity(self) -> int:

@@ -223,7 +223,7 @@ def funcann_guides(guides: List[Guide], contig: str, annotation: str, atype: str
 
 
 def annotate_guides(
-    guides: Dict[Region, List[Guide]], functional_annotation: str, gene_annotation: str, pam: PAM, genome: str, estimate_offtargets: bool, verbosity: int, debug: bool
+    guides: Dict[Region, List[Guide]], functional_annotation: str, gene_annotation: str, pam: PAM, genome: str, estimate_offtargets: bool, write_offtargets_report: bool, outdir: str, verbosity: int, debug: bool
 ) -> Dict[Region, List[Guide]]:
     # annotate guides with scores, variants and adjust positions
     print_verbosity("Annotating guides", verbosity, VERBOSITYLVL[1])
@@ -248,7 +248,7 @@ def annotate_guides(
         if gene_annotation:
             guides_list = funcann_guides(guides_list, region.contig, gene_annotation, "gene", verbosity, debug)
         if estimate_offtargets:  # estimate off-targets for each guide
-            guides_list = search_offtargets(guides_list, pam, genome, functional_annotation, gene_annotation, verbosity, debug)
+            guides_list = search_offtargets(guides_list, pam, genome, region, functional_annotation, gene_annotation, write_offtargets_report, outdir, verbosity, debug)
         guides[region] = guides_list  # store annotated guides
     print_verbosity(
         f"Annotation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]

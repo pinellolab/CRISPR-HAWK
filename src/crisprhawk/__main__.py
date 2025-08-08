@@ -153,6 +153,14 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         "candidate. By default, off-targets are not estimated",
     )
     group.add_argument(
+        "--write-offtargets-report",
+        action="store_true",
+        dest="write_offtargets_report",
+        default=False,
+        help="When enabled, write a report for all off-targets found for each "
+        "guide RNA candidate. By default, off-targets are not reported"
+    )
+    group.add_argument(
         "--verbosity",
         type=int,
         metavar="VERBOSITY",
