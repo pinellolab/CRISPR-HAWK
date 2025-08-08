@@ -10,6 +10,7 @@ from .utils import (
     remove_folder,
     IUPACTABLE,
     VERBOSITYLVL,
+    DNA,
 )
 from .scores.cfdscore.cfdscore import load_mismatch_pam_scores
 from .offtarget import Offtarget
@@ -23,20 +24,10 @@ from typing import List, Tuple, NamedTuple
 from pybedtools import BedTool
 from time import time
 
-import tempfile
-import subprocess
-import os
-
-# from concurrent.futures import ProcessPoolExecutor, as_completed
-# from multiprocessing import cpu_count
-# import functools
-
 import multiprocessing
-import tempfile
-import os
 import subprocess
-from time import time
-from typing import Optional
+import os
+
 
 MAXMM = 4  # maximum number of mismatches allowed when searching offtargets
 MAXENTRIES = 2000000  # maximum entries (bwa param)
@@ -279,8 +270,8 @@ def sam2bed(
 def offtarget_sequence(guide_bed: str, genome: str) -> List[Tuple[str, str]]:
     bed = BedTool(guide_bed)  # load bed file
     sequences = bed.sequence(
-        fi=genome, s=True, name=True
-    )  # extract offtargets sequences # type: ignore
+        fi=genome, s=True, name=True  # type: ignore
+    )  # extract offtargets sequences 
     # construct a list of offtarget sequences
     sequences = open(sequences.seqfn).read().split()
     return [(sequences[i], sequences[i + 1]) for i in range(0, len(sequences), 2)]
@@ -299,6 +290,9 @@ def filter_offtargets(
 ) -> List[Offtarget]:
     offtargets = []
     for otannotation, offtarget in sequences:
+        # skip off-targets containing Ns
+        if DNA[4] in offtarget.upper():
+            continue
         # parse annotation fields: format depends on alignment tool output (bwa)
         annotation_fields = otannotation.split("|")
         # check if alignment should be skipped due to repetitive regions
