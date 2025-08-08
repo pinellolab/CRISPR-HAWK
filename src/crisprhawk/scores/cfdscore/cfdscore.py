@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from crisprhawk.exception_handlers import exception_handler
 from crisprhawk.crisprhawk_error import CrisprHawkCfdScoreError
@@ -20,10 +19,24 @@ def load_mismatch_pam_scores(debug: bool) -> Tuple[Dict[str, float], Dict[str, f
         mmscores = pickle.load(open(os.path.join(modelspath, MMSCORES), mode="rb"))
         pamscores = pickle.load(open(os.path.join(modelspath, PAMSCORES), mode="rb"))
     except OSError as e:
-        exception_handler(CrisprHawkCfdScoreError, "An error occurred while loading CFD model files", os.EX_NOINPUT, debug, e)
+        exception_handler(
+            CrisprHawkCfdScoreError,
+            "An error occurred while loading CFD model files",
+            os.EX_NOINPUT,
+            debug,
+            e,
+        )
     return mmscores, pamscores
 
-def compute_cfd(wildtype: str, sg: str, pam: str, mmscores: Dict[str, float], pamscores: Dict[str, float], debug: bool) -> float:
+
+def compute_cfd(
+    wildtype: str,
+    sg: str,
+    pam: str,
+    mmscores: Dict[str, float],
+    pamscores: Dict[str, float],
+    debug: bool,
+) -> float:
     assert len(wildtype) == len(sg) == 20
     score = 1.0  # initialize cfd score
     wildtype, sg = dna2rna(wildtype), dna2rna(sg)  # convert to RNA sequences
@@ -32,7 +45,9 @@ def compute_cfd(wildtype: str, sg: str, pam: str, mmscores: Dict[str, float], pa
             score *= 1  # no mismatch, score unchanged
             continue
         # build mismatch dictionary key
-        key = f"r{wildtype[i].upper()}:d{reverse_complement(ntsg.upper(), debug)},{i + 1}"
+        key = (
+            f"r{wildtype[i].upper()}:d{reverse_complement(ntsg.upper(), debug)},{i + 1}"
+        )
         score *= mmscores[key]
     score *= pamscores[pam.upper()]  # multiply by PAM score
     return score

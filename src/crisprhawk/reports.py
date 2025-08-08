@@ -84,7 +84,14 @@ def update_report_fields(
     report[REPORTCOLS[14]].append(guide.hapid)  # haplotype id
     return report
 
-def update_optional_report_fields(report: Dict[str, List[Any]], guide: Guide, funcann: bool, geneann: bool, estimate_offtargets: bool) -> Dict[str, List[str]]:
+
+def update_optional_report_fields(
+    report: Dict[str, List[Any]],
+    guide: Guide,
+    funcann: bool,
+    geneann: bool,
+    estimate_offtargets: bool,
+) -> Dict[str, List[str]]:
     # update report optional fields
     if funcann:
         report[REPORTCOLS[15]].append(guide.funcann)
@@ -96,28 +103,45 @@ def update_optional_report_fields(report: Dict[str, List[Any]], guide: Guide, fu
     return report
 
 
-def process_data(region: Region, guides: List[Guide], pam: PAM, funcann: bool, geneann: bool, estimate_offtargets: bool) -> pd.DataFrame:
+def process_data(
+    region: Region,
+    guides: List[Guide],
+    pam: PAM,
+    funcann: bool,
+    geneann: bool,
+    estimate_offtargets: bool,
+) -> pd.DataFrame:
     report = {cname: [] for cname in REPORTCOLS}  # initialize report dictionary
     pamclass = compute_pam_class(pam)  # compute extended pam class
     for guide in guides:  # iterate over guides and add to report
         report[REPORTCOLS[0]].append(region.contig)  # region contig (chrom)
         # update report with current guide data
         report = update_report_fields(report, region, guide, pamclass)
-        report = update_optional_report_fields(report, guide, funcann, geneann, estimate_offtargets)
+        report = update_optional_report_fields(
+            report, guide, funcann, geneann, estimate_offtargets
+        )
     report = {c: v for c, v in report.items() if v}  # remove empty columns
     return pd.DataFrame(report)  # build dataframe from report data
 
 
 def construct_report(
-    guides: Dict[Region, List[Guide]], pam: PAM, funcann: bool, geneann: bool, estimate_offtargets: bool
+    guides: Dict[Region, List[Guide]],
+    pam: PAM,
+    funcann: bool,
+    geneann: bool,
+    estimate_offtargets: bool,
 ) -> Dict[Region, pd.DataFrame]:
     return {
-        region: process_data(region, guides_list, pam, funcann, geneann, estimate_offtargets)
+        region: process_data(
+            region, guides_list, pam, funcann, geneann, estimate_offtargets
+        )
         for region, guides_list in guides.items()
     }
 
 
-def format_report(report: pd.DataFrame, funcann: bool, geneann: bool, estimate_offtargets: bool) -> pd.DataFrame:
+def format_report(
+    report: pd.DataFrame, funcann: bool, geneann: bool, estimate_offtargets: bool
+) -> pd.DataFrame:
     # reset dataframe index and sort by genomic coordinates
     report = report.reset_index(drop=True)
     report = report.sort_values([REPORTCOLS[7]], ascending=False)
@@ -140,10 +164,19 @@ def format_report(report: pd.DataFrame, funcann: bool, geneann: bool, estimate_o
     return report
 
 
-def store_report(report: pd.DataFrame, guidesreport: str, funcann: bool, geneann: bool, estimate_offtargets: bool, debug: bool) -> None:
+def store_report(
+    report: pd.DataFrame,
+    guidesreport: str,
+    funcann: bool,
+    geneann: bool,
+    estimate_offtargets: bool,
+    debug: bool,
+) -> None:
     try:
         if not report.empty:
-            report = format_report(report, funcann, geneann, estimate_offtargets)  # format report
+            report = format_report(
+                report, funcann, geneann, estimate_offtargets
+            )  # format report
         report.to_csv(guidesreport, sep="\t", index=False)  # store report
     except FileNotFoundError as e:
         exception_handler(
@@ -170,21 +203,26 @@ def store_report(report: pd.DataFrame, guidesreport: str, funcann: bool, geneann
             e,
         )
 
+
 def _polish_samples_phased(samples: str) -> str:
     if "|" not in samples:  # unphased genotype, no need for polishing
         return samples
-    samplesmap = defaultdict(lambda: [0, 0]) # initialize samples map
-    for e in samples.split(","):  # retrive samples with genotypes 
+    samplesmap = defaultdict(lambda: [0, 0])  # initialize samples map
+    for e in samples.split(","):  # retrive samples with genotypes
         sample, genotype = e.split(":")
-        allele1, allele2 = map(int, genotype.split("|")) # retrieve allele
+        allele1, allele2 = map(int, genotype.split("|"))  # retrieve allele
         # combine using max (equivalent to OR for binary values)
         samplesmap[sample][0] = max(samplesmap[sample][0], allele1)
         samplesmap[sample][1] = max(samplesmap[sample][1], allele2)
     return ",".join([f"{sample}:{a1}|{a2}" for sample, (a1, a2) in samplesmap.items()])
-    
+
 
 def collapse_samples(samples: pd.Series) -> str:
-    return "" if samples.empty else _polish_samples_phased(",".join(sorted(set(",".join(samples).split(",")))))
+    return (
+        ""
+        if samples.empty
+        else _polish_samples_phased(",".join(sorted(set(",".join(samples).split(",")))))
+    )
 
 
 def parse_variant_ids(variant_ids: str) -> Set[str]:
@@ -200,16 +238,22 @@ def check_variant_ids(variant_ids_list: List[str]) -> str:
 def collapse_haplotype_ids(hapids: pd.Series) -> str:
     return "" if hapids.empty else ",".join(sorted(set(",".join(hapids).split(","))))
 
+
 def collapse_annotation(anns: pd.Series) -> str:
     return ",".join(set(",".join(anns).split(",")))
+
 
 def collapse_offtargets(offtargets: pd.Series) -> int:
     return list(set(offtargets))[0]
 
+
 def collapse_cfd(cfd: pd.Series) -> float:
     return float(list(set(cfd))[0])
 
-def collapsed_fields(funcann: bool, geneann: bool, estimate_offtargets: bool) -> Dict[str, str]:
+
+def collapsed_fields(
+    funcann: bool, geneann: bool, estimate_offtargets: bool
+) -> Dict[str, str]:
     # mandatory report fields
     fields = {
         "pam_class": "first",  # Assuming pam_class is the same across entries
@@ -229,7 +273,10 @@ def collapsed_fields(funcann: bool, geneann: bool, estimate_offtargets: bool) ->
         fields["cfd"] = collapse_cfd
     return fields
 
-def collapse_report_entries(report: pd.DataFrame, funcann: bool, geneann: bool, estimate_offtargets: bool) -> pd.DataFrame:
+
+def collapse_report_entries(
+    report: pd.DataFrame, funcann: bool, geneann: bool, estimate_offtargets: bool
+) -> pd.DataFrame:
     # Define the columns to group by
     group_cols = REPORTCOLS[:5] + REPORTCOLS[6:11]
     if funcann:
@@ -257,7 +304,9 @@ def report_guides(
 ) -> None:
     print_verbosity("Constructing reports", verbosity, VERBOSITYLVL[1])
     start = time()  # report construction start time
-    reports = construct_report(guides, pam, funcann, geneann, estimate_offtargets)  # construct reports
+    reports = construct_report(
+        guides, pam, funcann, geneann, estimate_offtargets
+    )  # construct reports
     for region, report in reports.items():  # store reports in output folder
         region_name = (
             f"{region.contig}_{region.start + PADDING}_{region.stop - PADDING}"
@@ -266,8 +315,12 @@ def report_guides(
             outdir, f"{GUIDESREPORTPREFIX}__{region_name}_{pam}_{guidelen}.tsv"
         )
         if not report.empty:
-            report = collapse_report_entries(report, funcann, geneann, estimate_offtargets)
-        store_report(report, guidesreport, funcann, geneann, estimate_offtargets, debug)  # write report
+            report = collapse_report_entries(
+                report, funcann, geneann, estimate_offtargets
+            )
+        store_report(
+            report, guidesreport, funcann, geneann, estimate_offtargets, debug
+        )  # write report
     print_verbosity(
         f"Reports constructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )

@@ -15,7 +15,7 @@ from typing import Iterable, Optional, TypeVar, Tuple, Dict, NoReturn, List
 from colorama import Fore
 from glob import glob
 
-
+import multiprocessing
 import sys
 import os
 
@@ -187,18 +187,43 @@ class CrisprHawkInputArgs:
         ):
             self._parser.error(f"Cannot find output folder {self._args.outdir}")
         # functional annotation bed
-        if self._args.functional_annotation and (not os.path.exists(self._args.functional_annotation) or not os.path.isfile(self._args.functional_annotation)):
-            self._parser.error(f"Cannot find functional annotation BED {self._args.functional_annotation}")
-        if self._args.functional_annotation and os.stat(self._args.functional_annotation).st_size <= 0:
+        if self._args.functional_annotation and (
+            not os.path.exists(self._args.functional_annotation)
+            or not os.path.isfile(self._args.functional_annotation)
+        ):
+            self._parser.error(
+                f"Cannot find functional annotation BED {self._args.functional_annotation}"
+            )
+        if (
+            self._args.functional_annotation
+            and os.stat(self._args.functional_annotation).st_size <= 0
+        ):
             self._parser.error(f"{self._args.functional_annotation} is empty")
         # gene annotation bed
-        if self._args.gene_annotation and (not os.path.exists(self._args.gene_annotation) or not os.path.isfile(self._args.gene_annotation)):
-            self._parser.error(f"Cannot find functional annotation BED {self._args.functional_annotation}")
-        if self._args.gene_annotation and os.stat(self._args.gene_annotation).st_size <= 0:
+        if self._args.gene_annotation and (
+            not os.path.exists(self._args.gene_annotation)
+            or not os.path.isfile(self._args.gene_annotation)
+        ):
+            self._parser.error(
+                f"Cannot find functional annotation BED {self._args.functional_annotation}"
+            )
+        if (
+            self._args.gene_annotation
+            and os.stat(self._args.gene_annotation).st_size <= 0
+        ):
             self._parser.error(f"{self._args.gene_annotation} is empty")
         # off-targets estimation
         if self._args.write_offtargets_report and not self._args.estimate_offtargets:
-            self._parser.error("Cannot write off-targets report if off-target estimation not enabled")
+            self._parser.error(
+                "Cannot write off-targets report if off-target estimation not enabled"
+            )
+        # threads number
+        if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
+            self._parser.error(
+                f"Forbidden number of threads provided ({self._args.threads}). Max number of available cores: {multiprocessing.cpu_count()}"
+            )
+        if self._args.threads == 0:  # use all cores
+            self._args.threads = multiprocessing.cpu_count()
         # verbosity
         if self._args.verbosity not in VERBOSITYLVL:
             self._parser.error(
@@ -252,14 +277,18 @@ class CrisprHawkInputArgs:
     @property
     def haplotype_table(self) -> bool:
         return self._args.haplotype_table
-    
+
     @property
     def estimate_offtargets(self) -> bool:
         return self._args.estimate_offtargets
-    
+
     @property
     def write_offtargets_report(self) -> bool:
         return self._args.write_offtargets_report
+
+    @property
+    def threads(self) -> int:
+        return self._args.threads
 
     @property
     def verbosity(self) -> int:

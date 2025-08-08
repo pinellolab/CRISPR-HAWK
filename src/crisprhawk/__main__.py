@@ -125,7 +125,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         nargs="?",
         default="",
         help="BED file specifying functional genomic regions to functionally "
-        "annotate guide candidates"
+        "annotate guide candidates",
     )
     group.add_argument(
         "--gene-annotation",
@@ -134,7 +134,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         dest="gene_annotation",
         nargs="?",
         default="",
-        help="BED file specifying gene regions to annotate guide candidates"
+        help="BED file specifying gene regions to annotate guide candidates",
     )
     group.add_argument(
         "--haplotype-table",
@@ -158,7 +158,17 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         dest="write_offtargets_report",
         default=False,
         help="When enabled, write a report for all off-targets found for each "
-        "guide RNA candidate. By default, off-targets are not reported"
+        "guide RNA candidate. By default, off-targets are not reported",
+    )
+    group.add_argument(
+        "-t",
+        "--threads",
+        type=int,
+        metavar="THREADS",
+        dest="threads",
+        nargs="?",
+        default=1,
+        help="Number of threads. Use 0 for using all threads",
     )
     group.add_argument(
         "--verbosity",

@@ -143,6 +143,7 @@ def compute_haplotypes_unphased(
     sample_variants = {s: v for s, v in sample_variants.items() if v}
     return sample_variants
 
+
 def compute_indel_haplotypes_unphased(
     variants: List[VariantRecord], samples: List[str]
 ) -> Dict[str, List[VariantRecord]]:
@@ -183,7 +184,9 @@ def _collapse_haplotypes(
         else ",".join(sorted({h.variants for h in haplotypes}))
     )
     hap.set_variants(variants)
-    hap.set_posmap(haplotypes[0].posmap, haplotypes[0].posmap_rev)  # same posmap for all collapsed haplotypes
+    hap.set_posmap(
+        haplotypes[0].posmap, haplotypes[0].posmap_rev
+    )  # same posmap for all collapsed haplotypes
     hap.set_variant_alleles(haplotypes[0].variant_alleles)  # same variant alleles
     return hap
 
@@ -252,7 +255,7 @@ def generate_variants_combinations(
     for variant in variants:
         # retrieve variant id to match multiallelic sites
         vid = _split_id(variant.id[0])
-        is_snv = True #variant.vtype[0] == VTYPES[0]
+        is_snv = True  # variant.vtype[0] == VTYPES[0]
         is_homozygous = all(sample in call for call in variant.samples[0])
         if is_snv or is_homozygous:  # only one option available
             variant_groups[vid] = [variant]
@@ -278,7 +281,9 @@ def _solve_haplotypes_unphased(
     for variant_combination in variants_combinations:
         variant_combination = [v for v in variant_combination if v is not None]
         h = Haplotype(Sequence(sequence, debug), coordinates, phased, 0, debug)
-        h.add_variants_unphased(variant_combination, sample)  # add variants to sample haplotypes
+        h.add_variants_unphased(
+            variant_combination, sample
+        )  # add variants to sample haplotypes
         haps.append(h)  # insert haplotype to haplotypes list
     return [haps[0]] if ishomozygous(haps) else haps
 
@@ -298,7 +303,10 @@ def solve_haplotypes_unphased(
         )
     return collapse_haplotypes(hapseqs, debug)
 
-def classify_variants(variants: List[VariantRecord]) -> Tuple[List[VariantRecord], List[VariantRecord]]:
+
+def classify_variants(
+    variants: List[VariantRecord],
+) -> Tuple[List[VariantRecord], List[VariantRecord]]:
     # split variants according to their type (required for unphased variants processing)
     snvs, indels = [], []
     for v in variants:
@@ -306,11 +314,19 @@ def classify_variants(variants: List[VariantRecord]) -> Tuple[List[VariantRecord
     assert len(snvs) + len(indels) == len(variants)
     return snvs, indels
 
-def compute_snvs_haplotype_unphased(snvs: List[VariantRecord], samples: List[str], refseq: str, coordinates: Coordinate, phased: bool, debug: bool) -> List[Haplotype]:
+
+def compute_snvs_haplotype_unphased(
+    snvs: List[VariantRecord],
+    samples: List[str],
+    refseq: str,
+    coordinates: Coordinate,
+    phased: bool,
+    debug: bool,
+) -> List[Haplotype]:
     # compute and solve snvs-only haplotype (only unphased)
     samples_variants_snvs = compute_haplotypes_unphased(snvs, samples)
     haplotypes_snvs = solve_haplotypes_unphased(
-        samples_variants_snvs, 
+        samples_variants_snvs,
         [],  # start with empty list instead of reference
         refseq,
         coordinates,
@@ -319,7 +335,10 @@ def compute_snvs_haplotype_unphased(snvs: List[VariantRecord], samples: List[str
     )
     return haplotypes_snvs
 
-def create_indel_window(indel: VariantRecord, region: Region) -> Tuple[str, Coordinate, int, int, int]:
+
+def create_indel_window(
+    indel: VariantRecord, region: Region
+) -> Tuple[str, Coordinate, int, int, int]:
     # compute indel window; additional 50 bp upstream and downstream
     indel_length = len(indel.alt[0]) - len(indel.ref) if indel.alt else 0
     # compute window boundaries
@@ -332,15 +351,21 @@ def create_indel_window(indel: VariantRecord, region: Region) -> Tuple[str, Coor
     indel_sequence = region.sequence.sequence[startrel:stoprel]
     return indel_sequence, indel_coords, window_start, window_stop, indel_length
 
-def find_overlapping_snvs(indel_start: int, indel_stop: int, snvs: List[VariantRecord]) -> List[VariantRecord]:
+
+def find_overlapping_snvs(
+    indel_start: int, indel_stop: int, snvs: List[VariantRecord]
+) -> List[VariantRecord]:
     # find snvs overlapping the current indel window
     return [snv for snv in snvs if indel_start <= snv.position <= indel_stop]
+
 
 def retrieve_indel_samples(indel: VariantRecord) -> Set[str]:
     return set(indel.samples[0][0]) if indel and len(indel.samples) > 0 else set()
 
 
-def set_haplotypes_samples(indel_haplotypes: List[Haplotype], indel_samples: Set[str]) -> List[Haplotype]:
+def set_haplotypes_samples(
+    indel_haplotypes: List[Haplotype], indel_samples: Set[str]
+) -> List[Haplotype]:
     # set samples for each haplotype to reflect indel carriers
     for hap in indel_haplotypes:
         if hap.samples != "REF":  # alternative
@@ -350,18 +375,28 @@ def set_haplotypes_samples(indel_haplotypes: List[Haplotype], indel_samples: Set
             if final_samples:
                 hap.set_samples(",".join(sorted(final_samples)))
     return indel_haplotypes
-    
 
-def create_indels_haplotype_unphased(indel: VariantRecord, snvs: List[VariantRecord], region: Region, phased: bool, debug: bool) -> List[Haplotype]:
+
+def create_indels_haplotype_unphased(
+    indel: VariantRecord,
+    snvs: List[VariantRecord],
+    region: Region,
+    phased: bool,
+    debug: bool,
+) -> List[Haplotype]:
     # compute indel window and find overlapping snvs
-    indel_sequence, indel_coords, indel_start, indel_stop, indel_length = create_indel_window(indel, region)
+    indel_sequence, indel_coords, indel_start, indel_stop, indel_length = (
+        create_indel_window(indel, region)
+    )
     snvs_overlapping = find_overlapping_snvs(indel_start, indel_stop, snvs)
     indel_samples = retrieve_indel_samples(indel)  # recover indel's samples
-    indel_haplotypes = []  # initialize variable 
+    indel_haplotypes = []  # initialize variable
     # create sample-variant mapping only for samples carrying the indel
     if indel_samples:  # compute and solve indel haplotypes
         indel_variants = [indel] + snvs_overlapping
-        samples_variants_indel = compute_indel_haplotypes_unphased(indel_variants, list(indel_samples))
+        samples_variants_indel = compute_indel_haplotypes_unphased(
+            indel_variants, list(indel_samples)
+        )
         indel_haplotypes = solve_haplotypes_unphased(
             samples_variants_indel,
             [],  # start with empty list
@@ -372,19 +407,46 @@ def create_indels_haplotype_unphased(indel: VariantRecord, snvs: List[VariantRec
         )
         # set samples for each indel haplotype to reflect indel carriers
         indel_haplotypes = set_haplotypes_samples(indel_haplotypes, indel_samples)
-        
+
     return indel_haplotypes
 
-def add_variants_unphased(haplotypes: List[Haplotype], region: Region, vcfs: Dict[str, VCF], variants: List[VariantRecord], phased: bool, debug: bool) -> List[Haplotype]:
-    snvs, indels = classify_variants(variants) # split variants according to their type
+
+def add_variants_unphased(
+    haplotypes: List[Haplotype],
+    region: Region,
+    vcfs: Dict[str, VCF],
+    variants: List[VariantRecord],
+    phased: bool,
+    debug: bool,
+) -> List[Haplotype]:
+    snvs, indels = classify_variants(variants)  # split variants according to their type
     if snvs:  # compute snvs-only haplotypes
-        haplotypes.extend(compute_snvs_haplotype_unphased(snvs, vcfs[region.contig].samples, region.sequence.sequence, region.coordinates, phased, debug))
+        haplotypes.extend(
+            compute_snvs_haplotype_unphased(
+                snvs,
+                vcfs[region.contig].samples,
+                region.sequence.sequence,
+                region.coordinates,
+                phased,
+                debug,
+            )
+        )
     for indel in indels:  # create haplotype for each individual indel
         if region.coordinates.startp <= indel.position < region.coordinates.stopp:
-            haplotypes.extend(create_indels_haplotype_unphased(indel, snvs, region, phased, debug))
+            haplotypes.extend(
+                create_indels_haplotype_unphased(indel, snvs, region, phased, debug)
+            )
     return haplotypes
 
-def add_variants_phased(haplotypes: List[Haplotype], region: Region, vcfs: Dict[str, VCF], variants: List[VariantRecord], phased: bool, debug: bool) -> List[Haplotype]:
+
+def add_variants_phased(
+    haplotypes: List[Haplotype],
+    region: Region,
+    vcfs: Dict[str, VCF],
+    variants: List[VariantRecord],
+    phased: bool,
+    debug: bool,
+) -> List[Haplotype]:
     # recover variants combinations on each chromosome copy
     samples_variants = compute_haplotypes_phased(variants, vcfs[region.contig].samples)
     # solve haplotypes for each sample
@@ -396,6 +458,7 @@ def add_variants_phased(haplotypes: List[Haplotype], region: Region, vcfs: Dict[
         phased,
         debug,
     )
+
 
 def add_variants(
     vcflist: List[str],
@@ -410,9 +473,13 @@ def add_variants(
     phased = vcfs[regions[0].contig].phased  # assess VCF phasing
     for region in regions:  # reconstruct haplotypes for each region
         if phased:  # phased VCFs
-            haplotypes[region] = add_variants_phased(haplotypes[region], region, vcfs, variants[region], phased, debug)
+            haplotypes[region] = add_variants_phased(
+                haplotypes[region], region, vcfs, variants[region], phased, debug
+            )
         else:  # unphased VCFs
-            haplotypes[region] = add_variants_unphased(haplotypes[region], region, vcfs, variants[region], phased, debug)
+            haplotypes[region] = add_variants_unphased(
+                haplotypes[region], region, vcfs, variants[region], phased, debug
+            )
     return haplotypes, phased
 
 

@@ -21,6 +21,7 @@ import os
 
 TBI = "tbi"  # tabix index file format
 
+
 class Bed:
     """Represents genomic regions from a BED file.
 
@@ -94,7 +95,9 @@ class Bed:
         """
         return BedIterator(self)
 
-    def __getitem__(self, idx: Union[int, slice]) -> Union[Coordinate, List[Coordinate]]:
+    def __getitem__(
+        self, idx: Union[int, slice]
+    ) -> Union[Coordinate, List[Coordinate]]:
         """Return the regions coordinate at the given index or slice.
 
         Returns the regions coordinate at the given index or slice from the
@@ -316,7 +319,6 @@ class BedAnnotation:
         # initialize TabixFile object with the previously computed index
         self._bed = TabixFile(self._fname, index=self._bedidx)
 
-
     def _search_index(self, bedidx: Optional[str] = "") -> str:
         """Search for or validate a Tabix index for the BED file.
 
@@ -376,13 +378,13 @@ class BedAnnotation:
     def fetch_features(self, contig: str, start: int, stop: int, fieldidx: int) -> str:
         if contig not in self._bed.contigs:
             return "NA"
-        return ",".join({e.split()[fieldidx] for e in self._bed.fetch(contig, start, stop)})
-    
+        return ",".join(
+            {e.split()[fieldidx] for e in self._bed.fetch(contig, start, stop)}
+        )
 
     @property
     def contigs(self) -> List[str]:
         return self._bed.contigs
-
 
 
 def _find_tbi(bedfile: str) -> bool:

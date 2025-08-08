@@ -66,8 +66,9 @@ class Haplotype(Region):
 
     def _update_variant_alleles(self, pos: int, offset: int) -> None:
         self._variant_alleles = {
-            (p + offset if p > pos else p): alleles for p, alleles in self._variant_alleles.items()
-        }    
+            (p + offset if p > pos else p): alleles
+            for p, alleles in self._variant_alleles.items()
+        }
 
     def _insert_variant_phased(
         self, position: int, ref: str, alt: str, chain: int, offset: int
@@ -86,12 +87,17 @@ class Haplotype(Region):
 
     def add_variants_phased(self, variants: List[VariantRecord], sample: str) -> None:
         if not self._phased:
-            exception_handler(ValueError, "Unphased haplotype, unable to add phased variants", os.EX_DATAERR, True) # always trace this error
+            exception_handler(
+                ValueError,
+                "Unphased haplotype, unable to add phased variants",
+                os.EX_DATAERR,
+                True,
+            )  # always trace this error
         variants = _sort_variants(variants)
-        chains = _compute_chains(variants) # retrieve original sequence positions
+        chains = _compute_chains(variants)  # retrieve original sequence positions
         # position map to handle indels' presence
         self._initialize_posmap(chains, self._coordinates.start)
-        for i, variant in enumerate(variants): # add variants to haplotype
+        for i, variant in enumerate(variants):  # add variants to haplotype
             self._insert_variant_phased(
                 variant.position,
                 variant.ref,
@@ -103,7 +109,7 @@ class Haplotype(Region):
         suffix = "1|0" if self._chromcopy == 0 else "0|1"
         self._sequence = Sequence(
             "".join(self._sequence._sequence_raw), self._debug, allow_lower_case=True
-        ) # reconstruct haplotype sequence
+        )  # reconstruct haplotype sequence
         self._samples = f"{sample}:{suffix}" if self._phased else sample
         self._variants = ",".join([v.id[0] for v in variants])
 
@@ -117,12 +123,12 @@ class Haplotype(Region):
         posrel_stop = posrel + abs(chain) + 1 if chain < 0 else posrel + 1
         if posrel_stop > self._size:
             posrel_stop = (self._size + offset) - 1
-        refnt = self.substring(posrel, posrel_stop) # retrieve ref nt in haplotype
-        if not match_iupac(ref, refnt): # check ref alleles coherence
+        refnt = self.substring(posrel, posrel_stop)  # retrieve ref nt in haplotype
+        if not match_iupac(ref, refnt):  # check ref alleles coherence
             raise ValueError(
                 f"Mismatching reference alleles in VCF and reference sequence at position {position} ({refnt} - {ref})"
             )
-        self._variant_alleles[posrel] = (ref, alt) # to solve haplotype
+        self._variant_alleles[posrel] = (ref, alt)  # to solve haplotype
         if vtype == VTYPES[0]:  # if snv encode as iupac
             alt = _encode_iupac(ref, alt, position, self._debug)
         if vtype == VTYPES[1]:  # if indel update variant alleles map positions
@@ -130,7 +136,7 @@ class Haplotype(Region):
         # update haplotype sequence and positions map
         self._update_sequence(posrel, posrel_stop, alt)
         self._update_posmap(posrel, chain)
-        
+
     def add_variants_unphased(self, variants: List[VariantRecord], sample: str) -> None:
         variants = _sort_variants(variants)
         chains = _compute_chains(variants)
@@ -184,7 +190,7 @@ class Haplotype(Region):
 
     @property
     def variants(self) -> str:
-        return self._variants    
+        return self._variants
 
     @property
     def phased(self) -> bool:
@@ -201,7 +207,7 @@ class Haplotype(Region):
     @property
     def id(self) -> str:
         return self._id
-    
+
     @property
     def variant_alleles(self) -> Dict[int, Tuple[str, str]]:
         return self._variant_alleles
@@ -230,7 +236,14 @@ def _encode_iupac(ref: str, alt: str, position: int, debug: bool) -> str:
 
 
 class HaplotypeIndel(Haplotype):
-    def __init__(self, sequence: Sequence, coord: Coordinate, phased: bool, chromcopy: int, debug: bool) -> None:
+    def __init__(
+        self,
+        sequence: Sequence,
+        coord: Coordinate,
+        phased: bool,
+        chromcopy: int,
+        debug: bool,
+    ) -> None:
         super().__init__(sequence, coord, phased, chromcopy, debug)
         self._offset = 0
         self._indel_position = -1
@@ -244,7 +257,7 @@ class HaplotypeIndel(Haplotype):
     @property
     def offset(self) -> int:
         return self._offset
-    
+
     @property
     def indel_position(self) -> int:
         return self._indel_position

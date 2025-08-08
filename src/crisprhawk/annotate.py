@@ -1,6 +1,11 @@
 """ """
 
-from .crisprhawk_error import CrisprHawkCfdScoreError, CrisprHawkAzimuthScoreError, CrisprHawkRs3ScoreError, CrisprHawkAnnotationError
+from .crisprhawk_error import (
+    CrisprHawkCfdScoreError,
+    CrisprHawkAzimuthScoreError,
+    CrisprHawkRs3ScoreError,
+    CrisprHawkAnnotationError,
+)
 from .exception_handlers import exception_handler
 from .scores import azimuth, cfdon, rs3
 from .bedfile import BedAnnotation
@@ -18,7 +23,9 @@ import numpy as np
 
 import os
 
-ANNDIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "annotations")  # annotation data directory
+ANNDIR = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), "annotations"
+)  # annotation data directory
 
 
 def reverse_guides(guides: List[Guide], verbosity: int) -> List[Guide]:
@@ -53,7 +60,11 @@ def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guid
         azimuth_scores = azimuth(guides_seqs)
     except Exception as e:
         exception_handler(
-            CrisprHawkAzimuthScoreError, "Azimuth score calculation failed", os.EX_DATAERR, debug, e
+            CrisprHawkAzimuthScoreError,
+            "Azimuth score calculation failed",
+            os.EX_DATAERR,
+            debug,
+            e,
         )
     assert len(azimuth_scores) == len(guides)  # should match
     for i, score in enumerate(azimuth_scores):
@@ -77,7 +88,11 @@ def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
         rs3_scores = rs3(guides_seqs)
     except Exception as e:
         exception_handler(
-            CrisprHawkRs3ScoreError, "RS3 score calculation failed", os.EX_DATAERR, debug, e
+            CrisprHawkRs3ScoreError,
+            "RS3 score calculation failed",
+            os.EX_DATAERR,
+            debug,
+            e,
         )
     assert len(rs3_scores) == len(guides)  # should match
     for i, score in enumerate(rs3_scores):
@@ -138,7 +153,7 @@ def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
     varposmap = {int(variant.split("-")[1]): variant for variant in variants}
     validated_variants = set()
     # check ach nucleotide position in the guide sequence
-    for seqidx, nt in enumerate(guide.guidepam):  
+    for seqidx, nt in enumerate(guide.guidepam):
         pos = guide.start + seqidx
         if pos not in varposmap:
             continue
@@ -148,7 +163,7 @@ def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
         # calculate sequence length difference (indel offset)
         offset = max(0, len(alt) - len(ref))
         # validate: lowercase sequence in guide should match uppercase alt allele
-        guide_segment = guide.guidepam[seqidx:seqidx + offset + 1]
+        guide_segment = guide.guidepam[seqidx : seqidx + offset + 1]
         if guide_segment.islower() and guide_segment.upper() == alt:
             validated_variants.add(variant_id)
     return validated_variants
@@ -196,9 +211,13 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
     return guides_lst
 
 
-def _funcann(guide: Guide, bedannotation: BedAnnotation, contig: str, atype: str, idx: int) -> Guide:
+def _funcann(
+    guide: Guide, bedannotation: BedAnnotation, contig: str, atype: str, idx: int
+) -> Guide:
     # fetch annotation features overlapped by input guide
-    if not (annotation := bedannotation.fetch_features(contig, guide.start, guide.stop, idx)):
+    if not (
+        annotation := bedannotation.fetch_features(contig, guide.start, guide.stop, idx)
+    ):
         annotation = "NA"  # no annotation feature overlapped by the input guide
     if atype == "gene":  # set gene annotation
         guide.set_gene_ann(annotation)
@@ -207,7 +226,14 @@ def _funcann(guide: Guide, bedannotation: BedAnnotation, contig: str, atype: str
     return guide
 
 
-def funcann_guides(guides: List[Guide], contig: str, annotation: str, atype: str, verbosity: int, debug: bool) -> List[Guide]:
+def funcann_guides(
+    guides: List[Guide],
+    contig: str,
+    annotation: str,
+    atype: str,
+    verbosity: int,
+    debug: bool,
+) -> List[Guide]:
     print_verbosity("Starting guides functional annotation", verbosity, VERBOSITYLVL[3])
     start = time()  # functional annotation start time
     assert atype in {"func", "gene"}  # used to set the proper field in guides
@@ -216,14 +242,34 @@ def funcann_guides(guides: List[Guide], contig: str, annotation: str, atype: str
     try:
         guides_ann = [_funcann(guide, bedann, contig, atype, idx) for guide in guides]
     except Exception as e:
-        exception_handler(CrisprHawkAnnotationError, "Guides functional annotation failed", os.EX_DATAERR, debug, e)
+        exception_handler(
+            CrisprHawkAnnotationError,
+            "Guides functional annotation failed",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
     assert len(guides) == len(guides_ann)
-    print_verbosity(f"Guides functional annotation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
+    print_verbosity(
+        f"Guides functional annotation completed in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
     return guides_ann
 
 
 def annotate_guides(
-    guides: Dict[Region, List[Guide]], functional_annotation: str, gene_annotation: str, pam: PAM, genome: str, estimate_offtargets: bool, write_offtargets_report: bool, outdir: str, verbosity: int, debug: bool
+    guides: Dict[Region, List[Guide]],
+    functional_annotation: str,
+    gene_annotation: str,
+    pam: PAM,
+    genome: str,
+    estimate_offtargets: bool,
+    write_offtargets_report: bool,
+    outdir: str,
+    threads: int,
+    verbosity: int,
+    debug: bool,
 ) -> Dict[Region, List[Guide]]:
     # annotate guides with scores, variants and adjust positions
     print_verbosity("Annotating guides", verbosity, VERBOSITYLVL[1])
@@ -243,12 +289,33 @@ def annotate_guides(
         guides_list = cfdon_score(guides_list, verbosity, debug)
         # annotate each guide functionally
         if functional_annotation:
-            guides_list = funcann_guides(guides_list, region.contig, functional_annotation, "func", verbosity, debug)
+            guides_list = funcann_guides(
+                guides_list,
+                region.contig,
+                functional_annotation,
+                "func",
+                verbosity,
+                debug,
+            )
         # annotate each guide with gene data
         if gene_annotation:
-            guides_list = funcann_guides(guides_list, region.contig, gene_annotation, "gene", verbosity, debug)
+            guides_list = funcann_guides(
+                guides_list, region.contig, gene_annotation, "gene", verbosity, debug
+            )
         if estimate_offtargets:  # estimate off-targets for each guide
-            guides_list = search_offtargets(guides_list, pam, genome, region, functional_annotation, gene_annotation, write_offtargets_report, outdir, verbosity, debug)
+            guides_list = search_offtargets(
+                guides_list,
+                pam,
+                genome,
+                region,
+                functional_annotation,
+                gene_annotation,
+                write_offtargets_report,
+                threads,
+                outdir,
+                verbosity,
+                debug,
+            )
         guides[region] = guides_list  # store annotated guides
     print_verbosity(
         f"Annotation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]

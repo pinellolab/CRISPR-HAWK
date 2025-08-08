@@ -73,7 +73,13 @@ class Guide:
             self._guideseq = sequence[: -self._pamlen]
 
     def _compute_guide_id(self) -> None:
-        assert hasattr(self, "_start") and hasattr(self, "_stop") and hasattr(self, "_direction") and hasattr(self, "_hapid") and hasattr(self, "_guideseq")
+        assert (
+            hasattr(self, "_start")
+            and hasattr(self, "_stop")
+            and hasattr(self, "_direction")
+            and hasattr(self, "_hapid")
+            and hasattr(self, "_guideseq")
+        )
         self._guide_id = f"{self._start}_{self._stop}_{self._direction}_{self._hapid}_{self._guideseq}"  # unique identifier for the guide
 
     def _initialize_scores(self) -> None:
@@ -167,7 +173,7 @@ class Guide:
     @property
     def guide(self) -> str:
         return self._guideseq
-    
+
     @property
     def guidepam(self) -> str:
         if self._right:
@@ -205,26 +211,47 @@ class Guide:
     @property
     def funcann(self) -> str:
         if not hasattr(self, "_funcann"):  # always trace this error
-            exception_handler(AttributeError, f"Missing _funcann attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
+            exception_handler(
+                AttributeError,
+                f"Missing _funcann attribute on {self.__class__.__name__}",
+                os.EX_DATAERR,
+                True,
+            )
         return self._funcann
 
     @property
     def geneann(self) -> str:
         if not hasattr(self, "_geneann"):  # always trace this error
-            exception_handler(AttributeError, f"Missing _geneann attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
+            exception_handler(
+                AttributeError,
+                f"Missing _geneann attribute on {self.__class__.__name__}",
+                os.EX_DATAERR,
+                True,
+            )
         return self._geneann
-    
+
     @property
     def offtargets(self) -> int:
         if not hasattr(self, "_offtargets_num"):  # always trace this error
-            exception_handler(AttributeError, f"Missing _offtargets_num attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
+            exception_handler(
+                AttributeError,
+                f"Missing _offtargets_num attribute on {self.__class__.__name__}",
+                os.EX_DATAERR,
+                True,
+            )
         return self._offtargets_num
-    
+
     @property
     def cfd(self) -> float:
         if not hasattr(self, "_cfd"):  # always trace this error
-            exception_handler(AttributeError, f"Missing _cfd attribute on {self.__class__.__name__}", os.EX_DATAERR, True)
+            exception_handler(
+                AttributeError,
+                f"Missing _cfd attribute on {self.__class__.__name__}",
+                os.EX_DATAERR,
+                True,
+            )
         return self._cfd
+
 
 class GuideIterator:
     def __init__(self, guide: Guide) -> None:

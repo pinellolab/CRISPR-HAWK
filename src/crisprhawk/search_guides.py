@@ -1,7 +1,11 @@
 """ """
 
 from .exception_handlers import exception_handler
-from .crisprhawk_error import CrisprHawkBitsetError, CrisprHawkIupacTableError, CrisprHawkCfdScoreError
+from .crisprhawk_error import (
+    CrisprHawkBitsetError,
+    CrisprHawkIupacTableError,
+    CrisprHawkCfdScoreError,
+)
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL, IUPACTABLE
 from .guide import Guide, GUIDESEQPAD
 from .bitset import Bitset
@@ -52,10 +56,13 @@ def match(
             e,
         )
 
-def compute_scan_start_stop(hap: Haplotype, region_start: int, region_stop: int, pamlen: int) -> Tuple[int, int]:
+
+def compute_scan_start_stop(
+    hap: Haplotype, region_start: int, region_stop: int, pamlen: int
+) -> Tuple[int, int]:
     stop_p = min(region_stop - PADDING, hap.stop)  # stop position with padding
     # handle indels overlapping the end of region
-    if (stop_p == region_stop - PADDING and stop_p not in hap.posmap_rev):
+    if stop_p == region_stop - PADDING and stop_p not in hap.posmap_rev:
         # find the highest available position in the mapping
         upperbound_p = max(hap.posmap_rev.keys())
         # search for next available position in the mapping
@@ -134,7 +141,9 @@ def pam_search(
             VERBOSITYLVL[3],
         )
         # define scan stop position for each haplotype
-        scan_start, scan_stop = compute_scan_start_stop(hap, region.start, region.stop, len(pam))
+        scan_start, scan_stop = compute_scan_start_stop(
+            hap, region.start, region.stop, len(pam)
+        )
         # scan haplotype for pam occurrences
         matches_fwd, matches_rev = scan_haplotype(
             pam, haplotypes_bits[i], scan_start, scan_stop, debug
@@ -192,19 +201,29 @@ def _decode_iupac(nt: str, pos: int, h: Haplotype, debug: bool) -> str:
         exception_handler(CrisprHawkIupacTableError, f"Invalid IUPAC character ({nt})", os.EX_DATAERR, debug, e)  # type: ignore
     if len(ntiupac) == 1:  # A, C, G, or T (reference / indel / homozygous)
         return ntiupac.lower() if nt.islower() else ntiupac
-    return "".join([n if n == h.variant_alleles[pos][0] else n.lower() for n in list(ntiupac)])
-    
+    return "".join(
+        [n if n == h.variant_alleles[pos][0] else n.lower() for n in list(ntiupac)]
+    )
 
 
 def resolve_guide(
-    guideseq: str, pam: PAM, direction: int, right: bool, pos: int, guidelen: int, h: Haplotype, debug: bool
+    guideseq: str,
+    pam: PAM,
+    direction: int,
+    right: bool,
+    pos: int,
+    guidelen: int,
+    h: Haplotype,
+    debug: bool,
 ) -> List[str]:
     # retrieve guide sequence relative start position
     p = pos - GUIDESEQPAD if right else pos - guidelen - GUIDESEQPAD
     guide_alts = [
         "".join(g)
-        for g in product(*[list(_decode_iupac(nt, p + i, h, debug)) for i, nt in enumerate(guideseq)])
-    ]  # decode iupac string 
+        for g in product(
+            *[list(_decode_iupac(nt, p + i, h, debug)) for i, nt in enumerate(guideseq)]
+        )
+    ]  # decode iupac string
     idx = GUIDESEQPAD if right else (len(guideseq) - GUIDESEQPAD - len(pam))
     return [
         guide
@@ -247,25 +266,37 @@ def remove_redundant_guides(guides: List[Guide], debug: bool) -> List[Guide]:
     for pos, guide_group in grouped_guides.items():
         refguide, altguides = guide_group[0], guide_group[1]
         if refguide is None:  # only alt guides, redundancy not possible
-            filtered_guides.extend(altguides) # type: ignore
+            filtered_guides.extend(altguides)  # type: ignore
             continue
-        altguides_list: List[Guide] = altguides # type: ignore
-        for guide in altguides_list:  # remove redundant guides 
-            refguide_seq = refguide.sequence[GUIDESEQPAD:-GUIDESEQPAD].upper() # type: ignore
+        altguides_list: List[Guide] = altguides  # type: ignore
+        for guide in altguides_list:  # remove redundant guides
+            refguide_seq = refguide.sequence[GUIDESEQPAD:-GUIDESEQPAD].upper()  # type: ignore
             guide_seq = guide.sequence[GUIDESEQPAD:-GUIDESEQPAD].upper()
-            if (guide.samples != "REF" and guide_seq != refguide_seq) or (guide.samples == "REF" and guide_seq == refguide_seq):
+            if (guide.samples != "REF" and guide_seq != refguide_seq) or (
+                guide.samples == "REF" and guide_seq == refguide_seq
+            ):
                 filtered_guides.append(guide)
     return filtered_guides
 
-def is_pamhit_valid(pamhit_pos: int, haplen: int, guidelen: int, pamlen: int, right: bool) -> bool:
+
+def is_pamhit_valid(
+    pamhit_pos: int, haplen: int, guidelen: int, pamlen: int, right: bool
+) -> bool:
     if right:
         return pamhit_pos + guidelen + pamlen + GUIDESEQPAD < haplen
     return pamhit_pos - guidelen - GUIDESEQPAD >= 0
 
-def is_pamhit_in_range(poshit: int, guidelen: int, pamlen: int, haplen: int, right: bool) -> bool:
+
+def is_pamhit_in_range(
+    poshit: int, guidelen: int, pamlen: int, haplen: int, right: bool
+) -> bool:
     # compute left and right boundaries for current guide
     lbound = poshit - GUIDESEQPAD if right else poshit - guidelen - GUIDESEQPAD
-    rbound = poshit + guidelen + pamlen + GUIDESEQPAD if right else poshit + pamlen + GUIDESEQPAD
+    rbound = (
+        poshit + guidelen + pamlen + GUIDESEQPAD
+        if right
+        else poshit + pamlen + GUIDESEQPAD
+    )
     return lbound >= 0 and rbound <= haplen  # check whether guide sequence is in range
 
 
@@ -300,14 +331,16 @@ def retrieve_guides(
         guideseqs = [guideseq]
         if variants_present and not phased:  # handle guides with iupac
             if is_pamhit_valid(pos, len(haplotype), guidelen, len(pam), right):
-                guideseqs = resolve_guide(guideseq, pam, direction, right, pos, guidelen, haplotype, debug)
+                guideseqs = resolve_guide(
+                    guideseq, pam, direction, right, pos, guidelen, haplotype, debug
+                )
             else:
                 guideseqs = []
         for guideseq in guideseqs:
             # compute guide's start and stop positions
             guide_start, guide_stop = adjust_guide_position(
                 haplotype.posmap, pos, guidelen, len(pam), right
-            ) 
+            )
             guide = Guide(
                 guide_start,
                 guide_stop,

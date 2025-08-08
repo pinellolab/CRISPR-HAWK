@@ -6,6 +6,8 @@ from typing import Any, List
 from itertools import permutations
 from colorama import Fore
 
+import subprocess
+import tempfile
 import contextlib
 import sys
 import io
@@ -257,3 +259,16 @@ def suppress_stderr():
         yield
     finally:
         sys.stderr = stderr_channel
+
+
+def create_temp_folder(dirname: str) -> str:
+    return tempfile.mkdtemp(prefix=f"crisprhawk_{dirname}_")
+
+
+def remove_folder(dirname: str) -> None:
+    try:
+        subprocess.run(["rm", "-rf", dirname], check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:  # always trace this error
+        raise OSError(f"Failed to clean up folder {dirname}") from e
+    except Exception as e:
+        raise Exception(f"Unexpected error while cleaning up folder {dirname}") from e
