@@ -152,7 +152,7 @@ def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
     # map variant positions to variant strings for quick lookup
     varposmap = {int(variant.split("-")[1]): variant for variant in variants}
     validated_variants = set()
-    # check ach nucleotide position in the guide sequence
+    # check each nucleotide position in the guide sequence
     for seqidx, nt in enumerate(guide.guidepam):
         pos = guide.start + seqidx
         if pos not in varposmap:
@@ -160,6 +160,9 @@ def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
         # parse variant information: "chrom-pos-ref/alt"
         variant_id = varposmap[pos]
         ref, alt = variant_id.split("-")[2].split("/")
+        if len(ref) != len(alt):  # patch to handle indels overlapping guide's start or stop
+            validated_variants.add(variant_id)
+            continue
         # calculate sequence length difference (indel offset)
         offset = max(0, len(alt) - len(ref))
         # validate: lowercase sequence in guide should match uppercase alt allele

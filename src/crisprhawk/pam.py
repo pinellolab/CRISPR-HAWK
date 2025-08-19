@@ -11,9 +11,23 @@ from .utils import reverse_complement, IUPAC
 from .encoder import encode
 from .bitset import Bitset
 
-from typing import Optional, List
+from typing import List
 
 import os
+
+# list PAMs for each cas system
+CASXPAM = ["TTCN"]
+CPF1PAM = ["TTN", "TTTN", "TYCV", "TATV", "TTTV", "TTTR", "ATTN", "TTTA", "TCTA", "TCCA", "CCCA", "YTTV", "TTYN"]
+SACAS9PAM = ["NNGRRT", "NNNRRT"]
+SPCAS9PAM = ["NGG", "NGA", "NGCG"]
+XCAS9PAM = ["NGK", "NGN"]
+
+# list cas systems
+CASX = 0
+CPF1 = 1
+SACAS9 = 2
+SPCAS9 = 3
+XCAS9 = 4
 
 
 class PAM:
@@ -82,6 +96,19 @@ class PAM:
             str: The PAM sequence.
         """
         return f"{self._sequence}"
+    
+    def _assess_cas_system(self) -> None:
+        self._cas_system = -1  # unknown cas system pam
+        if self._sequence in CASXPAM:  # casx system pam
+            self._cas_system = CASX
+        elif self._sequence in CPF1PAM:  # cpf1 cas system pam
+            self._cas_system = CPF1PAM
+        elif self._sequence in SACAS9PAM:  # sacas9 system pam
+            self._cas_system = SACAS9
+        elif self._sequence in SPCAS9PAM:  # spcas9 system pam
+            self._cas_system = SPCAS9
+        elif self._sequence in XCAS9PAM:  # xcas9 pam
+            self._cas_system = XCAS9
 
     def encode(self, verbosity: int) -> None:
         """Encodes the PAM sequence and its reverse complement into bit
