@@ -504,7 +504,7 @@ def save_final_model_V3(filename=None, include_position=True, learn_options=None
     return model
 
 
-def predict(seq, aa_cut=None, percent_peptide=None, model=None, model_file=None, pam_audit=True, length_audit=False, learn_options_override=None):
+def predict(seq, aa_cut=None, percent_peptide=None, model=None, model_file=None, pam_audit=False, length_audit=False, learn_options_override=None):
     """
     Args:
         seq: numpy array of 30 nt sequences.

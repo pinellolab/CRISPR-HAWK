@@ -12,7 +12,7 @@ from .bedfile import BedAnnotation
 from .guide import Guide, GUIDESEQPAD
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL
 from .region import Region
-from .pam import PAM
+from .pam import PAM, CASX, CPF1, SACAS9, SPCAS9, XCAS9
 from .offtargets import search_offtargets
 
 from collections import defaultdict
@@ -160,7 +160,9 @@ def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
         # parse variant information: "chrom-pos-ref/alt"
         variant_id = varposmap[pos]
         ref, alt = variant_id.split("-")[2].split("/")
-        if len(ref) != len(alt):  # patch to handle indels overlapping guide's start or stop
+        if len(ref) != len(
+            alt
+        ):  # patch to handle indels overlapping guide's start or stop
             validated_variants.add(variant_id)
             continue
         # calculate sequence length difference (indel offset)
@@ -282,14 +284,13 @@ def annotate_guides(
         guides_list = annotate_variants(guides_list, verbosity, debug)
         # compute reverse complement for guides occurring on rev strand
         guides_list = reverse_guides(guides_list, verbosity)
-        # # set variants for current guide
-        # guides_list = annotate_variants(guides_list, verbosity, debug)
-        # annotate each guide with azimuth scores
-        guides_list = azimuth_score(guides_list, verbosity, debug)
-        # annotate each guide with rs3 scores
-        guides_list = rs3_score(guides_list, verbosity, debug)
-        # annotate each guide with CFDon scores
-        guides_list = cfdon_score(guides_list, verbosity, debug)
+        if pam.cas_system in [SPCAS9, XCAS9]:  # cas9 system pam
+            # annotate each guide with azimuth scores
+            guides_list = azimuth_score(guides_list, verbosity, debug)
+            # annotate each guide with rs3 scores
+            guides_list = rs3_score(guides_list, verbosity, debug)
+            # annotate each guide with CFDon scores
+            guides_list = cfdon_score(guides_list, verbosity, debug)
         # annotate each guide functionally
         if functional_annotation:
             guides_list = funcann_guides(

@@ -17,7 +17,7 @@ from .offtarget import Offtarget
 from .bedfile import BedAnnotation
 from .region import Region
 from .guide import Guide
-from .pam import PAM
+from .pam import PAM, SPCAS9, XCAS9
 
 from dataclasses import dataclass
 from typing import List, Tuple, NamedTuple
@@ -271,7 +271,7 @@ def offtarget_sequence(guide_bed: str, genome: str) -> List[Tuple[str, str]]:
     bed = BedTool(guide_bed)  # load bed file
     sequences = bed.sequence(
         fi=genome, s=True, name=True  # type: ignore
-    )  # extract offtargets sequences 
+    )  # extract offtargets sequences
     # construct a list of offtarget sequences
     sequences = open(sequences.seqfn).read().split()
     return [(sequences[i], sequences[i + 1]) for i in range(0, len(sequences), 2)]
@@ -332,6 +332,7 @@ def retrieve_offtargets(
 
 def annotate_offtargets(
     wildtype: Guide,
+    pam: PAM,
     offtargets: List[Offtarget],
     functional_annotation: str,
     gene_annotation: str,
@@ -347,7 +348,8 @@ def annotate_offtargets(
     if annotate_gene:
         geneann = BedAnnotation(gene_annotation, verbosity, debug)
     for offtarget in offtargets:
-        offtarget.compute_cfd(wildtype, mmscores, pamscores)
+        if pam.cas_system in [SPCAS9, XCAS9]:
+            offtarget.compute_cfd(wildtype, mmscores, pamscores)
         if annotate_functional:  # annotate off-target functionally
             offtarget.annotate_functional(funcann)  # type: ignore
         if annotate_gene:  # annotate off-target gene function
@@ -426,6 +428,7 @@ def _process_guide_offtargets(
         )
         offtargets_guide = annotate_offtargets(
             args.guide,
+            args.pam,
             offtargets_guide,
             args.functional_annotation,
             args.gene_annotation,

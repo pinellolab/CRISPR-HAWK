@@ -17,9 +17,23 @@ import os
 
 # list PAMs for each cas system
 CASXPAM = ["TTCN"]
-CPF1PAM = ["TTN", "TTTN", "TYCV", "TATV", "TTTV", "TTTR", "ATTN", "TTTA", "TCTA", "TCCA", "CCCA", "YTTV", "TTYN"]
+CPF1PAM = [
+    "TTN",
+    "TTTN",
+    "TYCV",
+    "TATV",
+    "TTTV",
+    "TTTR",
+    "ATTN",
+    "TTTA",
+    "TCTA",
+    "TCCA",
+    "CCCA",
+    "YTTV",
+    "TTYN",
+]
 SACAS9PAM = ["NNGRRT", "NNNRRT"]
-SPCAS9PAM = ["NGG", "NGA", "NGCG"]
+SPCAS9PAM = ["NGG", "NGA"]
 XCAS9PAM = ["NGK", "NGN"]
 
 # list cas systems
@@ -48,6 +62,7 @@ class PAM:
             )
         self._sequence = pamseq.upper()  # store pam sequence
         self._sequence_rc = reverse_complement(pamseq, debug)  # reverse complement
+        self._assess_cas_system()  # assess pam's cas system
 
     def __len__(self) -> int:
         """Returns the length of the PAM sequence.
@@ -96,13 +111,13 @@ class PAM:
             str: The PAM sequence.
         """
         return f"{self._sequence}"
-    
+
     def _assess_cas_system(self) -> None:
         self._cas_system = -1  # unknown cas system pam
         if self._sequence in CASXPAM:  # casx system pam
             self._cas_system = CASX
         elif self._sequence in CPF1PAM:  # cpf1 cas system pam
-            self._cas_system = CPF1PAM
+            self._cas_system = CPF1
         elif self._sequence in SACAS9PAM:  # sacas9 system pam
             self._cas_system = SACAS9
         elif self._sequence in SPCAS9PAM:  # spcas9 system pam
@@ -165,3 +180,7 @@ class PAM:
                 True,
             )
         return self._sequence_rc_bits
+
+    @property
+    def cas_system(self) -> int:
+        return self._cas_system
