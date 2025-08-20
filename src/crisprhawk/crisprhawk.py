@@ -161,6 +161,7 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         guides,
         args.guidelen,
         pam,
+        args.right,
         bool(args.functional_annotation),
         bool(args.gene_annotation),
         args.estimate_offtargets,

@@ -116,6 +116,16 @@ class Guide:
             )
         self._rs3_score = str(round_score(score))
 
+    def set_deepcpf1_score(self, score: float) -> None:
+        if not isinstance(score, float):
+            exception_handler(
+                TypeError,
+                f"Expected deepCpf1 score of type {float.__name__}, got {type(score).__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
+        self._deepcpf1_score = str(round_score(score))
+
     def set_cfdon_score(self, score: float) -> None:
         if not isinstance(score, float):
             exception_handler(
@@ -199,6 +209,10 @@ class Guide:
     @property
     def rs3_score(self) -> str:
         return self._rs3_score
+
+    @property
+    def deepcpf1_score(self) -> str:
+        return self._deepcpf1_score
 
     @property
     def cfdon_score(self) -> str:

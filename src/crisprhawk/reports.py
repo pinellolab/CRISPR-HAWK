@@ -97,7 +97,7 @@ def _update_report_fields_cpf1(
     report[REPORTCOLS[5]].append(pamclass)  # extended pam class
     # strand orientation
     report[REPORTCOLS[6]].append(compute_strand_orientation(guide.strand))
-    report[REPORTCOLS[9]].append(0.0)  # deepcpf1 score
+    report[REPORTCOLS[9]].append(guide.deepcpf1_score)  # deepcpf1 score
     report[REPORTCOLS[11]].append(compute_guide_origin(guide.samples))  # genome
     report[REPORTCOLS[12]].append(guide.samples)  # samples list
     report[REPORTCOLS[13]].append(guide.variants)  # variant ids
@@ -207,10 +207,14 @@ def construct_report(
 
 
 def format_reportcols(
-    pam: PAM, funcann: bool, geneann: bool, estimate_offtargets: bool
+    pam: PAM, right: bool, funcann: bool, geneann: bool, estimate_offtargets: bool
 ) -> List[str]:
     # coordinates and score columns
-    reportcols = REPORTCOLS[:7]
+    reportcols = (
+        REPORTCOLS[:3] + REPORTCOLS[4:5] + REPORTCOLS[3:4] + REPORTCOLS[5:7]
+        if right
+        else REPORTCOLS[:7]
+    )
     if pam.cas_system in [SPCAS9, XCAS9]:
         reportcols += REPORTCOLS[7:9] + REPORTCOLS[10:11]
     elif pam.cas_system == CPF1:
@@ -230,6 +234,7 @@ def format_reportcols(
 def format_report(
     report: pd.DataFrame,
     pam: PAM,
+    right: bool,
     funcann: bool,
     geneann: bool,
     estimate_offtargets: bool,
@@ -242,7 +247,7 @@ def format_report(
     report = report.reset_index(drop=True)
     report = report.sort_values([REPORTCOLS[1], REPORTCOLS[2]], ascending=True)
     # sort report columns
-    reportcols = format_reportcols(pam, funcann, geneann, estimate_offtargets)
+    reportcols = format_reportcols(pam, right, funcann, geneann, estimate_offtargets)
     report = report[reportcols]
     return report
 
@@ -251,6 +256,7 @@ def store_report(
     report: pd.DataFrame,
     pam: PAM,
     guidesreport: str,
+    right: bool,
     funcann: bool,
     geneann: bool,
     estimate_offtargets: bool,
@@ -259,7 +265,7 @@ def store_report(
     try:
         if not report.empty:
             report = format_report(
-                report, pam, funcann, geneann, estimate_offtargets
+                report, pam, right, funcann, geneann, estimate_offtargets
             )  # format report
         report.to_csv(guidesreport, sep="\t", index=False)  # store report
     except FileNotFoundError as e:
@@ -392,6 +398,7 @@ def report_guides(
     guides: Dict[Region, List[Guide]],
     guidelen: int,
     pam: PAM,
+    right: bool,
     funcann: bool,
     geneann: bool,
     estimate_offtargets: bool,
@@ -416,7 +423,14 @@ def report_guides(
                 report, pam, funcann, geneann, estimate_offtargets
             )
         store_report(
-            report, pam, guidesreport, funcann, geneann, estimate_offtargets, debug
+            report,
+            pam,
+            guidesreport,
+            right,
+            funcann,
+            geneann,
+            estimate_offtargets,
+            debug,
         )  # write report
     print_verbosity(
         f"Reports constructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]

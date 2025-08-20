@@ -4,10 +4,11 @@ from .crisprhawk_error import (
     CrisprHawkCfdScoreError,
     CrisprHawkAzimuthScoreError,
     CrisprHawkRs3ScoreError,
+    CrisprHawkDeepCpf1ScoreError,
     CrisprHawkAnnotationError,
 )
 from .exception_handlers import exception_handler
-from .scores import azimuth, cfdon, rs3
+from .scores import azimuth, cfdon, rs3, deepcpf1
 from .bedfile import BedAnnotation
 from .guide import Guide, GUIDESEQPAD
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL
@@ -84,7 +85,7 @@ def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
         guide.sequence[(GUIDESEQPAD - 4) : (-GUIDESEQPAD + 3)].upper()
         for guide in guides
     ]
-    try:  # compute azimuth scores
+    try:  # compute rs3 scores
         rs3_scores = rs3(guides_seqs)
     except Exception as e:
         exception_handler(
@@ -99,6 +100,34 @@ def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
         guides[i].set_rs3_score(score)  # assign score to each guide
     print_verbosity(
         f"RS3 scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+    )
+    return guides
+
+
+def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    if not guides:
+        return guides
+    print_verbosity("Computing DeepCpf1 score", verbosity, VERBOSITYLVL[3])
+    start = time()  # deepcpf1 score start time
+    guides_seqs = [
+        guide.sequence[(GUIDESEQPAD - 4) : (-GUIDESEQPAD + 3)].upper()
+        for guide in guides
+    ]
+    try:  # compute deepcpf1 scores
+        deepcpf1_scores = deepcpf1(guides_seqs)
+    except Exception as e:
+        exception_handler(
+            CrisprHawkDeepCpf1ScoreError,
+            "RS3 score calculation failed",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
+    assert len(deepcpf1_scores) == len(guides)  # should match
+    for i, score in enumerate(deepcpf1_scores):
+        guides[i].set_deepcpf1_score(score)  # assign score to each guide
+    print_verbosity(
+        f"DeepCpf1 scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
     return guides
 
@@ -291,6 +320,8 @@ def annotate_guides(
             guides_list = rs3_score(guides_list, verbosity, debug)
             # annotate each guide with CFDon scores
             guides_list = cfdon_score(guides_list, verbosity, debug)
+        if pam.cas_system == CPF1:  # cpf1 system pam
+            guides_list = deepcpf1_score(guides_list, verbosity, debug)
         # annotate each guide functionally
         if functional_annotation:
             guides_list = funcann_guides(
