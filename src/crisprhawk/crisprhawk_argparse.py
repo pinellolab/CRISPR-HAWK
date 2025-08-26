@@ -187,18 +187,19 @@ class CrisprHawkInputArgs:
         ):
             self._parser.error(f"Cannot find output folder {self._args.outdir}")
         # functional annotation bed
-        if self._args.functional_annotation and (
-            not os.path.exists(self._args.functional_annotation)
-            or not os.path.isfile(self._args.functional_annotation)
-        ):
+        if self._args.annotations and (any(not os.path.isfile(f) for f in self._args.annotations)):
+            annfiles = ", ".join(self._args.annotations)
+            self._parser.error(f"Cannot find the specified annotation BED files {annfiles}")
+        if self._args.annotations and any(os.stat(f).st_size <= 0 for f in self._args.annotations):
+            annfiles = ", ".join(self._args.annotations)
+            self._parser.error(f"{annfiles} look empty")
+        # functional annotation colnames
+        if self._args.annotation_colnames and not self._args.annotations:
             self._parser.error(
-                f"Cannot find functional annotation BED {self._args.functional_annotation}"
+                "Annotation column names provided, but no input annotation file"
             )
-        if (
-            self._args.functional_annotation
-            and os.stat(self._args.functional_annotation).st_size <= 0
-        ):
-            self._parser.error(f"{self._args.functional_annotation} is empty")
+        if self._args.annotation_colnames and (len(self._args.annotation_colnames) != len(self._args.annotations)):
+            self._parser.error(f"Mismatching number of annotation files and annotation column names")
         # gene annotation bed
         if self._args.gene_annotation and (
             not os.path.exists(self._args.gene_annotation)
@@ -267,8 +268,12 @@ class CrisprHawkInputArgs:
         return self._args.no_filter
 
     @property
-    def functional_annotation(self) -> str:
-        return self._args.functional_annotation
+    def annotations(self) -> List[str]:
+        return self._args.annotations
+    
+    @property
+    def annotation_colnames(self) -> List[str]:
+        return self._args.annotation_colnames
 
     @property
     def gene_annotation(self) -> str:

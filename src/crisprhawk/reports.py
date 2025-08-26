@@ -42,10 +42,10 @@ REPORTCOLS = [
     "af",                       # 14
     "target",                   # 15
     "haplotype_id",             # 16
-    "functional_annotation",    # 17
-    "gene_annotation",          # 18
-    "offtargets",               # 19
-    "cfd",                      # 20
+    # "functional_annotation",    # 17
+    # "gene_annotation",          # 18
+    # "offtargets",               # 19
+    # "cfd",                      # 20
 ]
 
 
@@ -147,13 +147,15 @@ def update_optional_report_fields(
     report: Dict[str, List[Any]],
     guide: Guide,
     pam: PAM,
-    funcann: bool,
+    annotations: List[str],
     geneann: bool,
     estimate_offtargets: bool,
 ) -> Dict[str, List[str]]:
-    # update report optional fields
-    if funcann:
-        report[REPORTCOLS[17]].append(guide.funcann)
+    reportcols = list(report.keys())
+    if annotations:
+        idx = reportcols.index(REPORTCOLS[16]) + 1  # haplotype_id is last
+        for i, annotation in enumerate(guide.funcann):
+            report[reportcols[idx + i]].append(annotation)
     if geneann:
         report[REPORTCOLS[18]].append(guide.geneann)
     if estimate_offtargets:
@@ -162,25 +164,31 @@ def update_optional_report_fields(
             report[REPORTCOLS[20]].append(guide.cfd)
     return report
 
+def insert_annotation_reportcols(annotations: List[str], gene_annotations: List[str], anncolnames: List[str], gene_anncolnames: List[str]) -> List[str]:
+    reportcols = [anncolnames[i] if anncolnames else f"annotation_{i + 1}" for i, _ in enumerate(annotations)]
+    reportcols += [gene_anncolnames[i] if gene_anncolnames else f"gene_annotation_{i + 1}" for i, _ in enumerate(gene_annotations)]
+    return reportcols
 
-def select_reportcols(pam: PAM) -> List[str]:
+
+def select_reportcols(pam: PAM, annotations: List[str], annotation_colnames: List[str]) -> List[str]:
     if pam.cas_system in [SPCAS9, XCAS9]:  # spcas9 system pam report columns
-        return REPORTCOLS[:9] + REPORTCOLS[10:]
+        return REPORTCOLS[:9] + REPORTCOLS[10:] + insert_annotation_reportcols(annotations, [], annotation_colnames, [])
     elif pam.cas_system == CPF1:  # cpf1 system pam report
-        return REPORTCOLS[:7] + REPORTCOLS[9:10] + REPORTCOLS[11:19]
-    return REPORTCOLS[:7] + REPORTCOLS[11:19]  # all other pams
+        return REPORTCOLS[:7] + REPORTCOLS[9:10] + REPORTCOLS[11:] + insert_annotation_reportcols(annotations, [], annotation_colnames, [])
+    return REPORTCOLS[:7] + REPORTCOLS[11:] + insert_annotation_reportcols(annotations, [], annotation_colnames, [])  # all other pams
 
 
 def process_data(
     region: Region,
     guides: List[Guide],
     pam: PAM,
-    funcann: bool,
+    annotations: List[str],
+    annotation_colnames: List[str],
     geneann: bool,
     estimate_offtargets: bool,
 ) -> pd.DataFrame:
     report = {
-        cname: [] for cname in select_reportcols(pam)
+        cname: [] for cname in select_reportcols(pam, annotations, annotation_colnames)
     }  # initialize report dictionary
     pamclass = compute_pam_class(pam)  # compute extended pam class
     region_coordinates = str(region.coordinates)  # target region
@@ -189,7 +197,7 @@ def process_data(
         # update report with current guide data
         report = update_report_fields(report, region_coordinates, guide, pam, pamclass)
         report = update_optional_report_fields(
-            report, guide, pam, funcann, geneann, estimate_offtargets
+            report, guide, pam, annotations, geneann, estimate_offtargets
         )
     report = {c: v for c, v in report.items() if v}  # remove empty columns
     return pd.DataFrame(report)  # build dataframe from report data
@@ -198,48 +206,49 @@ def process_data(
 def construct_report(
     guides: Dict[Region, List[Guide]],
     pam: PAM,
-    funcann: bool,
+    annotations: List[str],
+    annotation_colnames: List[str],
     geneann: bool,
     estimate_offtargets: bool,
 ) -> Dict[Region, pd.DataFrame]:
     return {
         region: process_data(
-            region, guides_list, pam, funcann, geneann, estimate_offtargets
+            region, guides_list, pam, annotations, annotation_colnames, geneann, estimate_offtargets
         )
         for region, guides_list in guides.items()
     }
 
 
 def format_reportcols(
-    pam: PAM, right: bool, funcann: bool, geneann: bool, estimate_offtargets: bool
+    pam: PAM, right: bool, annotations: List[str], geneann: bool, estimate_offtargets: bool, reportcols: List[str]
 ) -> List[str]:
     # coordinates and score columns
-    reportcols = (
-        REPORTCOLS[:3] + REPORTCOLS[4:5] + REPORTCOLS[3:4] + REPORTCOLS[5:7]
+    reportcols_sorted = (
+        reportcols[:3] + reportcols[4:5] + reportcols[3:4] + reportcols[5:7]
         if right
-        else REPORTCOLS[:7]
+        else reportcols[:7]
     )
     if pam.cas_system in [SPCAS9, XCAS9]:
-        reportcols += REPORTCOLS[7:9] + REPORTCOLS[10:11]
+        reportcols_sorted += reportcols[7:9] + reportcols[10:11]
     elif pam.cas_system == CPF1:
-        reportcols += REPORTCOLS[9:10]
-    if estimate_offtargets:
-        reportcols += REPORTCOLS[19:20]
-        if pam.cas_system in [SPCAS9, XCAS9]:
-            reportcols += REPORTCOLS[20:]
-    if funcann:
-        reportcols += REPORTCOLS[17:18]
+        reportcols_sorted += reportcols[9:10]
+    # if estimate_offtargets:
+    #     reportcols_sorted += reportcols[19:20]
+    #     if pam.cas_system in [SPCAS9, XCAS9]:
+    #         reportcols_sorted += reportcols[20:]
+    if annotations:
+        reportcols_sorted += reportcols[17:17 + len(annotations)]
     if geneann:
-        reportcols += REPORTCOLS[18:19]
-    reportcols += REPORTCOLS[11:17]
-    return reportcols
+        reportcols_sorted += reportcols[18:19]
+    reportcols_sorted += reportcols[11:17]
+    return reportcols_sorted
 
 
 def format_report(
     report: pd.DataFrame,
     pam: PAM,
     right: bool,
-    funcann: bool,
+    annotations: List[str],
     geneann: bool,
     estimate_offtargets: bool,
 ) -> pd.DataFrame:
@@ -251,7 +260,7 @@ def format_report(
     report = report.reset_index(drop=True)
     report = report.sort_values([REPORTCOLS[1], REPORTCOLS[2]], ascending=True)
     # sort report columns
-    reportcols = format_reportcols(pam, right, funcann, geneann, estimate_offtargets)
+    reportcols = format_reportcols(pam, right, annotations, geneann, estimate_offtargets, report.columns.tolist())
     report = report[reportcols]
     return report
 
@@ -261,7 +270,7 @@ def store_report(
     pam: PAM,
     guidesreport: str,
     right: bool,
-    funcann: bool,
+    annotations: List[str],
     geneann: bool,
     estimate_offtargets: bool,
     debug: bool,
@@ -269,7 +278,7 @@ def store_report(
     try:
         if not report.empty:
             report = format_report(
-                report, pam, right, funcann, geneann, estimate_offtargets
+                report, pam, right, annotations, geneann, estimate_offtargets
             )  # format report
         report.to_csv(guidesreport, sep="\t", index=False)  # store report
     except FileNotFoundError as e:
@@ -345,7 +354,7 @@ def collapse_cfd(cfd: pd.Series) -> float:
 
 
 def collapsed_fields(
-    pam: PAM, funcann: bool, geneann: bool, estimate_offtargets: bool
+    pam: PAM, annotations: List[str], geneann: bool, estimate_offtargets: bool, reportcols: List[str]
 ) -> Dict[str, str]:
     # mandatory report fields
     fields = {
@@ -358,8 +367,10 @@ def collapsed_fields(
         "haplotype_id": collapse_haplotype_ids,  # Merge haplotype IDs
     }
     # add optional report fields
-    if funcann:  # guides functional annotation
-        fields["functional_annotation"] = collapse_annotation
+    if annotations:  # guides functional annotation
+        idx = reportcols.index(REPORTCOLS[16]) + 1  # haplotype_id is last
+        for colname in reportcols[idx:idx + len(annotations)]:
+            fields[colname] = collapse_annotation
     if geneann:
         fields["gene_annotation"] = collapse_annotation
     if estimate_offtargets:
@@ -372,29 +383,31 @@ def collapsed_fields(
 def collapse_report_entries(
     report: pd.DataFrame,
     pam: PAM,
-    funcann: bool,
+    annotations: List[str],
     geneann: bool,
     estimate_offtargets: bool,
 ) -> pd.DataFrame:
     # Define the columns to group by
+    reportcols = report.columns.tolist()
     if pam.cas_system in [SPCAS9, XCAS9]:
-        group_cols = REPORTCOLS[:5] + REPORTCOLS[6:9] + REPORTCOLS[10:12]
+        group_cols = reportcols[:5] + reportcols[6:9] + reportcols[10:12]
     elif pam.cas_system == CPF1:
         group_cols = (
-            REPORTCOLS[:5] + REPORTCOLS[6:7] + REPORTCOLS[9:10] + REPORTCOLS[11:12]
+            reportcols[:5] + reportcols[6:7] + reportcols[9:10] + reportcols[11:12]
         )
     else:
-        group_cols = REPORTCOLS[:5] + REPORTCOLS[6:7] + REPORTCOLS[11:12]
-    if funcann:
-        group_cols.append(REPORTCOLS[16])
+        group_cols = reportcols[:5] + reportcols[6:7] + reportcols[11:12]
+    if annotations:
+        idx = reportcols.index(REPORTCOLS[16]) + 1  # haplotype_id is last 
+        group_cols += [reportcols[idx + i] for i, _ in enumerate(annotations)]
     if geneann:
-        group_cols.append(REPORTCOLS[17])
-    if estimate_offtargets:
         group_cols.append(REPORTCOLS[18])
-        if pam.cas_system in [SPCAS9, XCAS9]:
-            group_cols.append(REPORTCOLS[19])
+    # if estimate_offtargets:
+    #     group_cols.append(REPORTCOLS[18])
+    #     if pam.cas_system in [SPCAS9, XCAS9]:
+    #         group_cols.append(REPORTCOLS[19])
     return report.groupby(group_cols, as_index=False).agg(
-        collapsed_fields(pam, funcann, geneann, estimate_offtargets)
+        collapsed_fields(pam, annotations, geneann, estimate_offtargets, reportcols)
     )
 
 
@@ -403,7 +416,8 @@ def report_guides(
     guidelen: int,
     pam: PAM,
     right: bool,
-    funcann: bool,
+    annotations: List[str],
+    annotation_colnames: List[str],
     geneann: bool,
     estimate_offtargets: bool,
     outdir: str,
@@ -413,7 +427,7 @@ def report_guides(
     print_verbosity("Constructing reports", verbosity, VERBOSITYLVL[1])
     start = time()  # report construction start time
     reports = construct_report(
-        guides, pam, funcann, geneann, estimate_offtargets
+        guides, pam, annotations, annotation_colnames, geneann, estimate_offtargets
     )  # construct reports
     for region, report in reports.items():  # store reports in output folder
         region_name = (
@@ -424,14 +438,14 @@ def report_guides(
         )
         if not report.empty:
             report = collapse_report_entries(
-                report, pam, funcann, geneann, estimate_offtargets
+                report, pam, annotations, geneann, estimate_offtargets
             )
         store_report(
             report,
             pam,
             guidesreport,
             right,
-            funcann,
+            annotations,
             geneann,
             estimate_offtargets,
             debug,

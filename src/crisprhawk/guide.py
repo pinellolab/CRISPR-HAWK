@@ -41,6 +41,7 @@ class Guide:
         self._hapid = hapid  # haplotype ID
         self._compute_guide_id()  # compute unique guide ID
         self._initialize_scores()  # initialize scores to NAs
+        self._initialize_annotations()  # initialize annotations to NAs
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} object; start={self._start} stop={self._stop} sequence={self._sequence} direction={self._direction}>"
@@ -87,6 +88,11 @@ class Guide:
     def _initialize_scores(self) -> None:
         # initialize scores for guide to NA
         self._azimuth_score = "NA"
+
+    def _initialize_annotations(self) -> None:
+        # initialize annotations for guide to NA
+        self._funcann = []
+        self._geneann = []
 
     def reverse_complement(self) -> None:
         assert hasattr(self, "_sequence")
@@ -145,10 +151,10 @@ class Guide:
         self._cfdon_score = str(round_score(score))
 
     def set_func_ann(self, annotation: str) -> None:
-        self._funcann = annotation
+        self._funcann.append(annotation)
 
     def set_gene_ann(self, annotation: str) -> None:
-        self._geneann = annotation
+        self._geneann.append(annotation)
 
     def set_offtargets(self, offtargets_num: int) -> None:
         self._offtargets_num = offtargets_num
@@ -239,7 +245,7 @@ class Guide:
         return self._hapid
 
     @property
-    def funcann(self) -> str:
+    def funcann(self) -> List[str]:
         if not hasattr(self, "_funcann"):  # always trace this error
             exception_handler(
                 AttributeError,
@@ -250,7 +256,7 @@ class Guide:
         return self._funcann
 
     @property
-    def geneann(self) -> str:
+    def geneann(self) -> List[str]:
         if not hasattr(self, "_geneann"):  # always trace this error
             exception_handler(
                 AttributeError,

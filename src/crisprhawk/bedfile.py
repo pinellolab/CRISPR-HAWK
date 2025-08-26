@@ -375,12 +375,10 @@ class BedAnnotation:
         assert _find_tbi(self._fname)
         self._bedidx = f"{self._fname}.{TBI}"
 
-    def fetch_features(self, contig: str, start: int, stop: int, fieldidx: int) -> str:
+    def fetch_features(self, contig: str, start: int, stop: int) -> Union[List[str], None]:
         if contig not in self._bed.contigs:
-            return "NA"
-        return ",".join(
-            {e.split()[fieldidx] for e in self._bed.fetch(contig, start, stop)}
-        )
+            return None
+        return [e.strip() for e in self._bed.fetch(contig, start, stop)]
 
     @property
     def contigs(self) -> List[str]:

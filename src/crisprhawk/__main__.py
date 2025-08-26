@@ -118,14 +118,28 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         "field are processed, while others are skipped",
     )
     group.add_argument(
-        "--functional-annotation",
+        "--annotation",
         type=str,
-        metavar="FUNC-ANN-BED",
-        dest="functional_annotation",
-        nargs="?",
-        default="",
-        help="BED file specifying functional genomic regions to functionally "
-        "annotate guide candidates",
+        metavar="ANNOTATION-BED",
+        dest="annotations",
+        nargs="*",
+        default=[],
+        help="One or more BED files specifying genomic regions used to annotate "
+        "guide candidates. Each file should follow the standard BED format "
+        "(at least: chrom, start, end), and should include additional annotation "
+        "on the 4th column"
+    )
+    group.add_argument(
+        "--annotation-colnames",
+        type=str,
+        metavar="ANNOTATION-COLNAMES",
+        dest="annotation_colnames",
+        nargs="*",
+        default=[],
+        help="List of custom column names to use in the final report. Each name "
+        "corresponds to one of the input BED files provided with '--annotation'. "
+        "Must match the number and order of files in '--annotation' (default: "
+        "annotation columns are named 'annotation_<i>')"
     )
     group.add_argument(
         "--gene-annotation",
