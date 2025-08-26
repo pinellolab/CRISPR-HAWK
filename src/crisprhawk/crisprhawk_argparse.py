@@ -232,11 +232,11 @@ class CrisprHawkInputArgs:
             self._parser.error(
                 f"Mismatching number of gene annotation files and gene annotation column names"
             )
-        # off-targets estimation
-        if self._args.write_offtargets_report and not self._args.estimate_offtargets:
-            self._parser.error(
-                "Cannot write off-targets report if off-target estimation not enabled"
-            )
+        # # off-targets estimation
+        # if self._args.write_offtargets_report and not self._args.estimate_offtargets:
+        #     self._parser.error(
+        #         "Cannot write off-targets report if off-target estimation not enabled"
+        #     )
         # threads number
         if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
             self._parser.error(

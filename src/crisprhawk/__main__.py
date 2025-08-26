@@ -183,22 +183,22 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="When enabled, the haplotype table is returned in the output folder "
         "as TSV file (default: disabled)",
     )
-    # group.add_argument(
-    #     "--estimate-offtargets",
-    #     action="store_true",
-    #     dest="estimate_offtargets",
-    #     default=False,
-    #     help="When enabled, the off-targets are estimated for each guide RNA "
-    #     "candidate ()",
-    # )
-    # group.add_argument(
-    #     "--write-offtargets-report",
-    #     action="store_true",
-    #     dest="write_offtargets_report",
-    #     default=False,
-    #     help="When enabled, write a report for all off-targets found for each "
-    #     "guide RNA candidate. By default, off-targets are not reported",
-    # )
+    group.add_argument(
+        "--estimate-offtargets",
+        action="store_true",
+        dest="estimate_offtargets",
+        default=False,
+        help="When enabled, the off-targets are estimated for each guide RNA "
+        "candidate ()",
+    )
+    group.add_argument(
+        "--write-offtargets-report",
+        action="store_true",
+        dest="write_offtargets_report",
+        default=False,
+        help="When enabled, write a report for all off-targets found for each "
+        "guide RNA candidate. By default, off-targets are not reported",
+    )
     group.add_argument(
         "-t",
         "--threads",

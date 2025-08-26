@@ -1,0 +1,157 @@
+# =============================================================================
+# pyproject.toml
+# =============================================================================
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crisprhawk"
+version = "0.1.0"
+description = "CRISPR-HAWK: Haplotype and vAriant-aWare guide design toolKit"
+readme = "README.md"
+authors = [
+    {name = "Manuel Tognon", email = "manu.tognon@gmail.com"}
+]
+maintainers = [
+    {name = "Manuel Tognon", email = "manu.tognon@gmail.com"}
+]
+license = {text = "MIT"}
+keywords = ["CRISPR", "guide RNA", "haplotype", "variant", "bioinformatics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+requires-python = ">=3.8"
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+    "mypy",
+]
+docs = [
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+
+[project.scripts]
+crisprhawk = "crisprhawk.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/ManuelTgn/CRISPR-HAWK"
+Documentation = "https://github.com/ManuelTgn/CRISPR-HAWK"
+Repository = "https://github.com/ManuelTgn/CRISPR-HAWK"
+"Bug Tracker" = "https://github.com/ManuelTgn/CRISPR-HAWK/issues"
+Changelog = "https://github.com/ManuelTgn/CRISPR-HAWK/blob/main/CHANGELOG.md"
+
+# =============================================================================
+# Tool configurations
+# =============================================================================
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"crisprhawk" = ["scripts/*"]
+"crisprhawk.scores.azimuth" = [
+    "saved_models/*.pickle",
+    "azure_models/*.pickle", 
+    "data/*",
+    "tests/*",
+    "LICENSE.txt",
+    "*.csv",
+]
+"crisprhawk.scores.cfdscore" = ["models/*.pkl"]
+"crisprhawk.scores.deepCpf1" = ["weights/*.h5"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+# =============================================================================
+# Development tool configurations
+# =============================================================================
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["crisprhawk"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "crisprhawk.*"
+ignore_errors = false
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+[tool.coverage.run]
+source = ["src/crisprhawk"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
