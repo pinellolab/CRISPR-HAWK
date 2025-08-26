@@ -187,10 +187,16 @@ class CrisprHawkInputArgs:
         ):
             self._parser.error(f"Cannot find output folder {self._args.outdir}")
         # functional annotation bed
-        if self._args.annotations and (any(not os.path.isfile(f) for f in self._args.annotations)):
+        if self._args.annotations and (
+            any(not os.path.isfile(f) for f in self._args.annotations)
+        ):
             annfiles = ", ".join(self._args.annotations)
-            self._parser.error(f"Cannot find the specified annotation BED files {annfiles}")
-        if self._args.annotations and any(os.stat(f).st_size <= 0 for f in self._args.annotations):
+            self._parser.error(
+                f"Cannot find the specified annotation BED files {annfiles}"
+            )
+        if self._args.annotations and any(
+            os.stat(f).st_size <= 0 for f in self._args.annotations
+        ):
             annfiles = ", ".join(self._args.annotations)
             self._parser.error(f"{annfiles} look empty")
         # functional annotation colnames
@@ -198,21 +204,34 @@ class CrisprHawkInputArgs:
             self._parser.error(
                 "Annotation column names provided, but no input annotation file"
             )
-        if self._args.annotation_colnames and (len(self._args.annotation_colnames) != len(self._args.annotations)):
-            self._parser.error(f"Mismatching number of annotation files and annotation column names")
-        # gene annotation bed
-        if self._args.gene_annotation and (
-            not os.path.exists(self._args.gene_annotation)
-            or not os.path.isfile(self._args.gene_annotation)
+        if self._args.annotation_colnames and (
+            len(self._args.annotation_colnames) != len(self._args.annotations)
         ):
             self._parser.error(
-                f"Cannot find functional annotation BED {self._args.functional_annotation}"
+                f"Mismatching number of annotation files and annotation column names"
             )
-        if (
-            self._args.gene_annotation
-            and os.stat(self._args.gene_annotation).st_size <= 0
+        # gene annotation bed
+        if self._args.gene_annotations and (
+            any(not os.path.isfile(f) for f in self._args.gene_annotations)
         ):
-            self._parser.error(f"{self._args.gene_annotation} is empty")
+            annfiles = ", ".join(self._args.gene_annotations)
+            self._parser.error(f"Cannot find gene annotation BED files {annfiles}")
+        if self._args.gene_annotations and any(
+            os.stat(f).st_size <= 0 for f in self._args.gene_annotations
+        ):
+            annfiles = ", ".join(self._args.gene_annotations)
+            self._parser.error(f"{annfiles} look empty")
+        # gene annotation colnames
+        if self._args.gene_annotation_colnames and not self._args.gene_annotations:
+            self._parser.error(
+                "Gene annotation column names provided, but no input gene annotation file"
+            )
+        if self._args.gene_annotation_colnames and (
+            len(self._args.gene_annotation_colnames) != len(self._args.gene_annotations)
+        ):
+            self._parser.error(
+                f"Mismatching number of gene annotation files and gene annotation column names"
+            )
         # off-targets estimation
         if self._args.write_offtargets_report and not self._args.estimate_offtargets:
             self._parser.error(
@@ -270,14 +289,18 @@ class CrisprHawkInputArgs:
     @property
     def annotations(self) -> List[str]:
         return self._args.annotations
-    
+
     @property
     def annotation_colnames(self) -> List[str]:
         return self._args.annotation_colnames
 
     @property
-    def gene_annotation(self) -> str:
-        return self._args.gene_annotation
+    def gene_annotations(self) -> List[str]:
+        return self._args.gene_annotations
+
+    @property
+    def gene_annotation_colnames(self) -> List[str]:
+        return self._args.gene_annotation_colnames
 
     @property
     def haplotype_table(self) -> bool:

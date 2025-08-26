@@ -207,7 +207,6 @@ class VariantRecord:
         assert hasattr(self, "_alt")
         return [_assign_vtype(self._ref, altallele) for altallele in self._alt]
 
-
     def _retrieve_af(self, info: str) -> List[float]:
         i = info.find("AF=")  # find the AF field start index
         if i == -1:  # no AF data in the input VCF
@@ -216,9 +215,13 @@ class VariantRecord:
         j = info.find(";", i)  # find the next semicolon delimiter
         afs = list(map(float, info[i:j].split(",")))
         if len(afs) != self._allelesnum:  # one af per af value per allele
-            exception_handler(ValueError, f"AF number does not match the alleles number ({len(afs)} - {self._allelesnum})", os.EX_DATAERR, self._debug)
+            exception_handler(
+                ValueError,
+                f"AF number does not match the alleles number ({len(afs)} - {self._allelesnum})",
+                os.EX_DATAERR,
+                self._debug,
+            )
         return afs
-
 
     def _assign_id(self) -> List[str]:
         """Assign or compute variant IDs.
@@ -369,7 +372,7 @@ class VariantRecord:
     @property
     def vtype(self) -> List[str]:
         return self._vtype
-    
+
     @property
     def afs(self) -> List[float]:
         return self._afs

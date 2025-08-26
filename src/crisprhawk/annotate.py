@@ -244,49 +244,88 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
     )
     return guides_lst
 
-def annotate_variants_afs(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+
+def annotate_variants_afs(
+    guides: List[Guide], verbosity: int, debug: bool
+) -> List[Guide]:
     guides_lst = []  # reported guides
     print_verbosity(
         "Annotating variants allele frequencies in guides", verbosity, VERBOSITYLVL[3]
     )
     start = time()  # position calculation start time
     for guide in guides:
-        afs = [str(guide.afs[v]) if str(guide.afs[v]) != "nan" else "NA" for v in guide.variants.split(",")] if guide.variants != "NA" else ["NA"]
+        afs = (
+            [
+                str(guide.afs[v]) if str(guide.afs[v]) != "nan" else "NA"
+                for v in guide.variants.split(",")
+            ]
+            if guide.variants != "NA"
+            else ["NA"]
+        )
         guide.set_allele_freqs(afs)
         guides_lst.append(guide)
     print_verbosity(
-        f"Variants allele frequencies annotated in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+        f"Variants allele frequencies annotated in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
     )
     return guides_lst
 
 
-
-# def _funcann(
-#     guide: Guide, bedannotation: BedAnnotation, contig: str, atype: str, idx: int
-# ) -> Guide:
-#     # fetch annotation features overlapped by input guide
-#     if not (
-#         annotation := bedannotation.fetch_features(contig, guide.start, guide.stop, idx)
-#     ):
-#         annotation = "NA"  # no annotation feature overlapped by the input guide
-#     if atype == "gene":  # set gene annotation
-#         guide.set_gene_ann(annotation)
-#     else:  # set functional annotation
-#         guide.set_func_ann(annotation)
-#     return guide
-
-def _funcann(guide: Guide, bedannotation: BedAnnotation, contig: str, debug: bool) -> Guide:
+def _funcann(
+    guide: Guide, bedannotation: BedAnnotation, contig: str, debug: bool
+) -> Guide:
     try:  # fetch annotation features overlapping input guide
         annotation = bedannotation.fetch_features(contig, guide.start, guide.stop)
     except Exception as e:
         exception_handler(
-            CrisprHawkAnnotationError, f"Guides annotation failed on {guide}", os.EX_DATAERR, debug, e,
+            CrisprHawkAnnotationError,
+            f"Guides annotation failed on {guide}",
+            os.EX_DATAERR,
+            debug,
+            e,
         )
     # if no annotation, return NA value; annotation values on 4th BED column
-    annotation = ",".join([e.split()[3] for e in annotation]) if annotation else "NA" 
+    annotation = ",".join([e.split()[3] for e in annotation]) if annotation else "NA"
     guide.set_func_ann(annotation)
     return guide
 
+
+def _retrieve_gene_name(field: str) -> str:
+    i = field.find("gene_name=")
+    if i == -1:  # gene name not found
+        return ""
+    j = field.find(";", i + 10)
+    return field[i + 10 : j]  # return gene name
+
+
+def _geneann(
+    guide: Guide, bedannotation: BedAnnotation, contig: str, debug: bool
+) -> Guide:
+    try:  # fetch annotation features overlapping input guide
+        annotation = bedannotation.fetch_features(contig, guide.start, guide.stop)
+    except Exception as e:
+        exception_handler(
+            CrisprHawkAnnotationError,
+            f"Guides gene annotation failed on {guide}",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
+    # if no annotation, return NA value; annotation values on 4th BED column
+    annotation = (
+        ",".join(
+            [
+                f"{fields[7]}:{_retrieve_gene_name(fields[9])}"
+                for e in annotation
+                for fields in [e.split()]
+            ]
+        )
+        if annotation
+        else "NA"
+    )
+    guide.set_gene_ann(annotation)
+    return guide
 
 
 def ann_guides(
@@ -304,20 +343,27 @@ def ann_guides(
     guides_ann = []
     for fann in annotations:
         bedann = BedAnnotation(fann, verbosity, debug)  # load annotation bed
-        guides_ann = [_funcann(guide, bedann, contig, debug) for guide in guides]
+        guides_ann = [
+            (
+                _funcann(guide, bedann, contig, debug)
+                if atype == 0
+                else _geneann(guide, bedann, contig, debug)
+            )
+            for guide in guides
+        ]
     assert len(guides) == len(guides_ann)  # type: ignore
     print_verbosity(
         f"Guides functional annotation completed in {time() - start:.2f}s",
         verbosity,
         VERBOSITYLVL[3],
     )
-    return guides_ann if guides else guides
+    return guides_ann if guides_ann else guides
 
 
 def annotate_guides(
     guides: Dict[Region, List[Guide]],
     annotations: List[str],
-    gene_annotation: str,
+    gene_annotations: List[str],
     pam: PAM,
     genome: str,
     estimate_offtargets: bool,
@@ -346,15 +392,19 @@ def annotate_guides(
             guides_list = cfdon_score(guides_list, verbosity, debug)
         if pam.cas_system == CPF1:  # cpf1 system pam
             guides_list = deepcpf1_score(guides_list, verbosity, debug)
-        if annotations:  # annotate each guide 
+        if annotations:  # annotate each guide
             guides_list = ann_guides(
-                guides_list, region.contig, annotations, 0, verbosity, debug,
+                guides_list,
+                region.contig,
+                annotations,
+                0,
+                verbosity,
+                debug,
             )
-        # annotate each guide with gene data
-        # if gene_annotation:
-        #     guides_list = ann_guides(
-        #         guides_list, region.contig, gene_annotation, 1, verbosity, debug
-        #     )
+        if gene_annotations:  # annotate each guide with gene data
+            guides_list = ann_guides(
+                guides_list, region.contig, gene_annotations, 1, verbosity, debug
+            )
         # TODO: use crispritz instead
         # if estimate_offtargets:  # estimate off-targets for each guide
         #     guides_list = search_offtargets(

@@ -197,7 +197,7 @@ class Haplotype(Region):
     @property
     def variants(self) -> str:
         return self._variants
-    
+
     @property
     def afs(self) -> Dict[str, float]:
         return self._afs

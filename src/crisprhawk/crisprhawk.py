@@ -146,7 +146,7 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
     guides = annotate_guides(
         guides,
         args.annotations,
-        args.gene_annotation,
+        args.gene_annotations,
         pam,
         args.fasta,
         args.estimate_offtargets,
@@ -164,7 +164,8 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         args.right,
         args.annotations,
         args.annotation_colnames,
-        bool(args.gene_annotation),
+        args.gene_annotations,
+        args.gene_annotation_colnames,
         args.estimate_offtargets,
         args.outdir,
         args.verbosity,

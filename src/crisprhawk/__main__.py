@@ -127,7 +127,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="One or more BED files specifying genomic regions used to annotate "
         "guide candidates. Each file should follow the standard BED format "
         "(at least: chrom, start, end), and should include additional annotation "
-        "on the 4th column"
+        "on the 4th column",
     )
     group.add_argument(
         "--annotation-colnames",
@@ -139,16 +139,33 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="List of custom column names to use in the final report. Each name "
         "corresponds to one of the input BED files provided with '--annotation'. "
         "Must match the number and order of files in '--annotation' (default: "
-        "annotation columns are named 'annotation_<i>')"
+        "annotation columns are named 'annotation_<i>')",
     )
     group.add_argument(
         "--gene-annotation",
         type=str,
-        metavar="GENE-ANN-BED",
-        dest="gene_annotation",
-        nargs="?",
-        default="",
-        help="BED file specifying gene regions to annotate guide candidates",
+        metavar="GENE-ANNOTATION-BED",
+        dest="gene_annotations",
+        nargs="*",
+        default=[],
+        help="One or more BED files specifying gene regions used to annotate guide "
+        "candidates. The file should follow standard BED format (chrom, start, "
+        "end) and should include 9 columns. The 7th column should indicate the "
+        "gencode feature (e.g., start_codon, exon, etc.). The 9th column should "
+        "be a semicolon-separated list with the gene name identified by "
+        "gene_name (e.g., gene_id=ENSG00000281518;gene_name=FOXO6;...;)",
+    )
+    group.add_argument(
+        "--gene-annotation-colnames",
+        type=str,
+        metavar="GENE-ANNOTATION-COLNAMES",
+        dest="gene_annotation_colnames",
+        nargs="*",
+        default=[],
+        help="Custom column names to assign to the gene annotation fields in the "
+        "final report. These should correspond to the columns present in the BED "
+        "file provided via '--gene-annotation' (default: column names assigned "
+        "as 'gene_annotation_<i>')",
     )
     group.add_argument(
         "--haplotype-table",

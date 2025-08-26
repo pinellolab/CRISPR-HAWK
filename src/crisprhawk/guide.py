@@ -105,7 +105,7 @@ class Guide:
         self._variants = variants  # set variants
 
     def set_allele_freqs(self, afs: List[str]) -> None:
-        if not afs or (len(set(afs)) == 1 and afs[0] == "NA"):  
+        if not afs or (len(set(afs)) == 1 and afs[0] == "NA"):
             self._afs_ = "NA"  # reference or afs not available
             return
         self._afs_ = ",".join(afs)
@@ -185,11 +185,11 @@ class Guide:
     @property
     def variants(self) -> str:
         return self._variants
-    
+
     @property
     def afs(self) -> Dict[str, float]:
         return self._afs
-    
+
     @property
     def afs_str(self) -> str:
         return self._afs_
