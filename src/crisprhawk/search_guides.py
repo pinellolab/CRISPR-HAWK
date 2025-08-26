@@ -350,6 +350,7 @@ def retrieve_guides(
                 direction,
                 haplotype.samples,
                 haplotype.variants,
+                haplotype.afs,
                 debug,
                 right,
                 haplotype.id,

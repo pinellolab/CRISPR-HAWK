@@ -25,8 +25,9 @@ class Haplotype(Region):
         self._debug = debug  # store debug flag
         super().__init__(sequence, coord)  # genomic sequence and region coordinates
         self._size = len(sequence)  # haplotype size
-        self._variant_alleles = {}
+        self._variant_alleles = {}  # map alleles to each variant
         self._variants = "NA"  # haplotype variants
+        self._afs = {}  # map allele frequency to each variant
         self._samples = "REF"  # haplotype samples
         self._phased = phased  # haplotype phasing
         self._chromcopy = chromcopy  # chromosome copy
@@ -112,6 +113,7 @@ class Haplotype(Region):
         )  # reconstruct haplotype sequence
         self._samples = f"{sample}:{suffix}" if self._phased else sample
         self._variants = ",".join([v.id[0] for v in variants])
+        self._afs = {v.id[0]: v.afs[0] for v in variants}
 
     def _insert_variant_unphased(
         self, position: int, ref: str, alt: str, vtype: str, chain: int, offset: int
@@ -155,6 +157,7 @@ class Haplotype(Region):
         )
         self._samples = sample
         self._variants = ",".join([v.id[0] for v in variants])
+        self._afs = {v.id[0]: v.afs[0] for v in variants}
 
     def homozygous_samples(self) -> None:
         # if samples are homozygous, change their phasing value (support diploid)
@@ -174,6 +177,9 @@ class Haplotype(Region):
     def set_variants(self, variants: str) -> None:
         self._variants = variants  # set variants to haplotype
 
+    def set_afs(self, afs: Dict[str, float]) -> None:
+        self._afs = afs  # set allele frequencies to haplotype
+
     def set_posmap(self, posmap: Dict[int, int], posmap_rev: Dict[int, int]) -> None:
         self._posmap = posmap  # set position map to haplotype
         self._posmap_reverse = posmap_rev
@@ -191,6 +197,10 @@ class Haplotype(Region):
     @property
     def variants(self) -> str:
         return self._variants
+    
+    @property
+    def afs(self) -> Dict[str, float]:
+        return self._afs
 
     @property
     def phased(self) -> bool:

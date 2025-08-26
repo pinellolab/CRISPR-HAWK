@@ -12,6 +12,8 @@ from .utils import warning
 from typing import Optional, List, Tuple, Set
 from pysam import TabixFile, tabix_index
 
+import numpy as np
+
 import sys
 import os
 
@@ -205,6 +207,19 @@ class VariantRecord:
         assert hasattr(self, "_alt")
         return [_assign_vtype(self._ref, altallele) for altallele in self._alt]
 
+
+    def _retrieve_af(self, info: str) -> List[float]:
+        i = info.find("AF=")  # find the AF field start index
+        if i == -1:  # no AF data in the input VCF
+            return [np.nan] * self._allelesnum
+        i += 3  # skip 'AF=' in info
+        j = info.find(";", i)  # find the next semicolon delimiter
+        afs = list(map(float, info[i:j].split(",")))
+        if len(afs) != self._allelesnum:  # one af per af value per allele
+            exception_handler(ValueError, f"AF number does not match the alleles number ({len(afs)} - {self._allelesnum})", os.EX_DATAERR, self._debug)
+        return afs
+
+
     def _assign_id(self) -> List[str]:
         """Assign or compute variant IDs.
 
@@ -258,6 +273,7 @@ class VariantRecord:
         vrecord._allelesnum = 1
         vrecord._vtype = [self._vtype[i]]
         vrecord._filter = self._filter
+        vrecord._afs = [self._afs[i]]
         vrecord._vid = [self._vid[i]]
         vrecord._samples = [self._samples[i]]
         return vrecord
@@ -283,6 +299,7 @@ class VariantRecord:
         self._allelesnum = len(self._alt)  # number of alt alleles
         self._vtype = self._assess_vtype()  # establish whether is a snp or indel
         self._filter = variant[6]  # store filter value
+        self._afs = self._retrieve_af(variant[7])  # retrieve allele frequencies
         self._vid = self._assign_id()  # assign variant id
         self._samples = _genotypes_to_samples(
             variant[9:], samples, self._allelesnum, phased, self._debug
@@ -352,6 +369,10 @@ class VariantRecord:
     @property
     def vtype(self) -> List[str]:
         return self._vtype
+    
+    @property
+    def afs(self) -> List[float]:
+        return self._afs
 
     @property
     def samples(self) -> List[Tuple[Set[str], Set[str]]]:

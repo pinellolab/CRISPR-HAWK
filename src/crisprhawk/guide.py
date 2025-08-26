@@ -4,7 +4,7 @@ from .exception_handlers import exception_handler
 from .crisprhawk_error import CrisprHawkGuideError
 from .utils import round_score, RC
 
-from typing import List, Union, Set
+from typing import Dict, Union, List
 import os
 
 GUIDESEQPAD = 10  # upstream and downstream sequence padding for guides scoring
@@ -21,6 +21,7 @@ class Guide:
         direction: int,
         samples: str,
         variants: str,
+        afs: Dict[str, float],
         debug: bool,
         right: bool,
         hapid: str,
@@ -36,6 +37,7 @@ class Guide:
         self._direction = direction  # guide direction
         self._samples = samples  # samples carrying guide variants
         self._variants = variants  # variants overlapping guide
+        self._afs = afs  # allele frequencies of variants overlapping guide
         self._hapid = hapid  # haplotype ID
         self._compute_guide_id()  # compute unique guide ID
         self._initialize_scores()  # initialize scores to NAs
@@ -95,6 +97,12 @@ class Guide:
 
     def set_variants(self, variants: str) -> None:
         self._variants = variants  # set variants
+
+    def set_allele_freqs(self, afs: List[str]) -> None:
+        if not afs or (len(set(afs)) == 1 and afs[0] == "NA"):  
+            self._afs_ = "NA"  # reference or afs not available
+            return
+        self._afs_ = ",".join(afs)
 
     def set_azimuth_score(self, score: float) -> None:
         if not isinstance(score, float):
@@ -171,6 +179,14 @@ class Guide:
     @property
     def variants(self) -> str:
         return self._variants
+    
+    @property
+    def afs(self) -> Dict[str, float]:
+        return self._afs
+    
+    @property
+    def afs_str(self) -> str:
+        return self._afs_
 
     @property
     def pam(self) -> str:

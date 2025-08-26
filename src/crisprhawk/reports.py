@@ -25,26 +25,27 @@ import os
 
 
 REPORTCOLS = [
-    "chr",
-    "start",
-    "stop",
-    "sgRNA_sequence",
-    "pam",
-    "pam_class",
-    "strand",
-    "score_azimuth",
-    "score_rs3",
-    "score_deepcpf1",
-    "score_cfdon",
-    "origin",
-    "samples",
-    "variant_id",
-    "target",
-    "haplotype_id",
-    "functional_annotation",
-    "gene_annotation",
-    "offtargets",
-    "cfd",
+    "chr",                      # 0
+    "start",                    # 1
+    "stop",                     # 2
+    "sgRNA_sequence",           # 3
+    "pam",                      # 4
+    "pam_class",                # 5
+    "strand",                   # 6
+    "score_azimuth",            # 7
+    "score_rs3",                # 8
+    "score_deepcpf1",           # 9
+    "score_cfdon",              # 10
+    "origin",                   # 11
+    "samples",                  # 12
+    "variant_id",               # 13
+    "af",                       # 14
+    "target",                   # 15
+    "haplotype_id",             # 16
+    "functional_annotation",    # 17
+    "gene_annotation",          # 18
+    "offtargets",               # 19
+    "cfd",                      # 20
 ]
 
 
@@ -81,8 +82,9 @@ def _update_report_fields_spcas9(
     report[REPORTCOLS[11]].append(compute_guide_origin(guide.samples))  # genome
     report[REPORTCOLS[12]].append(guide.samples)  # samples list
     report[REPORTCOLS[13]].append(guide.variants)  # variant ids
-    report[REPORTCOLS[14]].append(region_coordinates)  # region
-    report[REPORTCOLS[15]].append(guide.hapid)  # haplotype id
+    report[REPORTCOLS[14]].append(guide.afs_str)  # variants allele frequencies
+    report[REPORTCOLS[15]].append(region_coordinates)  # region
+    report[REPORTCOLS[16]].append(guide.hapid)  # haplotype id
     return report
 
 
@@ -101,8 +103,9 @@ def _update_report_fields_cpf1(
     report[REPORTCOLS[11]].append(compute_guide_origin(guide.samples))  # genome
     report[REPORTCOLS[12]].append(guide.samples)  # samples list
     report[REPORTCOLS[13]].append(guide.variants)  # variant ids
-    report[REPORTCOLS[14]].append(region_coordinates)  # region
-    report[REPORTCOLS[15]].append(guide.hapid)  # haplotype id
+    report[REPORTCOLS[14]].append(guide.afs_str)  # variants allele frequencies
+    report[REPORTCOLS[15]].append(region_coordinates)  # region
+    report[REPORTCOLS[16]].append(guide.hapid)  # haplotype id
     return report
 
 
@@ -120,8 +123,9 @@ def _update_report_fields_other(
     report[REPORTCOLS[11]].append(compute_guide_origin(guide.samples))  # genome
     report[REPORTCOLS[12]].append(guide.samples)  # samples list
     report[REPORTCOLS[13]].append(guide.variants)  # variant ids
-    report[REPORTCOLS[14]].append(region_coordinates)  # region
-    report[REPORTCOLS[15]].append(guide.hapid)  # haplotype id
+    report[REPORTCOLS[14]].append(guide.afs_str)  # variants allele frequencies
+    report[REPORTCOLS[15]].append(region_coordinates)  # region
+    report[REPORTCOLS[16]].append(guide.hapid)  # haplotype id
     return report
 
 
@@ -149,13 +153,13 @@ def update_optional_report_fields(
 ) -> Dict[str, List[str]]:
     # update report optional fields
     if funcann:
-        report[REPORTCOLS[16]].append(guide.funcann)
+        report[REPORTCOLS[17]].append(guide.funcann)
     if geneann:
-        report[REPORTCOLS[17]].append(guide.geneann)
+        report[REPORTCOLS[18]].append(guide.geneann)
     if estimate_offtargets:
-        report[REPORTCOLS[18]].append(guide.offtargets)
+        report[REPORTCOLS[19]].append(guide.offtargets)
         if pam.cas_system in [SPCAS9, XCAS9]:  # spcas9 system pam
-            report[REPORTCOLS[19]].append(guide.cfd)
+            report[REPORTCOLS[20]].append(guide.cfd)
     return report
 
 
@@ -220,14 +224,14 @@ def format_reportcols(
     elif pam.cas_system == CPF1:
         reportcols += REPORTCOLS[9:10]
     if estimate_offtargets:
-        reportcols += REPORTCOLS[18:19]
+        reportcols += REPORTCOLS[19:20]
         if pam.cas_system in [SPCAS9, XCAS9]:
-            reportcols += REPORTCOLS[19:]
+            reportcols += REPORTCOLS[20:]
     if funcann:
-        reportcols += REPORTCOLS[16:17]
-    if geneann:
         reportcols += REPORTCOLS[17:18]
-    reportcols += REPORTCOLS[11:16]
+    if geneann:
+        reportcols += REPORTCOLS[18:19]
+    reportcols += REPORTCOLS[11:17]
     return reportcols
 
 
@@ -324,7 +328,6 @@ def check_variant_ids(variant_ids_list: List[str]) -> str:
     unique_variant_ids_sets = {tuple(sorted(vs)) for vs in variant_sets}
     return ",".join(sorted(unique_variant_ids_sets.pop()))
 
-
 def collapse_haplotype_ids(hapids: pd.Series) -> str:
     return "" if hapids.empty else ",".join(sorted(set(",".join(hapids).split(","))))
 
@@ -350,6 +353,7 @@ def collapsed_fields(
         "origin": "first",  # Assuming origin does not change
         "samples": collapse_samples,  # Merge sample lists
         "variant_id": check_variant_ids,  # Ensure identical variant_id
+        "af": "first",  # Merge variants afs
         "target": "first",  # Keep the first target entry
         "haplotype_id": collapse_haplotype_ids,  # Merge haplotype IDs
     }

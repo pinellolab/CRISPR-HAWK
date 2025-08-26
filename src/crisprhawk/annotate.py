@@ -118,7 +118,7 @@ def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Gui
     except Exception as e:
         exception_handler(
             CrisprHawkDeepCpf1ScoreError,
-            "RS3 score calculation failed",
+            "DeepCpf1 score calculation failed",
             os.EX_DATAERR,
             debug,
             e,
@@ -244,6 +244,22 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
     )
     return guides_lst
 
+def annotate_variants_afs(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    guides_lst = []  # reported guides
+    print_verbosity(
+        "Annotating variants allele frequencies in guides", verbosity, VERBOSITYLVL[3]
+    )
+    start = time()  # position calculation start time
+    for guide in guides:
+        afs = [str(guide.afs[v]) if str(guide.afs[v]) != "nan" else "NA" for v in guide.variants.split(",")] if guide.variants != "NA" else ["NA"]
+        guide.set_allele_freqs(afs)
+        guides_lst.append(guide)
+    print_verbosity(
+        f"Variants allele frequencies annotated in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+    )
+    return guides_lst
+
+
 
 def _funcann(
     guide: Guide, bedannotation: BedAnnotation, contig: str, atype: str, idx: int
@@ -311,6 +327,8 @@ def annotate_guides(
     for region, guides_list in guides.items():
         # set variants for current guide
         guides_list = annotate_variants(guides_list, verbosity, debug)
+        # add allele frequencies for variants occurring in guides
+        guides_list = annotate_variants_afs(guides_list, verbosity, debug)
         # compute reverse complement for guides occurring on rev strand
         guides_list = reverse_guides(guides_list, verbosity)
         if pam.cas_system in [SPCAS9, XCAS9]:  # cas9 system pam

@@ -184,6 +184,7 @@ def _collapse_haplotypes(
         else ",".join(sorted({h.variants for h in haplotypes}))
     )
     hap.set_variants(variants)
+    hap.set_afs(haplotypes[0].afs)
     hap.set_posmap(
         haplotypes[0].posmap, haplotypes[0].posmap_rev
     )  # same posmap for all collapsed haplotypes
@@ -407,7 +408,6 @@ def create_indels_haplotype_unphased(
         )
         # set samples for each indel haplotype to reflect indel carriers
         indel_haplotypes = set_haplotypes_samples(indel_haplotypes, indel_samples)
-
     return indel_haplotypes
 
 
