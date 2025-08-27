@@ -81,7 +81,8 @@ class CrisprHawkArgumentParser(ArgumentParser):
         kwargs["formatter_class"] = self.CrisprHawkHelpFormatter  # type: ignore
         # replace the default version display in usage help with a custom
         # version display formatter
-        kwargs["usage"] = kwargs["usage"].replace("{version}", __version__)  # type: ignore
+        if "usage" in kwargs:
+            kwargs["usage"] = kwargs["usage"].replace("{version}", __version__)  # type: ignore
         # initialize argument parser object with input parameters for
         # usage display
         super().__init__(*args, **kwargs)  # type: ignore

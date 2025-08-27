@@ -5,8 +5,12 @@ Copyright (C) 2025 Manuel Tognon <manu.tognon@gmail.com> <manuel.tognon@univr.it
 
 CRISPR-HAWK: Haplotype- and vAriant-aWare guide design toolKit
 
+CRISPR-HAWK is a tool for haplotype- and variant-aware guide RNAs design (support all CRISPR systems), gRNA 
+efficiency assessment (support for Cas9 and Cpf1 systems), and analysis of genetic diversity impact on 
+on-targets specificity.
+
 Usage:
-    crisprhawk -f <fasta> -r <bedfile> -v <vcf> -p <pam> -g <guide-length> -o <output-dir>
+    crisprhawk search -f <fasta> -r <bedfile> -v <vcf> -p <pam> -g <guide-length> -o <output-dir>
 
 Run 'crisprhawk -h/--help' to display the complete help
 """
@@ -17,10 +21,15 @@ from .crisprhawk_version import __version__
 from .crisprhawk import crisprhawk
 from .utils import TOOLNAME
 
+from argparse import _SubParsersAction
 from time import time
 
 import sys
 import os
+
+# crisprhawk commands
+SEARCH = "search"
+COMMANDS = [SEARCH]
 
 
 def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
@@ -28,7 +37,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
     # the default help to not being shown
     parser = CrisprHawkArgumentParser(usage=__doc__, add_help=False)  # type: ignore
     group = parser.add_argument_group("Options")  # arguments group
-    # input arguments
+    # add help and version arguments
     group.add_argument(
         "-h", "--help", action="help", help="Show this help message and exit"
     )
@@ -38,7 +47,35 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help=f"Show {TOOLNAME} version and exit",
         version=__version__,
     )
-    group.add_argument(
+    # create subparsers for different functionalities
+    subparsers = parser.add_subparsers(
+        dest="command",
+        title="Available commands",
+        metavar="",  # needed for help formatting (avoid <command to be displayed>)
+        description=None,
+    )
+    # crisprhawk search command
+    parser_search = create_search_parser(subparsers)
+    # crisprhawk graphical-reports command
+    # crisprhawk convert-gnomad-vcf command
+    # crisprhawk prepare-data-crisprme command
+    return parser
+
+def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
+    parser_search = subparser.add_parser(
+        SEARCH,
+        usage = "CRISPR-HAWK search {version}\n\nUsage:\n"
+        "\tcrisprhawk search -f <fasta> -r <bedfile> -v <vcf> -p <pam> -g "
+        "<guide-length> -o <output-dir>\n\n",
+        description="Automated end-to-end search pipeline that processes raw input "
+        "data through gRNA identification, scoring, and annotation of results",
+        help="perform a comprehensive gRNA search across the reference genome "
+        "and optionally variant-aware genomes. Includes Azimuth and RS3 (for "
+        "Cas9 systems), and DeepCpf1 (for Cpf1 systems) scores, CFDon score (for "
+        "Cas systems) to evaluate genetic diversity impact on on-targets, and "
+        "automated gRNA annotation",
+    )
+    parser_search.add_argument(
         "-f",
         "--fasta",
         type=str,
@@ -47,7 +84,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         required=True,
         help="Reference genome in FASTA format used for guide search",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "-i",
         "--fasta-idx",
         type=str,
@@ -58,7 +95,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="Optional FASTA index file (FAI) for the input reference (default: "
         "compute FAI)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "-r",
         "--regions",
         type=str,
@@ -67,7 +104,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         required=True,
         help="BED file specifying genomic regions where guides will be searched",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "-v",
         "--vcf",
         type=str,
@@ -78,7 +115,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="Optional folder storing VCF files to consider in the guide design. "
         "(default: no variant-aware analysis)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "-p",
         "--pam",
         type=str,
@@ -87,7 +124,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         required=True,
         help="PAM sequence used to identify candidate guides (e.g., NGG, NAG, " "etc.)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "-g",
         "--guide-len",
         type=int,
@@ -96,7 +133,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         required=True,
         help="Length of the guide (excluding the PAM)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--right",
         action="store_true",
         dest="right",
@@ -104,7 +141,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="If set, guides are extracted downstream (right side) of the PAM "
         "site. (default: guides are extracted upstream (left side))",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "-o",
         "--outdir",
         type=str,
@@ -115,7 +152,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="Output directory where reports and results will be saved. "
         "(default: current working directory)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--no-filter",
         action="store_true",
         dest="no_filter",
@@ -124,7 +161,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         "regardless of FILTER status (default: only variants with FILTER == "
         "'PASS' are used)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--annotation",
         type=str,
         metavar="ANNOTATION-BED",
@@ -136,7 +173,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         "(at least: chrom, start, end), and should include additional annotation "
         "on the 4th column (default: no annotation)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--annotation-colnames",
         type=str,
         metavar="ANNOTATION-COLNAMES",
@@ -148,7 +185,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         "Must match the number and order of files in '--annotation' (default: "
         "annotation columns are named 'annotation_<i>')",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--gene-annotation",
         type=str,
         metavar="GENE-ANNOTATION-BED",
@@ -163,7 +200,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         "gene_name (e.g., gene_id=ENSG00000281518;gene_name=FOXO6;...;) "
         "(default: no gene annotation)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--gene-annotation-colnames",
         type=str,
         metavar="GENE-ANNOTATION-COLNAMES",
@@ -175,7 +212,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         "file provided via '--gene-annotation' (default: column names assigned "
         "as 'gene_annotation_<i>')",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--haplotype-table",
         action="store_true",
         dest="haplotype_table",
@@ -183,7 +220,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="When enabled, the haplotype table is returned in the output folder "
         "as TSV file (default: disabled)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--estimate-offtargets",
         action="store_true",
         dest="estimate_offtargets",
@@ -191,7 +228,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="When enabled, the off-targets are estimated for each guide RNA "
         "candidate ()",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--write-offtargets-report",
         action="store_true",
         dest="write_offtargets_report",
@@ -199,7 +236,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="When enabled, write a report for all off-targets found for each "
         "guide RNA candidate. By default, off-targets are not reported",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "-t",
         "--threads",
         type=int,
@@ -209,7 +246,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         default=1,
         help="Number of threads. Use 0 for using all available cores (default: 1)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--verbosity",
         type=int,
         metavar="VERBOSITY",
@@ -219,13 +256,13 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         help="Verbosity level of output messages: 0 = Silent, 1 = Normal, 2 = "
         "Verbose, 3 = Debug (default: 1)",
     )
-    group.add_argument(
+    parser_search.add_argument(
         "--debug",
         action="store_true",
         default=False,
         help="Enter debug mode and trace the full error stack",
     )
-    return parser
+    return parser_search
 
 
 def main():
