@@ -672,7 +672,7 @@ class VCF:
 
         # look for index for the current vcf, if not found compute it
         if not vcfidx:
-            if _find_tbi(self._fname):  # index found, store it
+            if find_tbi(self._fname):  # index found, store it
                 return f"{self._fname}.{TBI}"
             # index not found -> compute it de novo and store it in the same folder
             # as the input vcf
@@ -706,7 +706,7 @@ class VCF:
                 self._debug,
                 e,
             )
-        assert _find_tbi(self._fname)
+        assert find_tbi(self._fname)
         self._vcfidx = f"{self._fname}.{TBI}"
 
     def _is_phased(self) -> None:
@@ -804,7 +804,7 @@ class VCF:
         return self._samples
 
 
-def _find_tbi(vcf: str) -> bool:
+def find_tbi(vcf: str) -> bool:
     """Check if a Tabix index exists for a VCF file.
 
     Checks if a Tabix index (.tbi) exists for the given VCF file and is a non-empty

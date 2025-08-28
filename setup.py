@@ -7,7 +7,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 # Read requirements
 with open("requirements.txt", "r", encoding="utf-8") as fh:
-    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+    requirements = [
+        line.strip() for line in fh if line.strip() and not line.startswith("#")
+    ]
 
 setup(
     name="crisprhawk",
@@ -19,7 +21,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/ManuelTgn/CRISPR-HAWK",
     packages=find_packages("src"),
-    package_dir={"":"src"},
+    package_dir={"": "src"},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Science/Research",
@@ -46,7 +48,7 @@ setup(
         ],
         "crisprhawk.scores.azimuth": [
             "saved_models/*.pickle",
-            "azure_models/*.pickle", 
+            "azure_models/*.pickle",
             "data/*",
             "tests/*",
             "LICENSE.txt",

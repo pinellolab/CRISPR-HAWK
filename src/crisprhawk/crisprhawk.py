@@ -10,6 +10,7 @@ from .search_guides import search
 from .annotate import annotate_guides
 from .encoder import encode
 from .reports import report_guides
+from .converter import convert_gnomad_vcf
 from .bitset import Bitset
 from .guide import Guide
 from .pam import PAM
@@ -174,5 +175,16 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
 
 
 def crisprhawk_converter(args: CrisprHawkConverterInputArgs) -> None:
-    print("converting..")
-
+    # convert gnomad vcfs; vcfs keep the fundamental data, but add a genotyping
+    # field to the vcf; genotypes are assigned based on population-wise allele
+    # counts; populations are treated as samples
+    convert_gnomad_vcf(
+        args.gnomad_vcfs,
+        args.joint,
+        args.keep,
+        args.suffix,
+        args.outdir,
+        args.threads,
+        args.verbosity,
+        args.debug,
+    )

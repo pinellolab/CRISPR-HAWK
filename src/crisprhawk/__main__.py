@@ -5,8 +5,8 @@ Copyright (C) 2025 Manuel Tognon <manu.tognon@gmail.com> <manuel.tognon@univr.it
 
 CRISPR-HAWK: Haplotype- and vAriant-aWare guide design toolKit
 
-CRISPR-HAWK is a tool for haplotype- and variant-aware guide RNAs design (support all CRISPR systems), gRNA 
-efficiency assessment (support for Cas9 and Cpf1 systems), and analysis of genetic diversity impact on 
+CRISPR-HAWK is a tool for haplotype- and variant-aware guide RNAs design (support all CRISPR systems), gRNA
+efficiency assessment (support for Cas9 and Cpf1 systems), and analysis of genetic diversity impact on
 on-targets specificity.
 
 Usage:
@@ -15,7 +15,11 @@ Usage:
 Run 'crisprhawk -h/--help' to display the complete help
 """
 
-from .crisprhawk_argparse import CrisprHawkArgumentParser, CrisprHawkSearchInputArgs, CrisprHawkConverterInputArgs
+from .crisprhawk_argparse import (
+    CrisprHawkArgumentParser,
+    CrisprHawkSearchInputArgs,
+    CrisprHawkConverterInputArgs,
+)
 from .crisprhawk import crisprhawk_search, crisprhawk_converter
 from .exception_handlers import sigint_handler
 from .crisprhawk_version import __version__
@@ -63,10 +67,11 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
     # crisprhawk prepare-data-crisprme command
     return parser
 
+
 def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
     parser_search = subparser.add_parser(
         SEARCH,
-        usage = "CRISPR-HAWK search {version}\n\nUsage:\n"
+        usage="CRISPR-HAWK search {version}\n\nUsage:\n"
         "\tcrisprhawk search -f <fasta> -r <bedfile> -v <vcf> -p <pam> -g "
         "<guide-length> -o <output-dir>\n\n",
         description="Automated end-to-end search pipeline that processes raw input "
@@ -266,10 +271,11 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
     )
     return parser_search
 
+
 def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
     parser_converter = subparser.add_parser(
         CONVERTGNOMADVCF,
-        usage = "CRISPR-HAWK convert-gnomad-vcf {version}\n\nUsage:\n"
+        usage="CRISPR-HAWK convert-gnomad-vcf {version}\n\nUsage:\n"
         "\tcrisprhawk convert-gnomad-vcf -d <vcf-dir> -o <output-dir>\n\n",
         description="Convert gnomAD VCF files (version ≥ 3.1) into a format "
         f"compatible with {TOOLNAME}. This utility preprocesses gnomAD VCFs to "
@@ -287,7 +293,7 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         required=True,
         help="path to the directory containing gnomAD VCF files (with .vcf.bgz "
         "or vcf.gz extension). All .vcf.bgz files in the directory will be automatically "
-        "processed"
+        "processed",
     )
     parser_converter.add_argument(
         "-o",
@@ -312,8 +318,17 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         action="store_true",
         dest="keep",
         help="Retain all variants regardless of their FILTER status. "
-        "By default, only variants with FILTER=PASS are included (default: " 
+        "By default, only variants with FILTER=PASS are included (default: "
         "disabled)",
+    )
+    parser_converter.add_argument(
+        "--suffix",
+        type=str,
+        dest="suffix",
+        required=False,
+        default="",
+        help="Optional suffix to append to the names of the converted VCF files. "
+        "Useful for distinguishing output files (default: no suffix)",
     )
     parser_converter.add_argument(
         "-t",

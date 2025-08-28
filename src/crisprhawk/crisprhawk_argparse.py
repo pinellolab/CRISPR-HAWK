@@ -339,9 +339,13 @@ class CrisprHawkConverterInputArgs:
         # vcf folder
         if self._args.gnomad_vcf_dir and (not os.path.isdir(self._args.gnomad_vcf_dir)):
             self._parser.error(f"Cannot find VCF folder {self._args.gnomad_vcf_dir}")
-        self._gnomad_vcfs = glob(os.path.join(self._args.gnomad_vcf_dir, "*.vcf.bgz")) + glob(os.path.join(self._args.gnomad_vcf_dir, "*.vcf.gz"))
+        self._gnomad_vcfs = glob(
+            os.path.join(self._args.gnomad_vcf_dir, "*.vcf.bgz")
+        ) + glob(os.path.join(self._args.gnomad_vcf_dir, "*.vcf.gz"))
         if self._args.gnomad_vcf_dir and not self._gnomad_vcfs:
-            self._parser.error(f"No gnomAD VCF file found in {self._args.gnomad_vcf_dir}")
+            self._parser.error(
+                f"No gnomAD VCF file found in {self._args.gnomad_vcf_dir}"
+            )
         # output folder
         if not os.path.exists(self._args.outdir) or not os.path.isdir(
             self._args.outdir
@@ -363,18 +367,22 @@ class CrisprHawkConverterInputArgs:
     @property
     def gnomad_vcfs(self) -> List[str]:
         return self._gnomad_vcfs
-    
+
     @property
     def outdir(self) -> str:
         return self._args.outdir
-    
+
     @property
     def joint(self) -> bool:
         return self._args.joint
-    
+
     @property
     def keep(self) -> bool:
         return self._args.keep
+
+    @property
+    def suffix(self) -> str:
+        return self._args.suffix
 
     @property
     def threads(self) -> int:

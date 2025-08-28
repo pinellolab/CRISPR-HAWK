@@ -272,3 +272,12 @@ def remove_folder(dirname: str) -> None:
         raise OSError(f"Failed to clean up folder {dirname}") from e
     except Exception as e:
         raise Exception(f"Unexpected error while cleaning up folder {dirname}") from e
+
+
+def remove_file(filename: str) -> None:
+    try:
+        subprocess.run(["rm", "-rf", filename], check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:  # always trace this error
+        raise OSError(f"Failed to remove file {filename}") from e
+    except Exception as e:
+        raise Exception(f"Unexpected error while removing file {filename}") from e
