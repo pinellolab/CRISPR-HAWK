@@ -118,7 +118,7 @@ class CrisprHawkArgumentParser(ArgumentParser):
         sys.exit(os.EX_NOINPUT)  # exit with no input code
 
 
-class CrisprHawkInputArgs:
+class CrisprHawkSearchInputArgs:
     """Handles and validates parsed command-line arguments for CRISPR-HAWK.
 
     This class checks the consistency of input arguments and provides convenient
@@ -314,6 +314,67 @@ class CrisprHawkInputArgs:
     @property
     def write_offtargets_report(self) -> bool:
         return self._args.write_offtargets_report
+
+    @property
+    def threads(self) -> int:
+        return self._args.threads
+
+    @property
+    def verbosity(self) -> int:
+        return self._args.verbosity
+
+    @property
+    def debug(self) -> bool:
+        return self._args.debug
+
+
+class CrisprHawkConverterInputArgs:
+
+    def __init__(self, args: Namespace, parser: CrisprHawkArgumentParser) -> None:
+        self._args = args
+        self._parser = parser
+        self._check_consistency()  # check input args consistency
+
+    def _check_consistency(self):
+        # vcf folder
+        if self._args.gnomad_vcf_dir and (not os.path.isdir(self._args.gnomad_vcf_dir)):
+            self._parser.error(f"Cannot find VCF folder {self._args.gnomad_vcf_dir}")
+        self._gnomad_vcfs = glob(os.path.join(self._args.gnomad_vcf_dir, "*.vcf.bgz")) + glob(os.path.join(self._args.gnomad_vcf_dir, "*.vcf.gz"))
+        if self._args.gnomad_vcf_dir and not self._gnomad_vcfs:
+            self._parser.error(f"No gnomAD VCF file found in {self._args.gnomad_vcf_dir}")
+        # output folder
+        if not os.path.exists(self._args.outdir) or not os.path.isdir(
+            self._args.outdir
+        ):
+            self._parser.error(f"Cannot find output folder {self._args.outdir}")
+        # threads number
+        if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
+            self._parser.error(
+                f"Forbidden number of threads provided ({self._args.threads}). Max number of available cores: {multiprocessing.cpu_count()}"
+            )
+        if self._args.threads == 0:  # use all cores
+            self._args.threads = multiprocessing.cpu_count()
+        # verbosity
+        if self._args.verbosity not in VERBOSITYLVL:
+            self._parser.error(
+                f"Forbidden verbosity level selected ({self._args.verbosity})"
+            )
+
+    @property
+    def gnomad_vcfs(self) -> List[str]:
+        return self._gnomad_vcfs
+    
+    @property
+    def outdir(self) -> str:
+        return self._args.outdir
+    
+    @property
+    def joint(self) -> bool:
+        return self._args.joint
+    
+    @property
+    def keep(self) -> bool:
+        return self._args.keep
 
     @property
     def threads(self) -> int:

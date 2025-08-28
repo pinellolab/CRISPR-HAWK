@@ -1,6 +1,6 @@
 """ """
 
-from .crisprhawk_argparse import CrisprHawkInputArgs
+from .crisprhawk_argparse import CrisprHawkSearchInputArgs, CrisprHawkConverterInputArgs
 from .region_constructor import construct_regions
 from .haplotypes import reconstruct_haplotypes
 from .haplotype import Haplotype
@@ -113,7 +113,7 @@ def guides_search(
     return guides
 
 
-def crisprhawk(args: CrisprHawkInputArgs) -> None:
+def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
     # extract genomic regions defined in input bed file
     regions = construct_regions(
         args.fasta, args.bedfile, args.fasta_idx, args.verbosity, args.debug
@@ -171,3 +171,8 @@ def crisprhawk(args: CrisprHawkInputArgs) -> None:
         args.verbosity,
         args.debug,
     )
+
+
+def crisprhawk_converter(args: CrisprHawkConverterInputArgs) -> None:
+    print("converting..")
+

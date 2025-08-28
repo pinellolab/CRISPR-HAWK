@@ -15,10 +15,10 @@ Usage:
 Run 'crisprhawk -h/--help' to display the complete help
 """
 
-from .crisprhawk_argparse import CrisprHawkArgumentParser, CrisprHawkInputArgs
+from .crisprhawk_argparse import CrisprHawkArgumentParser, CrisprHawkSearchInputArgs, CrisprHawkConverterInputArgs
+from .crisprhawk import crisprhawk_search, crisprhawk_converter
 from .exception_handlers import sigint_handler
 from .crisprhawk_version import __version__
-from .crisprhawk import crisprhawk
 from .utils import TOOLNAME
 
 from argparse import _SubParsersAction
@@ -29,7 +29,8 @@ import os
 
 # crisprhawk commands
 SEARCH = "search"
-COMMANDS = [SEARCH]
+CONVERTGNOMADVCF = "convert-gnomad-vcf"
+COMMANDS = [SEARCH, CONVERTGNOMADVCF]
 
 
 def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
@@ -58,6 +59,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
     parser_search = create_search_parser(subparsers)
     # crisprhawk graphical-reports command
     # crisprhawk convert-gnomad-vcf command
+    parser_converter = create_converter_parser(subparsers)
     # crisprhawk prepare-data-crisprme command
     return parser
 
@@ -242,7 +244,7 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         type=int,
         metavar="THREADS",
         dest="threads",
-        nargs="?",
+        required=False,
         default=1,
         help="Number of threads. Use 0 for using all available cores (default: 1)",
     )
@@ -264,6 +266,83 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
     )
     return parser_search
 
+def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
+    parser_converter = subparser.add_parser(
+        CONVERTGNOMADVCF,
+        usage = "CRISPR-HAWK convert-gnomad-vcf {version}\n\nUsage:\n"
+        "\tcrisprhawk convert-gnomad-vcf -d <vcf-dir> -o <output-dir>\n\n",
+        description="Convert gnomAD VCF files (version ≥ 3.1) into a format "
+        f"compatible with {TOOLNAME}. This utility preprocesses gnomAD VCFs to "
+        "ensure both structural and content compatibility, and incorporates "
+        "sample-level information to enable population-aware variant representation.",
+        help=f"convert gnomAD VCFs (v3.1 or newer) into {TOOLNAME}-compatible "
+        "format",
+    )
+    parser_converter.add_argument(
+        "-d",
+        "--vcf-dir",
+        type=str,
+        dest="gnomad_vcf_dir",
+        metavar="GNOMAD-VCF-DIR",
+        required=True,
+        help="path to the directory containing gnomAD VCF files (with .vcf.bgz "
+        "or vcf.gz extension). All .vcf.bgz files in the directory will be automatically "
+        "processed"
+    )
+    parser_converter.add_argument(
+        "-o",
+        "--outdir",
+        type=str,
+        metavar="OUTDIR",
+        dest="outdir",
+        nargs="?",
+        default=os.getcwd(),
+        help="Output directory where converted VCF files will be saved "
+        "(default: current working directory)",
+    )
+    parser_converter.add_argument(
+        "--joint",
+        action="store_true",
+        dest="joint",
+        help="Set this flag if the input VCFs contain joint allele frequencies, "
+        "as in gnomAD v4.1 joint exomes/genomes releases (default: disabled)",
+    )
+    parser_converter.add_argument(
+        "--keep",
+        action="store_true",
+        dest="keep",
+        help="Retain all variants regardless of their FILTER status. "
+        "By default, only variants with FILTER=PASS are included (default: " 
+        "disabled)",
+    )
+    parser_converter.add_argument(
+        "-t",
+        "--threads",
+        type=int,
+        metavar="THREADS",
+        dest="threads",
+        required=False,
+        default=1,
+        help="Number of threads. Use 0 for using all available cores (default: 1)",
+    )
+    parser_converter.add_argument(
+        "--verbosity",
+        type=int,
+        metavar="VERBOSITY",
+        dest="verbosity",
+        nargs="?",
+        default=1,  # minimal output
+        help="Verbosity level of output messages: 0 = Silent, 1 = Normal, 2 = "
+        "Verbose, 3 = Debug (default: 1)",
+    )
+    parser_converter.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Enter debug mode and trace the full error stack",
+    )
+    return parser_converter
+
 
 def main():
     start = time()  # track elapsed time
@@ -271,7 +350,11 @@ def main():
         parser = create_parser_crisprhawk()  # parse input argument using custom parser
         if not sys.argv[1:]:  # no input args -> print help and exit
             parser.error_noargs()
-        crisprhawk(CrisprHawkInputArgs(parser.parse_args(sys.argv[1:]), parser))  # type: ignore
+        args = parser.parse_args(sys.argv[1:])  # parse input args
+        if args.command == SEARCH:  # search command
+            crisprhawk_search(CrisprHawkSearchInputArgs(args, parser))  # type: ignore
+        elif args.command == CONVERTGNOMADVCF:  # convert-gnoamd-vcf command
+            crisprhawk_converter(CrisprHawkConverterInputArgs(args, parser))
     except KeyboardInterrupt as e:
         sigint_handler()  # catch SIGINT and exit gracefully
     sys.stdout.write(f"{TOOLNAME} - Elapsed time {(time() - start):.2f}s\n")
