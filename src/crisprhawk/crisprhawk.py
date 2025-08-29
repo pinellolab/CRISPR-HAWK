@@ -1,16 +1,17 @@
 """ """
 
-from .crisprhawk_argparse import CrisprHawkSearchInputArgs, CrisprHawkConverterInputArgs
+from .crisprhawk_argparse import CrisprHawkSearchInputArgs, CrisprHawkConverterInputArgs, CrisprHawkPrepareDataInputArgs
 from .region_constructor import construct_regions
 from .haplotypes import reconstruct_haplotypes
 from .haplotype import Haplotype
 from .region import Region
-from .utils import print_verbosity, VERBOSITYLVL
+from .utils import print_verbosity, VERBOSITYLVL, IUPAC_ENCODER
 from .search_guides import search
 from .annotate import annotate_guides
 from .encoder import encode
 from .reports import report_guides
 from .converter import convert_gnomad_vcf
+from .crisprme_data import prepare_data_crisprme
 from .bitset import Bitset
 from .guide import Guide
 from .pam import PAM
@@ -188,3 +189,7 @@ def crisprhawk_converter(args: CrisprHawkConverterInputArgs) -> None:
         args.verbosity,
         args.debug,
     )
+
+
+def crisprhawk_prepare_data_crisprme(args: CrisprHawkPrepareDataInputArgs) -> None:
+    prepare_data_crisprme(args.report, args.create_pam, args.outdir, args.debug)

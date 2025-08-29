@@ -1,6 +1,6 @@
 """ """
 
-from .utils import COMMAND, IUPAC, VERBOSITYLVL
+from .utils import COMMAND, IUPAC, VERBOSITYLVL, TOOLNAME
 from .crisprhawk_version import __version__
 
 from argparse import (
@@ -395,3 +395,38 @@ class CrisprHawkConverterInputArgs:
     @property
     def debug(self) -> bool:
         return self._args.debug
+    
+
+class CrisprHawkPrepareDataInputArgs:
+
+    def __init__(self, args: Namespace, parser: CrisprHawkArgumentParser) -> None:
+        self._args = args
+        self._parser = parser
+        self._check_consistency()  # check input args consistency
+
+    def _check_consistency(self):
+        # crisprhawk report
+        if self._args.report and (not os.path.isfile(self._args.report)):
+            self._parser.error(f"Cannot find {TOOLNAME} report {self._args.report}")
+        # output folder
+        if not os.path.exists(self._args.outdir) or not os.path.isdir(
+            self._args.outdir
+        ):
+            self._parser.error(f"Cannot find output folder {self._args.outdir}")
+
+    @property
+    def report(self) -> str:
+        return self._args.report
+
+    @property
+    def create_pam(self) -> bool:
+        return self._args.create_pam
+
+    @property
+    def outdir(self) -> str:
+        return self._args.outdir
+
+    @property
+    def debug(self) -> bool:
+        return self._args.debug
+

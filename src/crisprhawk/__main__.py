@@ -11,6 +11,8 @@ on-targets specificity.
 
 Usage:
     crisprhawk search -f <fasta> -r <bedfile> -v <vcf> -p <pam> -g <guide-length> -o <output-dir>
+    crisprhawk convert-gnomad-vcf -d <vcf-dir> -o <output-dir>
+    crisprhawk prepare-data-crisprme --report <crisprhawk-report> -o <output-dir>
 
 Run 'crisprhawk -h/--help' to display the complete help
 """
@@ -19,8 +21,9 @@ from .crisprhawk_argparse import (
     CrisprHawkArgumentParser,
     CrisprHawkSearchInputArgs,
     CrisprHawkConverterInputArgs,
+    CrisprHawkPrepareDataInputArgs,
 )
-from .crisprhawk import crisprhawk_search, crisprhawk_converter
+from .crisprhawk import crisprhawk_search, crisprhawk_converter, crisprhawk_prepare_data_crisprme
 from .exception_handlers import sigint_handler
 from .crisprhawk_version import __version__
 from .utils import TOOLNAME
@@ -34,7 +37,8 @@ import os
 # crisprhawk commands
 SEARCH = "search"
 CONVERTGNOMADVCF = "convert-gnomad-vcf"
-COMMANDS = [SEARCH, CONVERTGNOMADVCF]
+PREPAREDATACRISPRME = "prepare-data-crisprme"
+COMMANDS = [SEARCH, CONVERTGNOMADVCF, PREPAREDATACRISPRME]
 
 
 def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
@@ -65,6 +69,7 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
     # crisprhawk convert-gnomad-vcf command
     parser_converter = create_converter_parser(subparsers)
     # crisprhawk prepare-data-crisprme command
+    parser_prepare = create_parser_prepare_data(subparsers)
     return parser
 
 
@@ -359,6 +364,53 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
     return parser_converter
 
 
+def create_parser_prepare_data(subparser: _SubParsersAction) -> _SubParsersAction:
+    parser_prepare = subparser.add_parser(
+        PREPAREDATACRISPRME,
+        usage="CRISPR-HAWK prepare-data-crisprme {version}\n\nUsage:\n"
+        "\tcrisprhawk prepare-data-crisprme --report <crisprhawk-report> -o "
+        "<output-dir>\n\n",
+        description="Generate guide files from a CRISPR-HAWK report for "
+        "downstream analysis with CRISPRme. For each guide listed in the report, "
+        "this utility creates a guide file compatible with CRISPRme, enabling "
+        "variant- and haplotype-aware off-target prediction",
+        help=f"generate CRISPRme-compatible guide files from a CRISPR-HAWK report",
+    )
+    parser_prepare.add_argument(
+        "--report",
+        type=str,
+        dest="report",
+        metavar="CRISPRHAWK-REPORT",
+        required=True,
+        help="path to the CRISPR-HAWK report file containing guide sequences",
+    )
+    parser_prepare.add_argument(
+        "--create-pam-file",
+        action="store_true",
+        dest="create_pam",
+        help="If set, a PAM file suitable for CRISPRme will also be generated "
+        "in the same output directory (default: disabled)"
+    )
+    parser_prepare.add_argument(
+        "-o",
+        "--outdir",
+        type=str,
+        metavar="OUTDIR",
+        dest="outdir",
+        nargs="?",
+        default=os.getcwd(),
+        help="Directory where the guide (and optional PAM) files will be saved "
+        "(default: current working directory)",
+    )
+    parser_prepare.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Enter debug mode and trace the full error stack",
+    )
+    return parser_prepare
+
+
 def main():
     start = time()  # track elapsed time
     try:
@@ -367,9 +419,11 @@ def main():
             parser.error_noargs()
         args = parser.parse_args(sys.argv[1:])  # parse input args
         if args.command == SEARCH:  # search command
-            crisprhawk_search(CrisprHawkSearchInputArgs(args, parser))  # type: ignore
+            crisprhawk_search(CrisprHawkSearchInputArgs(args, parser))
         elif args.command == CONVERTGNOMADVCF:  # convert-gnoamd-vcf command
             crisprhawk_converter(CrisprHawkConverterInputArgs(args, parser))
+        elif args.command == PREPAREDATACRISPRME:  # prepare-data-crisprme command
+            crisprhawk_prepare_data_crisprme(CrisprHawkPrepareDataInputArgs(args, parser))
     except KeyboardInterrupt as e:
         sigint_handler()  # catch SIGINT and exit gracefully
     sys.stdout.write(f"{TOOLNAME} - Elapsed time {(time() - start):.2f}s\n")
