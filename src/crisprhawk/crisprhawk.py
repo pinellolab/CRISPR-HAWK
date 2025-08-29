@@ -1,6 +1,10 @@
 """ """
 
-from .crisprhawk_argparse import CrisprHawkSearchInputArgs, CrisprHawkConverterInputArgs, CrisprHawkPrepareDataInputArgs
+from .crisprhawk_argparse import (
+    CrisprHawkSearchInputArgs,
+    CrisprHawkConverterInputArgs,
+    CrisprHawkPrepareDataInputArgs,
+)
 from .region_constructor import construct_regions
 from .haplotypes import reconstruct_haplotypes
 from .haplotype import Haplotype

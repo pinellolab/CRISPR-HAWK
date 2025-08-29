@@ -23,7 +23,11 @@ from .crisprhawk_argparse import (
     CrisprHawkConverterInputArgs,
     CrisprHawkPrepareDataInputArgs,
 )
-from .crisprhawk import crisprhawk_search, crisprhawk_converter, crisprhawk_prepare_data_crisprme
+from .crisprhawk import (
+    crisprhawk_search,
+    crisprhawk_converter,
+    crisprhawk_prepare_data_crisprme,
+)
 from .exception_handlers import sigint_handler
 from .crisprhawk_version import __version__
 from .utils import TOOLNAME
@@ -389,7 +393,7 @@ def create_parser_prepare_data(subparser: _SubParsersAction) -> _SubParsersActio
         action="store_true",
         dest="create_pam",
         help="If set, a PAM file suitable for CRISPRme will also be generated "
-        "in the same output directory (default: disabled)"
+        "in the same output directory (default: disabled)",
     )
     parser_prepare.add_argument(
         "-o",
@@ -423,7 +427,9 @@ def main():
         elif args.command == CONVERTGNOMADVCF:  # convert-gnoamd-vcf command
             crisprhawk_converter(CrisprHawkConverterInputArgs(args, parser))
         elif args.command == PREPAREDATACRISPRME:  # prepare-data-crisprme command
-            crisprhawk_prepare_data_crisprme(CrisprHawkPrepareDataInputArgs(args, parser))
+            crisprhawk_prepare_data_crisprme(
+                CrisprHawkPrepareDataInputArgs(args, parser)
+            )
     except KeyboardInterrupt as e:
         sigint_handler()  # catch SIGINT and exit gracefully
     sys.stdout.write(f"{TOOLNAME} - Elapsed time {(time() - start):.2f}s\n")

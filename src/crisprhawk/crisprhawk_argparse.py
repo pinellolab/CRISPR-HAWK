@@ -395,7 +395,7 @@ class CrisprHawkConverterInputArgs:
     @property
     def debug(self) -> bool:
         return self._args.debug
-    
+
 
 class CrisprHawkPrepareDataInputArgs:
 
@@ -429,4 +429,3 @@ class CrisprHawkPrepareDataInputArgs:
     @property
     def debug(self) -> bool:
         return self._args.debug
-
