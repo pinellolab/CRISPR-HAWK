@@ -16,6 +16,8 @@ import os
 # define static variables shared across software modules
 TOOLNAME = "CRISPR-HAWK"  # tool name
 COMMAND = "crisprhawk"  # command line call
+# define OS systems
+OSSYSTEMS = ["Linux", "Darwin", "Windows"]
 # define verbosity levels
 VERBOSITYLVL = [0, 1, 2, 3]
 # dna alphabet

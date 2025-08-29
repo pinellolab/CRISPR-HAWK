@@ -529,37 +529,40 @@ def search_offtargets(
     region: Region,
     functional_annotation: str,
     gene_annotation: str,
-    write_offtargets_report: bool,
     threads: int,
     outdir: str,
     verbosity: int,
     debug: bool,
-) -> List[Guide]:
-    print_verbosity(
-        f"Estimating off-targets for {len(guides)} guides", verbosity, VERBOSITYLVL[3]
-    )
-    start = time()
-    # prepare arguments for parallel processing
-    argslist = _prepare_processing_args(
-        guides,
-        pam,
-        genome,
-        functional_annotation,
-        gene_annotation,
-        write_offtargets_report,
-        verbosity,
-        debug,
-    )
-    # execute parallel processing
-    results = _execute_parallel_processing(argslist, threads)
-    # update guides and collect report data
-    updated_guides, offtarget_lines = _update_guides_from_results(results)
-    # write off-targets report if requested
-    if write_offtargets_report and offtarget_lines:
-        report_offtargets(offtarget_lines, region, outdir, verbosity, debug)
-    print_verbosity(
-        f"Off-targets estimation completed in {(time() - start):.2f}s",
-        verbosity,
-        VERBOSITYLVL[3],
-    )
-    return updated_guides
+) -> None:
+# ) -> List[Guide]:
+    
+    print("searching offtargets...")
+
+    # print_verbosity(
+    #     f"Estimating off-targets for {len(guides)} guides", verbosity, VERBOSITYLVL[3]
+    # )
+    # start = time()
+    # # prepare arguments for parallel processing
+    # argslist = _prepare_processing_args(
+    #     guides,
+    #     pam,
+    #     genome,
+    #     functional_annotation,
+    #     gene_annotation,
+    #     write_offtargets_report,
+    #     verbosity,
+    #     debug,
+    # )
+    # # execute parallel processing
+    # results = _execute_parallel_processing(argslist, threads)
+    # # update guides and collect report data
+    # updated_guides, offtarget_lines = _update_guides_from_results(results)
+    # # write off-targets report if requested
+    # if write_offtargets_report and offtarget_lines:
+    #     report_offtargets(offtarget_lines, region, outdir, verbosity, debug)
+    # print_verbosity(
+    #     f"Off-targets estimation completed in {(time() - start):.2f}s",
+    #     verbosity,
+    #     VERBOSITYLVL[3],
+    # )
+    # return updated_guides

@@ -367,7 +367,6 @@ def annotate_guides(
     pam: PAM,
     genome: str,
     estimate_offtargets: bool,
-    write_offtargets_report: bool,
     outdir: str,
     threads: int,
     verbosity: int,
@@ -406,21 +405,20 @@ def annotate_guides(
                 guides_list, region.contig, gene_annotations, 1, verbosity, debug
             )
         # TODO: use crispritz instead
-        # if estimate_offtargets:  # estimate off-targets for each guide
-        #     guides_list = search_offtargets(
-        #         guides_list,
-        #         pam,
-        #         genome,
-        #         region,
-        #         "",  # TODO: fix
-        #         gene_annotation,
-        #         write_offtargets_report,
-        #         threads,
-        #         outdir,
-        #         verbosity,
-        #         debug,
-        #     )
-        guides[region] = guides_list  # store annotated guides
+        if estimate_offtargets:  # estimate off-targets for each guide
+            guides_list = search_offtargets(
+                guides_list,
+                pam,
+                genome,
+                region,
+                "",  # TODO: fix
+                "",
+                threads,
+                outdir,
+                verbosity,
+                debug,
+            )
+        # guides[region] = guides_list  # store annotated guides
     print_verbosity(
         f"Annotation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )

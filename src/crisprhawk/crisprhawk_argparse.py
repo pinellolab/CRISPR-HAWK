@@ -1,6 +1,6 @@
 """ """
 
-from .utils import COMMAND, IUPAC, VERBOSITYLVL, TOOLNAME
+from .utils import warning, COMMAND, IUPAC, VERBOSITYLVL, TOOLNAME, OSSYSTEMS
 from .crisprhawk_version import __version__
 
 from argparse import (
@@ -16,6 +16,7 @@ from colorama import Fore
 from glob import glob
 
 import multiprocessing
+import platform
 import sys
 import os
 
@@ -233,11 +234,17 @@ class CrisprHawkSearchInputArgs:
             self._parser.error(
                 f"Mismatching number of gene annotation files and gene annotation column names"
             )
-        # # off-targets estimation
-        # if self._args.write_offtargets_report and not self._args.estimate_offtargets:
-        #     self._parser.error(
-        #         "Cannot write off-targets report if off-target estimation not enabled"
-        #     )
+        # off-targets estimation
+        if self._args.estimate_offtargets and platform.system() != OSSYSTEMS[0]:
+            warning(
+                f"Off-target estimation is only supported on {OSSYSTEMS[0]} "
+                "systems. Off-target estimation automatically disabled",
+                1
+            )  # always disply this warning
+            self._estimate_offtargets = False
+        else:
+            self._estimate_offtargets = self._args.estimate_offtargets
+        
         # threads number
         if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
             self._parser.error(
@@ -309,11 +316,7 @@ class CrisprHawkSearchInputArgs:
 
     @property
     def estimate_offtargets(self) -> bool:
-        return self._args.estimate_offtargets
-
-    @property
-    def write_offtargets_report(self) -> bool:
-        return self._args.write_offtargets_report
+        return self._estimate_offtargets
 
     @property
     def threads(self) -> int:

@@ -9,7 +9,7 @@ from .region_constructor import construct_regions
 from .haplotypes import reconstruct_haplotypes
 from .haplotype import Haplotype
 from .region import Region
-from .utils import print_verbosity, VERBOSITYLVL, IUPAC_ENCODER
+from .utils import print_verbosity, VERBOSITYLVL
 from .search_guides import search
 from .annotate import annotate_guides
 from .encoder import encode
@@ -156,7 +156,6 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         pam,
         args.fasta,
         args.estimate_offtargets,
-        args.write_offtargets_report,
         args.outdir,
         args.threads,
         args.verbosity,

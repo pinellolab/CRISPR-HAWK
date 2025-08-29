@@ -241,16 +241,9 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         action="store_true",
         dest="estimate_offtargets",
         default=False,
-        help="When enabled, the off-targets are estimated for each guide RNA "
-        "candidate ()",
-    )
-    parser_search.add_argument(
-        "--write-offtargets-report",
-        action="store_true",
-        dest="write_offtargets_report",
-        default=False,
-        help="When enabled, write a report for all off-targets found for each "
-        "guide RNA candidate. By default, off-targets are not reported",
+        help="estimate potential off-target sites on reference genome for each "
+        "guide RNA candidate using CRISPRitz. This feature is only supported on "
+        "Linux-based systems (default: disabled)"
     )
     parser_search.add_argument(
         "-t",
