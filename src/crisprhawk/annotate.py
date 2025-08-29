@@ -2,13 +2,14 @@
 
 from .crisprhawk_error import (
     CrisprHawkCfdScoreError,
+    CrisprHawkElevationScoreError,
     CrisprHawkAzimuthScoreError,
     CrisprHawkRs3ScoreError,
     CrisprHawkDeepCpf1ScoreError,
     CrisprHawkAnnotationError,
 )
 from .exception_handlers import exception_handler
-from .scores import azimuth, cfdon, rs3, deepcpf1
+from .scores import azimuth, cfdon, rs3, deepcpf1, elevationon
 from .bedfile import BedAnnotation
 from .guide import Guide, GUIDESEQPAD
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL
@@ -173,6 +174,30 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
     guides = flatten_list([gg[1] for _, gg in guide_groups.items()])  # type: ignore
     print_verbosity(
         f"CFDon scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+    )
+    return guides
+
+def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    print_verbosity("Computing Elevation-on score", verbosity, VERBOSITYLVL[3])
+    start = time()  # cfdon start time
+    guide_groups = group_guides_position(guides, debug)  # group guides by positions
+    for _, gg in guide_groups.items():
+        try:
+            elevationon_scores = elevationon(gg[0], gg[1])  # type: ignore
+        except Exception as e:
+            exception_handler(
+                CrisprHawkElevationScoreError,
+                "Elevation-on score calculation failed",
+                os.EX_DATAERR,
+                debug,
+                e,
+            )
+        for i, score in enumerate(elevationon_scores):
+            gg[1][i].set_elevationon_score(score)  # type: ignore
+    # revert grouped guides by position into list
+    guides = flatten_list([gg[1] for _, gg in guide_groups.items()])  # type: ignore
+    print_verbosity(
+        f"Elevation-on scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
     return guides
 
@@ -391,6 +416,9 @@ def annotate_guides(
             guides_list = cfdon_score(guides_list, verbosity, debug)
         if pam.cas_system == CPF1:  # cpf1 system pam
             guides_list = deepcpf1_score(guides_list, verbosity, debug)
+        if len(guides_list[0].guidepam) == 23 and not guides_list[0].right:
+            # elevation requires 23 bp long sequences, where last 3 bp are pam
+            guides_list = elevationon_score(guides_list, verbosity, debug)
         if annotations:  # annotate each guide
             guides_list = ann_guides(
                 guides_list,

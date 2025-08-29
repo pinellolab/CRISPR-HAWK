@@ -33,8 +33,8 @@ CPF1PAM = [
     "TTYN",
 ]
 SACAS9PAM = ["NNGRRT", "NNNRRT"]
-SPCAS9PAM = ["NGG", "NGA"]
-XCAS9PAM = ["NGK", "NGN"]
+SPCAS9PAM = ["NGG", "NGA", "NRG", "NGC"]
+XCAS9PAM = ["NGK", "NGN", "NNG"]
 
 # list cas systems
 CASX = 0

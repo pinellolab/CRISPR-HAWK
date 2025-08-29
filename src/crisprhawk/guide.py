@@ -150,6 +150,16 @@ class Guide:
             )
         self._cfdon_score = str(round_score(score))
 
+    def set_elevationon_score(self, score: float) -> None:
+        if not isinstance(score, float):
+            exception_handler(
+                TypeError,
+                f"Expected elevation-on score of type {float.__name__}, got {type(score).__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
+        self._elevationon_score = str(round_score(score))
+
     def set_func_ann(self, annotation: str) -> None:
         self._funcann.append(annotation)
 
@@ -239,6 +249,10 @@ class Guide:
     @property
     def cfdon_score(self) -> str:
         return self._cfdon_score
+    
+    @property
+    def elevationon_score(self) -> str:
+        return self._elevationon_score
 
     @property
     def hapid(self) -> str:

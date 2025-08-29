@@ -9,6 +9,7 @@ from .deepCpf1.seqdeepcpf1 import (
     compute_deepcpf1,
     SeqDeepCpf1,
 )
+from .elevation.elevation.cmds.predict import Predict
 from ..guide import Guide
 from ..utils import suppress_stdout, suppress_stderr
 
@@ -68,3 +69,13 @@ def deepcpf1(guides: List[str]) -> List[float]:
     load_deepcpf1_weights(model)  # load models weights
     model.eval()
     return compute_deepcpf1(model, emb_matrix)
+
+
+def elevationon(guide_ref: Guide, guides: List[Guide]) -> List[float]:
+    if not guide_ref:
+        return [np.nan] * len(guides)
+    p = Predict()  # initialize elevation predictor
+    wildtype = [guide_ref.guidepam] * len(guides)
+    offtarget = [g.guidepam for g in guides]
+    scores = p.execute(wildtype, offtarget)
+    return [s["CFD"][0][0] for s in scores]  # compute elevation score for on-targets    
