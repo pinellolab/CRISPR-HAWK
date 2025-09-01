@@ -9,7 +9,7 @@ from .deepCpf1.seqdeepcpf1 import (
     compute_deepcpf1,
     SeqDeepCpf1,
 )
-from .elevation.elevation.cmds.predict import Predict
+from .elevation.cmds.predict import Predict
 from ..guide import Guide
 from ..utils import suppress_stdout, suppress_stderr
 
