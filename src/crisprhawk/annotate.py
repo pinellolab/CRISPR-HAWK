@@ -18,7 +18,7 @@ from .pam import PAM, CASX, CPF1, SACAS9, SPCAS9, XCAS9
 from .offtargets import search_offtargets
 
 from collections import defaultdict
-from typing import List, Dict, Union, Set
+from typing import List, Dict, Union, Set, Tuple
 from time import time
 
 import numpy as np
@@ -133,33 +133,39 @@ def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Gui
     return guides
 
 
-def group_guides_position(
-    guides: List[Guide], debug: bool
-) -> Dict[str, Dict[int, Union[Guide, List[Guide]]]]:
-    # dictionary to map guides to positions (0 -> ref; 1 -> alt)
-    pos_guide = defaultdict(lambda: {0: None, 1: []})
+def group_guides_position(guides: List[Guide], debug: bool) -> Dict[str, Tuple[Union[None, Guide], List[Guide]]]: 
+
+    class _GuideGroup:
+        def __init__(self) -> None:
+            self._refguide = None
+            self._guides = []
+        
+        def to_tuple(self) -> Tuple[Union[Guide, None], List[Guide]]:
+            return (self._refguide, self._guides)
+
+    pos_guide = defaultdict(_GuideGroup)
     for guide in guides:
         poskey = f"{guide.start}_{guide.strand}"
         if guide.samples == "REF":  # reference guide
-            if pos_guide[poskey][0] is not None:
+            if pos_guide[poskey]._refguide is not None:
                 exception_handler(
                     CrisprHawkCfdScoreError,
-                    f"Duplicate REF guide at position {guide.start}? CFDon calculation failed",
+                    f"Duplicate REF guide at position {guide.start}? CFDon/Elevation-on calculation failed",
                     os.EX_DATAERR,
                     debug,
                 )
-            pos_guide[poskey][0] = guide  # type: ignore
-        pos_guide[poskey][1].append(guide)  # type: ignore
-    return pos_guide  # type: ignore
+            pos_guide[poskey]._refguide = guide   # type: ignore
+        pos_guide[poskey]._guides.append(guide)  
+    return {poskey: g.to_tuple() for poskey, g in pos_guide.items()}
 
 
 def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     print_verbosity("Computing CFDon score", verbosity, VERBOSITYLVL[3])
     start = time()  # cfdon start time
     guide_groups = group_guides_position(guides, debug)  # group guides by positions
-    for _, gg in guide_groups.items():
+    for _, (guide_ref, guides_g) in guide_groups.items():
         try:
-            cfdon_scores = cfdon(gg[0], gg[1], debug)  # type: ignore
+            cfdon_scores = cfdon(guide_ref, guides_g, debug)  
         except Exception as e:
             exception_handler(
                 CrisprHawkCfdScoreError,
@@ -169,9 +175,9 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
                 e,
             )
         for i, score in enumerate(cfdon_scores):
-            gg[1][i].set_cfdon_score(score)  # type: ignore
+            guides_g[i].set_cfdon_score(score)  
     # revert grouped guides by position into list
-    guides = flatten_list([gg[1] for _, gg in guide_groups.items()])  # type: ignore
+    guides = flatten_list([guides_g for _, (_, guides_g) in guide_groups.items()])
     print_verbosity(
         f"CFDon scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
@@ -181,21 +187,7 @@ def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[
     print_verbosity("Computing Elevation-on score", verbosity, VERBOSITYLVL[3])
     start = time()  # cfdon start time
     guide_groups = group_guides_position(guides, debug)  # group guides by positions
-    for _, gg in guide_groups.items():
-        try:
-            elevationon_scores = elevationon(gg[0], gg[1])  # type: ignore
-        except Exception as e:
-            exception_handler(
-                CrisprHawkElevationScoreError,
-                "Elevation-on score calculation failed",
-                os.EX_DATAERR,
-                debug,
-                e,
-            )
-        for i, score in enumerate(elevationon_scores):
-            gg[1][i].set_elevationon_score(score)  # type: ignore
-    # revert grouped guides by position into list
-    guides = flatten_list([gg[1] for _, gg in guide_groups.items()])  # type: ignore
+    guides = elevationon(guide_groups)
     print_verbosity(
         f"Elevation-on scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )

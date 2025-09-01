@@ -5,6 +5,9 @@ from .crisprhawk_error import CrisprHawkGuideError
 from .utils import round_score, RC
 
 from typing import Dict, Union, List
+
+import numpy as np
+
 import os
 
 GUIDESEQPAD = 10  # upstream and downstream sequence padding for guides scoring
@@ -88,6 +91,11 @@ class Guide:
     def _initialize_scores(self) -> None:
         # initialize scores for guide to NA
         self._azimuth_score = "NA"
+        self._rs3_score = "NA"
+        self._cfdon_score = "NA"
+        self._elevationon_score = "NA"
+        self._deepcpf1_score = "NA"
+        self._cfd = "NA"
 
     def _initialize_annotations(self) -> None:
         # initialize annotations for guide to NA
@@ -118,7 +126,8 @@ class Guide:
                 os.EX_DATAERR,
                 self._debug,
             )
-        self._azimuth_score = str(round_score(score))
+        if not np.isnan(score):
+            self._azimuth_score = str(round_score(score))
 
     def set_rs3_score(self, score: float) -> None:
         if not isinstance(score, float):
@@ -128,7 +137,8 @@ class Guide:
                 os.EX_DATAERR,
                 self._debug,
             )
-        self._rs3_score = str(round_score(score))
+        if not np.isnan(score):
+            self._rs3_score = str(round_score(score))
 
     def set_deepcpf1_score(self, score: float) -> None:
         if not isinstance(score, float):
@@ -138,7 +148,8 @@ class Guide:
                 os.EX_DATAERR,
                 self._debug,
             )
-        self._deepcpf1_score = str(round_score(score))
+        if not np.isnan(score):
+            self._deepcpf1_score = str(round_score(score))
 
     def set_cfdon_score(self, score: float) -> None:
         if not isinstance(score, float):
@@ -148,7 +159,8 @@ class Guide:
                 os.EX_DATAERR,
                 self._debug,
             )
-        self._cfdon_score = str(round_score(score))
+        if not np.isnan(score):
+            self._cfdon_score = str(round_score(score))
 
     def set_elevationon_score(self, score: float) -> None:
         if not isinstance(score, float):
@@ -158,7 +170,8 @@ class Guide:
                 os.EX_DATAERR,
                 self._debug,
             )
-        self._elevationon_score = str(round_score(score))
+        if not np.isnan(score):
+            self._elevationon_score = str(round_score(score))
 
     def set_func_ann(self, annotation: str) -> None:
         self._funcann.append(annotation)
@@ -170,7 +183,7 @@ class Guide:
         self._offtargets_num = offtargets_num
 
     def set_cfd(self, cfd: float) -> None:
-        self._cfd = cfd
+        self._cfd = str(round_score(cfd))
 
     @property
     def start(self) -> int:
@@ -292,7 +305,7 @@ class Guide:
         return self._offtargets_num
 
     @property
-    def cfd(self) -> float:
+    def cfd(self) -> str:
         if not hasattr(self, "_cfd"):  # always trace this error
             exception_handler(
                 AttributeError,
