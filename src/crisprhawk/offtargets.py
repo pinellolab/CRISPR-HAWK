@@ -534,8 +534,8 @@ def search_offtargets(
     verbosity: int,
     debug: bool,
 ) -> None:
-# ) -> List[Guide]:
-    
+    # ) -> List[Guide]:
+
     print("searching offtargets...")
 
     # print_verbosity(

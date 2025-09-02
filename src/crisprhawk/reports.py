@@ -65,7 +65,11 @@ def compute_strand_orientation(strand: int) -> str:
 
 
 def _update_report_fields_spcas9(
-    report: Dict[str, List[Any]], region_coordinates: str, guide: Guide, pamclass: str, pamlen: int
+    report: Dict[str, List[Any]],
+    region_coordinates: str,
+    guide: Guide,
+    pamclass: str,
+    pamlen: int,
 ) -> Dict[str, List[str]]:
     # update report fields for spcas9 system pam
     report[REPORTCOLS[1]].append(guide.start)  # start and stop position
@@ -90,7 +94,11 @@ def _update_report_fields_spcas9(
 
 
 def _update_report_fields_cpf1(
-    report: Dict[str, List[Any]], region_coordinates: str, guide: Guide, pamclass: str, pamlen: int
+    report: Dict[str, List[Any]],
+    region_coordinates: str,
+    guide: Guide,
+    pamclass: str,
+    pamlen: int,
 ) -> Dict[str, List[str]]:
     # update report fields for cpf1 system pam
     report[REPORTCOLS[1]].append(guide.start)  # start and stop position
@@ -113,7 +121,11 @@ def _update_report_fields_cpf1(
 
 
 def _update_report_fields_other(
-    report: Dict[str, List[Any]], region_coordinates: str, guide: Guide, pamclass: str, pamlen: int
+    report: Dict[str, List[Any]],
+    region_coordinates: str,
+    guide: Guide,
+    pamclass: str,
+    pamlen: int,
 ) -> Dict[str, List[str]]:
     # update report fields for other pam
     report[REPORTCOLS[1]].append(guide.start)  # start and stop position
@@ -142,10 +154,16 @@ def update_report_fields(
     pamclass: str,
 ) -> Dict[str, List[str]]:
     if pam.cas_system in [SPCAS9, XCAS9]:  # spcas9 system pam
-        return _update_report_fields_spcas9(report, region_coordinates, guide, pamclass, len(pam))
+        return _update_report_fields_spcas9(
+            report, region_coordinates, guide, pamclass, len(pam)
+        )
     elif pam.cas_system == CPF1:  # cpf1 system pam
-        return _update_report_fields_cpf1(report, region_coordinates, guide, pamclass, len(pam))
-    return _update_report_fields_other(report, region_coordinates, guide, pamclass, len(pam))
+        return _update_report_fields_cpf1(
+            report, region_coordinates, guide, pamclass, len(pam)
+        )
+    return _update_report_fields_other(
+        report, region_coordinates, guide, pamclass, len(pam)
+    )
 
 
 def update_optional_report_fields(
@@ -172,6 +190,7 @@ def update_optional_report_fields(
     #     if pam.cas_system in [SPCAS9, XCAS9]:  # spcas9 system pam
     #         report[REPORTCOLS[20]].append(guide.cfd)
     return report
+
 
 def insert_elevationon_reportcols(guidepam_len: int, right: bool) -> List[str]:
     if guidepam_len == 23 and not right:
@@ -298,6 +317,7 @@ def construct_report(
         )
         for region, guides_list in guides.items()
     }
+
 
 def _format_elevationon(reportcols: List[str]) -> List[str]:
     if REPORTCOLS[11] in reportcols:
@@ -501,7 +521,9 @@ def collapse_report_entries(
     # Define the columns to group by
     reportcols = report.columns.tolist()
     if pam.cas_system in [SPCAS9, XCAS9]:
-        group_cols = REPORTCOLS[:5] + REPORTCOLS[6:9] + REPORTCOLS[10:11] + REPORTCOLS[12:13]
+        group_cols = (
+            REPORTCOLS[:5] + REPORTCOLS[6:9] + REPORTCOLS[10:11] + REPORTCOLS[12:13]
+        )
     elif pam.cas_system == CPF1:
         group_cols = (
             REPORTCOLS[:5] + REPORTCOLS[6:7] + REPORTCOLS[9:10] + REPORTCOLS[12:13]

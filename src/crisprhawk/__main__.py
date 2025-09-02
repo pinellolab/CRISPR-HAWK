@@ -30,7 +30,7 @@ from .crisprhawk import (
 )
 from .exception_handlers import sigint_handler
 from .crisprhawk_version import __version__
-from .utils import TOOLNAME
+from .utils import prepare_package, TOOLNAME
 
 from argparse import _SubParsersAction
 from time import time
@@ -243,7 +243,7 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         default=False,
         help="estimate potential off-target sites on reference genome for each "
         "guide RNA candidate using CRISPRitz. This feature is only supported on "
-        "Linux-based systems (default: disabled)"
+        "Linux-based systems (default: disabled)",
     )
     parser_search.add_argument(
         "-t",
@@ -409,6 +409,7 @@ def create_parser_prepare_data(subparser: _SubParsersAction) -> _SubParsersActio
 
 
 def main():
+    prepare_package()  # check if models and data are available and uncompressed
     start = time()  # track elapsed time
     try:
         parser = create_parser_crisprhawk()  # parse input argument using custom parser

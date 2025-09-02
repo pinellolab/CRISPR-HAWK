@@ -9,6 +9,7 @@ from colorama import Fore
 import subprocess
 import tempfile
 import contextlib
+import zipfile
 import sys
 import io
 import os
@@ -283,3 +284,102 @@ def remove_file(filename: str) -> None:
         raise OSError(f"Failed to remove file {filename}") from e
     except Exception as e:
         raise Exception(f"Unexpected error while removing file {filename}") from e
+
+
+def _uncompress_azimuth_models(azimuthdir: str) -> None:
+    models_zip = os.path.join(azimuthdir, "saved_models.zip")  # azimuth models
+    if not os.path.isfile(models_zip):  # always trace these errors
+        raise FileNotFoundError(f"Cannot find Azimuth models: {models_zip}")
+    try:
+        with zipfile.ZipFile(models_zip, mode="r") as zipref:
+            zipref.extractall(path=azimuthdir)  # extract in azimuth directory
+    except (zipfile.BadZipFile, RuntimeError) as e:
+        raise zipfile.BadZipFile(
+            f"An error occurred while unzipping Azimuth models: {models_zip}"
+        ) from e
+    remove_file(models_zip)
+
+
+def _uncompress_cfd_models(cfdscoredir: str) -> None:
+    cfdmodels_zip = os.path.join(cfdscoredir, "models.zip")  # cfd models
+    if not os.path.isfile(cfdmodels_zip):  # always trace these errors
+        raise FileNotFoundError(f"Cannot find CFD models: {cfdmodels_zip}")
+    try:
+        with zipfile.ZipFile(cfdmodels_zip, mode="r") as zipref:
+            zipref.extractall(path=cfdscoredir)  # extract in cfd directory
+    except (zipfile.BadZipFile, RuntimeError) as e:
+        raise zipfile.BadZipFile(
+            f"An error occurred while unzipping CFD models: {cfdmodels_zip}"
+        ) from e
+    remove_file(cfdmodels_zip)
+
+
+def _uncompress_deepcpf1_models(deepcpf1dir: str) -> None:
+    deepcpf1_weights_zip = os.path.join(deepcpf1dir, "weights.zip")  # deepCpf1 models
+    if not os.path.isfile(deepcpf1_weights_zip):  # always trace these errors
+        raise FileNotFoundError(f"Cannot find DeepCpf1 models: {deepcpf1_weights_zip}")
+    try:
+        with zipfile.ZipFile(deepcpf1_weights_zip, mode="r") as zipref:
+            zipref.extractall(path=deepcpf1dir)  # extract in DeepCpf1 directory
+    except (zipfile.BadZipFile, RuntimeError) as e:
+        raise zipfile.BadZipFile(
+            f"An error occurred while unzipping DeepCpf1 models: {deepcpf1_weights_zip}"
+        ) from e
+    remove_file(deepcpf1_weights_zip)
+
+
+def _uncompress_elevation_models(elevationdir: str) -> None:
+    elevation_models_zip = os.path.join(elevationdir, "models.zip")  # elvation models
+    if not os.path.isfile(elevation_models_zip):  # always trace these errors
+        raise FileNotFoundError(f"Cannot find Elevation models: {elevation_models_zip}")
+    try:
+        with zipfile.ZipFile(elevation_models_zip, mode="r") as zipref:
+            zipref.extractall(path=elevationdir)  # extract in cfd directory
+    except (zipfile.BadZipFile, RuntimeError) as e:
+        raise zipfile.BadZipFile(
+            f"An error occurred while unzipping Elevation models: {elevation_models_zip}"
+        ) from e
+    remove_file(elevation_models_zip)
+    elevation_data_zip = os.path.join(elevationdir, "CRISPR.zip")  # elvation data
+    if not os.path.isfile(elevation_data_zip):  # always trace these errors
+        raise FileNotFoundError(f"Cannot find Elevation data: {elevation_data_zip}")
+    try:
+        with zipfile.ZipFile(elevation_data_zip, mode="r") as zipref:
+            zipref.extractall(path=elevationdir)  # extract in cfd directory
+    except (zipfile.BadZipFile, RuntimeError) as e:
+        raise zipfile.BadZipFile(
+            f"An error occurred while unzipping Elevation data: {elevation_data_zip}"
+        ) from e
+    remove_file(elevation_data_zip)
+
+
+def prepare_package() -> None:
+    # at first run uncompress ZIP files containing models and data used by
+    # the scoring algorithms used by crisprhawk
+    scoresdir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scores")
+    azimuthdir = os.path.join(scoresdir, "azimuth")  # azimuth
+    if not os.path.isdir(azimuthdir):  # always trace these errors
+        raise FileNotFoundError(f"Cannot find Azimuth score modules")
+    if not os.path.isdir(os.path.join(azimuthdir, "saved_models")):
+        warning("Extracting Azimuth models. This may take some time", 1)
+        _uncompress_azimuth_models(azimuthdir)  # uncompress azimuth models
+    cfdscoredir = os.path.join(scoresdir, "cfdscore")  # cfd
+    if not os.path.isdir(cfdscoredir):  # always trace these errors
+        raise FileNotFoundError(f"Cannot find CFD score modules")
+    if not os.path.isdir(os.path.join(cfdscoredir, "models")):
+        warning("Extracting CFD models. This may take some time", 1)
+        _uncompress_cfd_models(cfdscoredir)  # uncompress CFD models
+    deepcpf1dir = os.path.join(scoresdir, "deepCpf1")  # deepCpf1
+    if not os.path.isdir(deepcpf1dir):  # always trace these errors
+        raise FileNotFoundError(f"Cannot find DeepCpf1 score modules")
+    if not os.path.isdir(os.path.join(deepcpf1dir, "weights")):
+        warning("Extracting DeepCpf1 models. This may take some time", 1)
+        _uncompress_deepcpf1_models(deepcpf1dir)  # uncompress deepCpf1 models
+    elevationdir = os.path.join(scoresdir, "elevation")  # Elevation
+    if not os.path.isdir(elevationdir):  # always trace these errors
+        raise FileNotFoundError(f"Cannot find Elevation score modules")
+    if not os.path.isdir(os.path.join(elevationdir, "models")) and not os.path.isdir(
+        os.path.join(elevationdir, "CRISPR")
+    ):
+        warning("Extracting Elevation models and data. This may take some time", 1)
+        _uncompress_elevation_models(elevationdir)  # uncompress elevation models

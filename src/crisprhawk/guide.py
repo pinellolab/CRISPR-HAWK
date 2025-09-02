@@ -262,7 +262,7 @@ class Guide:
     @property
     def cfdon_score(self) -> str:
         return self._cfdon_score
-    
+
     @property
     def elevationon_score(self) -> str:
         return self._elevationon_score

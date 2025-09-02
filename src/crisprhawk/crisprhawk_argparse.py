@@ -239,12 +239,12 @@ class CrisprHawkSearchInputArgs:
             warning(
                 f"Off-target estimation is only supported on {OSSYSTEMS[0]} "
                 "systems. Off-target estimation automatically disabled",
-                1
+                1,
             )  # always disply this warning
             self._estimate_offtargets = False
         else:
             self._estimate_offtargets = self._args.estimate_offtargets
-        
+
         # threads number
         if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
             self._parser.error(

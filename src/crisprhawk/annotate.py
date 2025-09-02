@@ -133,13 +133,15 @@ def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Gui
     return guides
 
 
-def group_guides_position(guides: List[Guide], debug: bool) -> Dict[str, Tuple[Union[None, Guide], List[Guide]]]: 
+def group_guides_position(
+    guides: List[Guide], debug: bool
+) -> Dict[str, Tuple[Union[None, Guide], List[Guide]]]:
 
     class _GuideGroup:
         def __init__(self) -> None:
             self._refguide = None
             self._guides = []
-        
+
         def to_tuple(self) -> Tuple[Union[Guide, None], List[Guide]]:
             return (self._refguide, self._guides)
 
@@ -154,8 +156,8 @@ def group_guides_position(guides: List[Guide], debug: bool) -> Dict[str, Tuple[U
                     os.EX_DATAERR,
                     debug,
                 )
-            pos_guide[poskey]._refguide = guide   # type: ignore
-        pos_guide[poskey]._guides.append(guide)  
+            pos_guide[poskey]._refguide = guide  # type: ignore
+        pos_guide[poskey]._guides.append(guide)
     return {poskey: g.to_tuple() for poskey, g in pos_guide.items()}
 
 
@@ -165,7 +167,7 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
     guide_groups = group_guides_position(guides, debug)  # group guides by positions
     for _, (guide_ref, guides_g) in guide_groups.items():
         try:
-            cfdon_scores = cfdon(guide_ref, guides_g, debug)  
+            cfdon_scores = cfdon(guide_ref, guides_g, debug)
         except Exception as e:
             exception_handler(
                 CrisprHawkCfdScoreError,
@@ -175,7 +177,7 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
                 e,
             )
         for i, score in enumerate(cfdon_scores):
-            guides_g[i].set_cfdon_score(score)  
+            guides_g[i].set_cfdon_score(score)
     # revert grouped guides by position into list
     guides = flatten_list([guides_g for _, (_, guides_g) in guide_groups.items()])
     print_verbosity(
@@ -183,13 +185,16 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
     )
     return guides
 
+
 def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     print_verbosity("Computing Elevation-on score", verbosity, VERBOSITYLVL[3])
     start = time()  # cfdon start time
     guide_groups = group_guides_position(guides, debug)  # group guides by positions
     guides = elevationon(guide_groups)
     print_verbosity(
-        f"Elevation-on scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+        f"Elevation-on scores computed in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
     )
     return guides
 
