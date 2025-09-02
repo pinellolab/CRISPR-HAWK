@@ -288,7 +288,7 @@ def stacked_predictions(data, preds_base_model, models=['product', 'CFD', 'const
     if 'CFD' in models:
         # predicting
         if 'cfd_table_file' not in list(learn_options.keys()):
-            learn_options['cfd_table_file'] = settings.pj(settings.offtarget_data_dir, "STable 19 FractionActive_dlfc_lookup.xls")
+            learn_options['cfd_table_file'] = settings.pj(settings.offtarget_data_dir, "STable 19 FractionActive_dlfc_lookup.xlsx")
         # learn_options['cfd_table_file'] = settings.pj(settings.offtarget_data_dir, "STable 19 FractionActive_dlfc_lookup.xls")
         
         cfd = CFDModel(cfd_table_file=learn_options['cfd_table_file'])

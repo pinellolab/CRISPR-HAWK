@@ -33,10 +33,10 @@ def update_CRISPR(new_dir):
 CRISPR_dir = pj(repo_root, "CRISPR")
 seq_dir_template = pj(CRISPR_dir, 'gene_sequences/{gene_name}_sequence.txt')
 offtarget_data_dir = pj(CRISPR_dir, 'data/offtarget')
-if not os.path.exists(offtarget_data_dir):
-    update_CRISPR(pj(repo_root, "../CRISPR"))
-if not os.path.exists(offtarget_data_dir):
-    logging.warning("Unable to locate CRISPR repository.")
+# if not os.path.exists(offtarget_data_dir):
+#     update_CRISPR(pj(repo_root, "../CRISPR"))
+# if not os.path.exists(offtarget_data_dir):
+#     logging.warning("Unable to locate CRISPR repository.")
 
 # temp dir for pickle files
 # tmpdir = pj(repo_root, "tmp")
@@ -58,8 +58,8 @@ calibration_file = pj(tmpdir, 'calibration_models.pkl')
 cd33_file = pj(tmpdir, 'cd33.pkl')
 base_preds_dir = pj(tmpdir, 'base_preds')
 
-if not os.path.exists(tmpdir):
-    os.mkdir(tmpdir)
+# if not os.path.exists(tmpdir):
+#     os.mkdir(tmpdir)
 
 # aggregation model
 agg_model_file = pj(repo_root, 'models/aggregation_model.pkl')
