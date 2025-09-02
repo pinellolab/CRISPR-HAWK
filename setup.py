@@ -53,12 +53,18 @@ setup(
             "tests/*",
             "LICENSE.txt",
             "*.csv",
+            "*.zip"
         ],
         "crisprhawk.scores.cfdscore": [
             "models/*.pkl",
+            "*.zip"
         ],
         "crisprhawk.scores.deepCpf1": [
             "weights/*.h5",
+            "*.zip"
+        ],
+        "crisprhawk.scores.elevation": [
+            "*.zip",
         ],
     },
     zip_safe=False,
