@@ -2,6 +2,7 @@
 
 from .utils import warning, COMMAND, IUPAC, VERBOSITYLVL, TOOLNAME, OSSYSTEMS
 from .crisprhawk_version import __version__
+from .offtargets import check_crispritz, check_index_dir
 
 from argparse import (
     SUPPRESS,
@@ -245,9 +246,10 @@ class CrisprHawkSearchInputArgs:
                 1,
             )  # always disply this warning
             self._estimate_offtargets = False
+        elif not check_crispritz() or not check_index_dir(self._args.fasta, self._args.pam):
+            self._estimate_offtargets = False
         else:
             self._estimate_offtargets = self._args.estimate_offtargets
-
         # threads number
         if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
             self._parser.error(
@@ -264,6 +266,10 @@ class CrisprHawkSearchInputArgs:
     @property
     def fastas(self) -> List[str]:
         return self._fastas
+    
+    @property
+    def fastadir(self) -> str:
+        return self._args.fasta
 
     @property
     def fasta_idx(self) -> str:

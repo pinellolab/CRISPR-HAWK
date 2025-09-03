@@ -233,6 +233,7 @@ class Fasta:
                 self._debug,
             )
         self._contig = self._fasta.references[0]  # add contig name
+        self._length = self._fasta.lengths[0]  # add sequence length
 
     def __repr__(self):
         """Return a string representation of the Fasta object.
@@ -243,6 +244,9 @@ class Fasta:
             A string representation of the Fasta object.
         """
         return f"<{self.__class__.__name__} object>"
+    
+    def __len__(self) -> int:
+        return self._length
 
     def _search_index(self, faidx: Optional[str] = "") -> str:
         """Search for or validate a FASTA index.

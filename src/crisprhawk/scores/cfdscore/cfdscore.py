@@ -44,6 +44,9 @@ def compute_cfd(
         if wildtype[i].upper() == ntsg.upper():
             score *= 1  # no mismatch, score unchanged
             continue
+        elif wildtype[i].upper() == "-" or ntsg.upper() == "-":  # handle bulges
+            score *= 1
+            continue
         # build mismatch dictionary key
         key = (
             f"r{wildtype[i].upper()}:d{reverse_complement(ntsg.upper(), debug)},{i + 1}"

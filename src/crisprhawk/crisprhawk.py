@@ -154,7 +154,7 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.annotations,
         args.gene_annotations,
         pam,
-        fastas,
+        args.fastadir,
         args.estimate_offtargets,
         args.outdir,
         args.threads,
