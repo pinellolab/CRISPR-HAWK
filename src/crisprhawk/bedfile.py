@@ -13,7 +13,7 @@ from .region import Region, RegionList
 from .utils import warning
 
 
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict
 from pysam import TabixFile, tabix_index
 
 import sys
@@ -189,24 +189,12 @@ class Bed:
             )  # sourcery skip: raise-specific-error
         return coordinates
 
-    def extract_regions(self, fasta: Fasta) -> RegionList:
-        """Extract and return a list of regions from a FASTA file.
-
-        Extracts regions from the provided FASTA file based on the coordinates
-        stored in the Bed object.
-
-        Args:
-            fasta: The Fasta object representing the FASTA file.
-
-        Returns:
-            A RegionList object containing the extracted regions.
-
-        Raises:
-            AttributeError: If the _coordinates attribute is missing or None.
-        """
+    def extract_regions(self, fastas: Dict[str, Fasta]) -> RegionList:
         if not hasattr(self, "_coordinates") or self._coordinates is None:
             raise AttributeError("Missing coordinates list, cannot extract sequences")
-        return RegionList([Region(fasta.fetch(c), c) for c in self._coordinates])
+        return RegionList(
+            [Region(fastas[c.contig].fetch(c), c) for c in self._coordinates]
+        )
 
 
 class BedIterator:

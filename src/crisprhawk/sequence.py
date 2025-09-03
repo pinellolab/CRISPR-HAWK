@@ -225,7 +225,14 @@ class Fasta:
         # initialize FastaFile object with the previously computed index
         # (class is a wrapper for pysam FastaFile class)
         self._fasta = pysam.FastaFile(self._fname, filepath_index=self._faidx)
-        self._contigs = self._fasta.references  # add contig names
+        if len(self._fasta.references) != 1:  # fastas are chromosome-wise
+            exception_handler(
+                ValueError,
+                f"Unexpected number of contigs ({len(self._fasta.references)}) found in FASTA file {self._fname}",
+                os.EX_DATAERR,
+                self._debug,
+            )
+        self._contig = self._fasta.references[0]  # add contig name
 
     def __repr__(self):
         """Return a string representation of the Fasta object.
@@ -312,7 +319,7 @@ class Fasta:
             ValueError: If the contig is not found in the FASTA file or if sequence
                 extraction fails.
         """
-        if coord.contig not in self._contigs:  # conting not available in fasta
+        if coord.contig != self._contig:  # conting not available in fasta
             exception_handler(
                 ValueError,
                 f"Input contig ({coord.contig}) not available in {self._fname}",
@@ -336,6 +343,10 @@ class Fasta:
     @property
     def fname(self) -> str:
         return self._fname
+
+    @property
+    def contig(self) -> str:
+        return self._contig
 
 
 def _find_fai(fastafile: str) -> bool:

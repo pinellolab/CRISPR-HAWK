@@ -121,8 +121,8 @@ def guides_search(
 
 def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
     # extract genomic regions defined in input bed file
-    regions = construct_regions(
-        args.fasta, args.bedfile, args.fasta_idx, args.verbosity, args.debug
+    regions, fastas = construct_regions(
+        args.fastas, args.bedfile, args.fasta_idx, args.verbosity, args.debug
     )
     # reconstruct haplotypes for each input region
     haplotypes, variants_present, phased = reconstruct_haplotypes(
@@ -154,7 +154,7 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.annotations,
         args.gene_annotations,
         pam,
-        args.fasta,
+        fastas,
         args.estimate_offtargets,
         args.outdir,
         args.threads,

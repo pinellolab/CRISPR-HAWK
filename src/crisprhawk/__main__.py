@@ -10,7 +10,7 @@ efficiency assessment (support for Cas9 and Cpf1 systems), and analysis of genet
 on-targets specificity.
 
 Usage:
-    crisprhawk search -f <fasta> -r <bedfile> -v <vcf> -p <pam> -g <guide-length> -o <output-dir>
+    crisprhawk search -f <fasta-dir> -r <bedfile> -v <vcf-dir> -p <pam> -g <guide-length> -o <output-dir>
     crisprhawk convert-gnomad-vcf -d <vcf-dir> -o <output-dir>
     crisprhawk prepare-data-crisprme --report <crisprhawk-report> -o <output-dir>
 
@@ -98,7 +98,9 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         metavar="FASTA-FILE",
         dest="fasta",
         required=True,
-        help="Reference genome in FASTA format used for guide search",
+        help="Folder containing genome FASTA files for guide search. Each "
+        "chromosome must be in a separate FASTA file (e.g., chr1.fa, chr2.fa). "
+        "All files in the folder will be used as the reference genome",
     )
     parser_search.add_argument(
         "-i",

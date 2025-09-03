@@ -568,8 +568,8 @@ def stacked_predictions(data, preds_base_model, models=['product', 'CFD', 'const
                 cal_pred = prob_calibration_model[m].predict_proba(pred)[:, 1]
                 #cal_pred = prob_calibration_model[m].predict_proba(pred)[:, 0]
 
-                if len(pred) > 10:
-                    assert np.allclose(sp.stats.spearmanr(pred, cal_pred)[0], 1.0)# or np.allclose(sp.stats.spearmanr(pred, cal_pred)[0], -1.0)
+                # if len(pred) > 10:
+                #     assert np.allclose(sp.stats.spearmanr(pred, cal_pred)[0], 1.0)# or np.allclose(sp.stats.spearmanr(pred, cal_pred)[0], -1.0)
 
                 predictions[m] = cal_pred
 

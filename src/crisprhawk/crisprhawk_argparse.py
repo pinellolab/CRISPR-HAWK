@@ -153,10 +153,13 @@ class CrisprHawkSearchInputArgs:
             None
         """
         # fasta file
-        if not os.path.exists(self._args.fasta) or not os.path.isfile(self._args.fasta):
-            self._parser.error(f"Cannot find input FASTA {self._args.fasta}")
-        if os.stat(self._args.fasta).st_size <= 0:
-            self._parser.error(f"{self._args.fasta} is empty")
+        if not os.path.exists(self._args.fasta) or not os.path.isdir(self._args.fasta):
+            self._parser.error(f"Cannot find input FASTA folder {self._args.fasta}")
+        self._fastas = glob(os.path.join(self._args.fasta, "*.fa")) + glob(
+            os.path.join(self._args.fasta, "*.fasta")
+        )
+        if not self._fastas:
+            self._parser.error(f"No FASTA file found in {self._args.fasta}")
         # fasta index
         if self._args.fasta_idx and (
             not os.path.exists(self._args.fasta) or not os.path.isfile(self._args.fasta)
@@ -259,8 +262,8 @@ class CrisprHawkSearchInputArgs:
             )
 
     @property
-    def fasta(self) -> str:
-        return self._args.fasta
+    def fastas(self) -> List[str]:
+        return self._fastas
 
     @property
     def fasta_idx(self) -> str:

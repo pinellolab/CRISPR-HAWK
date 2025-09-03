@@ -16,6 +16,7 @@ from .utils import print_verbosity, flatten_list, VERBOSITYLVL
 from .region import Region
 from .pam import PAM, CASX, CPF1, SACAS9, SPCAS9, XCAS9
 from .offtargets import search_offtargets
+from .sequence import Fasta
 
 from collections import defaultdict
 from typing import List, Dict, Union, Set, Tuple
@@ -387,7 +388,7 @@ def annotate_guides(
     annotations: List[str],
     gene_annotations: List[str],
     pam: PAM,
-    genome: str,
+    genome: Dict[str, Fasta],
     estimate_offtargets: bool,
     outdir: str,
     threads: int,
