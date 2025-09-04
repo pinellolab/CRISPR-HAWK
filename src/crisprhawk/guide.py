@@ -99,6 +99,7 @@ class Guide:
 
     def _initialize_annotations(self) -> None:
         # initialize annotations for guide to NA
+        self._gc = "NA"
         self._funcann = []
         self._geneann = []
 
@@ -185,6 +186,9 @@ class Guide:
     def set_cfd(self, cfd: float) -> None:
         self._cfd = str(round_score(cfd))
 
+    def set_gc_content(self, gc_frac: float) -> None:
+        self._gc = str(gc_frac)  # percentage between 0 and 1
+
     @property
     def start(self) -> int:
         return self._start
@@ -266,6 +270,10 @@ class Guide:
     @property
     def elevationon_score(self) -> str:
         return self._elevationon_score
+    
+    @property
+    def gc(self) -> str:
+        return self._gc
 
     @property
     def hapid(self) -> str:

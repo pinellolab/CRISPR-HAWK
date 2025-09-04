@@ -7,6 +7,7 @@ from .crisprhawk_error import (
     CrisprHawkRs3ScoreError,
     CrisprHawkDeepCpf1ScoreError,
     CrisprHawkAnnotationError,
+    CrisprHawkGcContentError,
 )
 from .exception_handlers import exception_handler
 from .scores import azimuth, cfdon, rs3, deepcpf1, elevationon
@@ -20,6 +21,7 @@ from .sequence import Fasta
 
 from collections import defaultdict
 from typing import List, Dict, Union, Set, Tuple
+from Bio.SeqUtils import gc_fraction
 from time import time
 
 import numpy as np
@@ -383,6 +385,25 @@ def ann_guides(
     return guides_ann if guides_ann else guides
 
 
+def gc_content(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    print_verbosity("Computing GC content", verbosity, VERBOSITYLVL[3])
+    start = time()  # GC content calculation start time
+    try:  # compute gc content (PAM excluded)
+        for guide in guides:
+            guide.set_gc_content(gc_fraction(guide.guide))
+    except Exception as e:
+        exception_handler(
+            CrisprHawkGcContentError,
+            "GC content calculation failed",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
+    print_verbosity(
+        f"GC content computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+    )
+    return guides
+
 def annotate_guides(
     guides: Dict[Region, List[Guide]],
     annotations: List[str],
@@ -417,6 +438,8 @@ def annotate_guides(
         if len(guides_list[0].guidepam) == 23 and not guides_list[0].right:
             # elevation requires 23 bp long sequences, where last 3 bp are pam
             guides_list = elevationon_score(guides_list, verbosity, debug)
+        # compute gc content (pam excluded) for each guide
+        guides_list = gc_content(guides_list, verbosity, debug)
         if annotations:  # annotate each guide
             guides_list = ann_guides(
                 guides_list,
