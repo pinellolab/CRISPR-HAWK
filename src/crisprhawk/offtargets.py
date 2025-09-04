@@ -13,7 +13,6 @@ from .utils import (
     VERBOSITYLVL,
     DNA,
 )
-from .crispritz import CRISPRITZ, CRISPRITZDIR, CRISPRITZENV
 from .region_constructor import PADDING
 from .scores.cfdscore.cfdscore import load_mismatch_pam_scores
 from .offtarget import Offtarget
@@ -33,8 +32,9 @@ import subprocess
 import shutil
 import os
 
-
-
+# CRISPRitz
+CRISPRITZ = "crispritz.py"
+# off-targets report column names
 OTREPCNAMES = [
     "guide",
     "chrom",
@@ -642,7 +642,7 @@ def report_offtargets(
     print_verbosity("Writing off-targets report", verbosity, VERBOSITYLVL[1])
     start = time()  # track haplotypes table writing time
     offtargets = _read_offtargets(crispritz_targets_file, pam, debug)
-    
+
 
 
     report_fname = os.path.join(

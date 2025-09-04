@@ -3,6 +3,7 @@
 from .utils import warning, COMMAND, IUPAC, VERBOSITYLVL, TOOLNAME, OSSYSTEMS
 from .crisprhawk_version import __version__
 from .offtargets import check_crispritz, check_index_dir
+from .config_crispritz import CrispritzConfig
 
 from argparse import (
     SUPPRESS,
@@ -12,7 +13,7 @@ from argparse import (
     _MutuallyExclusiveGroup,
     Namespace,
 )
-from typing import Iterable, Optional, TypeVar, Tuple, Dict, NoReturn, List
+from typing import Iterable, Optional, TypeVar, Tuple, Dict, NoReturn, List, Union
 from colorama import Fore
 from glob import glob
 
@@ -239,17 +240,20 @@ class CrisprHawkSearchInputArgs:
                 f"Mismatching number of gene annotation files and gene annotation column names"
             )
         # off-targets estimation
-        if self._args.estimate_offtargets and platform.system() != OSSYSTEMS[0]:
+        if self._args.estimate_offtargets and platform.system() != OSSYSTEMS[1]:
             warning(
                 f"Off-target estimation is only supported on {OSSYSTEMS[0]} "
                 "systems. Off-target estimation automatically disabled",
                 1,
             )  # always disply this warning
             self._estimate_offtargets = False
-        elif not check_crispritz() or not check_index_dir(self._args.fasta, self._args.pam):
-            self._estimate_offtargets = False
+            self._crispritz_config = None
+        # elif not check_crispritz() or not check_index_dir(self._args.fasta, self._args.pam):
+        #     self._estimate_offtargets = False
+        #     self._crispritz_config = None
         else:
             self._estimate_offtargets = self._args.estimate_offtargets
+            self._crispritz_config = CrispritzConfig()  # read crispritz config
         # threads number
         if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
             self._parser.error(
@@ -326,6 +330,10 @@ class CrisprHawkSearchInputArgs:
     @property
     def estimate_offtargets(self) -> bool:
         return self._estimate_offtargets
+    
+    @property
+    def crispritz_config(self) -> Union[None, CrispritzConfig]:
+        return self._crispritz_config
 
     @property
     def threads(self) -> int:
@@ -441,3 +449,45 @@ class CrisprHawkPrepareDataInputArgs:
     @property
     def debug(self) -> bool:
         return self._args.debug
+    
+class CrisprHawkCrispritzConfigInputArgs:
+
+    def __init__(self, args: Namespace, parser: CrisprHawkArgumentParser) -> None:
+        self._args = args
+        self._parser = parser
+        self._check_consistency()  # check input args consistency
+
+    def _check_consistency(self):
+        # crispritz config file
+        if self._args.targets_dir:
+            if not os.path.exists(self._args.targets_dir) and not os.path.isdir(self._args.targets_dir):
+                self._parser.error(f"Cannot find targets directory {self._args.targets_dir}")
+        # show option
+        if (self._args.env_name or self._args.targets_dir or self._args.reset or self._args.validate) and self._args.show:
+            self._parser.error(f"--show options cannot be used with other input arguments")
+        # reset option
+        if (self._args.env_name or self._args.targets_dir or self._args.show or self._args.validate) and self._args.reset:
+            self._parser.error(f"--reset options cannot be used with other input arguments")
+        # validate option
+        if (self._args.env_name or self._args.targets_dir or self._args.reset or self._args.show) and self._args.validate:
+            self._parser.error(f"--validate options cannot be used with other input arguments")
+
+    @property
+    def env_name(self) -> str:
+        return self._args.env_name
+
+    @property
+    def targets_dir(self) -> str:
+        return self._args.targets_dir
+
+    @property
+    def show(self) -> bool:
+        return self._args.show
+
+    @property
+    def reset(self) -> bool:
+        return self._args.reset
+    
+    @property
+    def validate(self) -> bool:
+        return self._args.validate

@@ -4,7 +4,9 @@ from .crisprhawk_argparse import (
     CrisprHawkSearchInputArgs,
     CrisprHawkConverterInputArgs,
     CrisprHawkPrepareDataInputArgs,
+    CrisprHawkCrispritzConfigInputArgs,
 )
+from .config_crispritz import CrispritzConfig, config_crispritz
 from .region_constructor import construct_regions
 from .haplotypes import reconstruct_haplotypes
 from .haplotype import Haplotype
@@ -22,6 +24,7 @@ from .pam import PAM
 
 from typing import Dict, List
 from time import time
+import sys
 
 
 def encode_pam(pamseq: str, verbosity: int, debug: bool) -> PAM:
@@ -120,6 +123,9 @@ def guides_search(
 
 
 def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
+    print(args.crispritz_config)
+    exit()
+
     # extract genomic regions defined in input bed file
     regions, fastas = construct_regions(
         args.fastas, args.bedfile, args.fasta_idx, args.verbosity, args.debug
@@ -196,3 +202,19 @@ def crisprhawk_converter(args: CrisprHawkConverterInputArgs) -> None:
 
 def crisprhawk_prepare_data_crisprme(args: CrisprHawkPrepareDataInputArgs) -> None:
     prepare_data_crisprme(args.report, args.create_pam, args.outdir, args.debug)
+
+
+def crisprhawk_crispritz_config(args: CrisprHawkCrispritzConfigInputArgs) -> None:
+    config = CrispritzConfig()  # load current config file
+    if args.env_name or args.targets_dir:  # change config data
+        config_crispritz(config, args.env_name, args.targets_dir)  
+    if args.show:  # display config
+        sys.stdout.write(f"Current config:\n{config.show_config()}\n")
+    if args.reset:  # reset config file to default values
+        sys.stdout.write("Reverting CRISPRitz config file to default values\n")
+        config.reset_to_defaults()
+    if args.validate:  # validate current config file
+        sys.stdout.write("Validating CRISPRitz config file\n")
+        config.validate_config()
+        sys.stdout.write("CRISPRitz config file correctly validated\n")
+
