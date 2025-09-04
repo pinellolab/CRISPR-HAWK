@@ -1,9 +1,16 @@
 """ """
 
-from .utils import warning, COMMAND, IUPAC, VERBOSITYLVL, TOOLNAME, OSSYSTEMS
+from .utils import (
+    warning,
+    command_exists,
+    COMMAND,
+    IUPAC,
+    VERBOSITYLVL,
+    TOOLNAME,
+    OSSYSTEMS,
+)
 from .crisprhawk_version import __version__
-from .offtargets import check_crispritz, check_index_dir
-from .config_crispritz import CrispritzConfig
+from .config_crispritz import CrispritzConfig, check_crispritz_env, MAMBA
 
 from argparse import (
     SUPPRESS,
@@ -240,7 +247,7 @@ class CrisprHawkSearchInputArgs:
                 f"Mismatching number of gene annotation files and gene annotation column names"
             )
         # off-targets estimation
-        if self._args.estimate_offtargets and platform.system() != OSSYSTEMS[1]:
+        if self._args.estimate_offtargets and platform.system() != OSSYSTEMS[0]:
             warning(
                 f"Off-target estimation is only supported on {OSSYSTEMS[0]} "
                 "systems. Off-target estimation automatically disabled",
@@ -248,12 +255,29 @@ class CrisprHawkSearchInputArgs:
             )  # always disply this warning
             self._estimate_offtargets = False
             self._crispritz_config = None
-        # elif not check_crispritz() or not check_index_dir(self._args.fasta, self._args.pam):
-        #     self._estimate_offtargets = False
-        #     self._crispritz_config = None
         else:
             self._estimate_offtargets = self._args.estimate_offtargets
             self._crispritz_config = CrispritzConfig()  # read crispritz config
+            if not self._crispritz_config.set_command() or not check_crispritz_env(
+                self._crispritz_config.env_name
+            ):
+                # check if mamba/conda and crispritz environment are available
+                self._estimate_offtargets = False
+                self._crispritz_config = None
+        # crispritz genome index
+        if self._args.estimate_offtargets and not self._args.crispritz_index:
+            self._parser.error("Genome index required for off-targets estimation")
+        # check mm, bdna and brna arguments
+        if self._args.estimate_offtargets and self._args.mm < 0:
+            self._parser.error(f"Forbidden number of mismatches given: {self._args.mm}")
+        if self._args.estimate_offtargets and self._args.bdna < 0:
+            self._parser.error(
+                f"Forbidden number of DNA bulges given: {self._args.bdna}"
+            )
+        if self._args.estimate_offtargets and self._args.brna < 0:
+            self._parser.error(
+                f"Forbidden number of RNA bulges given: {self._args.brna}"
+            )
         # threads number
         if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
             self._parser.error(
@@ -270,7 +294,7 @@ class CrisprHawkSearchInputArgs:
     @property
     def fastas(self) -> List[str]:
         return self._fastas
-    
+
     @property
     def fastadir(self) -> str:
         return self._args.fasta
@@ -330,10 +354,26 @@ class CrisprHawkSearchInputArgs:
     @property
     def estimate_offtargets(self) -> bool:
         return self._estimate_offtargets
-    
+
     @property
     def crispritz_config(self) -> Union[None, CrispritzConfig]:
         return self._crispritz_config
+
+    @property
+    def crispritz_index(self) -> str:
+        return self._args.crispritz_index
+
+    @property
+    def mm(self) -> int:
+        return self._args.mm
+
+    @property
+    def bdna(self) -> int:
+        return self._args.bdna
+
+    @property
+    def brna(self) -> int:
+        return self._args.brna
 
     @property
     def threads(self) -> int:
@@ -449,7 +489,8 @@ class CrisprHawkPrepareDataInputArgs:
     @property
     def debug(self) -> bool:
         return self._args.debug
-    
+
+
 class CrisprHawkCrispritzConfigInputArgs:
 
     def __init__(self, args: Namespace, parser: CrisprHawkArgumentParser) -> None:
@@ -460,17 +501,42 @@ class CrisprHawkCrispritzConfigInputArgs:
     def _check_consistency(self):
         # crispritz config file
         if self._args.targets_dir:
-            if not os.path.exists(self._args.targets_dir) and not os.path.isdir(self._args.targets_dir):
-                self._parser.error(f"Cannot find targets directory {self._args.targets_dir}")
+            if not os.path.exists(self._args.targets_dir) and not os.path.isdir(
+                self._args.targets_dir
+            ):
+                self._parser.error(
+                    f"Cannot find targets directory {self._args.targets_dir}"
+                )
         # show option
-        if (self._args.env_name or self._args.targets_dir or self._args.reset or self._args.validate) and self._args.show:
-            self._parser.error(f"--show options cannot be used with other input arguments")
+        if (
+            self._args.env_name
+            or self._args.targets_dir
+            or self._args.reset
+            or self._args.validate
+        ) and self._args.show:
+            self._parser.error(
+                f"--show options cannot be used with other input arguments"
+            )
         # reset option
-        if (self._args.env_name or self._args.targets_dir or self._args.show or self._args.validate) and self._args.reset:
-            self._parser.error(f"--reset options cannot be used with other input arguments")
+        if (
+            self._args.env_name
+            or self._args.targets_dir
+            or self._args.show
+            or self._args.validate
+        ) and self._args.reset:
+            self._parser.error(
+                f"--reset options cannot be used with other input arguments"
+            )
         # validate option
-        if (self._args.env_name or self._args.targets_dir or self._args.reset or self._args.show) and self._args.validate:
-            self._parser.error(f"--validate options cannot be used with other input arguments")
+        if (
+            self._args.env_name
+            or self._args.targets_dir
+            or self._args.reset
+            or self._args.show
+        ) and self._args.validate:
+            self._parser.error(
+                f"--validate options cannot be used with other input arguments"
+            )
 
     @property
     def env_name(self) -> str:
@@ -487,7 +553,7 @@ class CrisprHawkCrispritzConfigInputArgs:
     @property
     def reset(self) -> bool:
         return self._args.reset
-    
+
     @property
     def validate(self) -> bool:
         return self._args.validate

@@ -96,6 +96,7 @@ class Guide:
         self._elevationon_score = "NA"
         self._deepcpf1_score = "NA"
         self._cfd = "NA"
+        self._elevation = "NA"
 
     def _initialize_annotations(self) -> None:
         # initialize annotations for guide to NA
@@ -183,8 +184,27 @@ class Guide:
     def set_offtargets(self, offtargets_num: int) -> None:
         self._offtargets_num = offtargets_num
 
-    def set_cfd(self, cfd: float) -> None:
-        self._cfd = str(round_score(cfd))
+    def set_cfd(self, score: float) -> None:
+        if not isinstance(score, float):
+            exception_handler(
+                TypeError,
+                f"Expected elevation-on score of type {float.__name__}, got {type(score).__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
+        if not np.isnan(score):
+            self._cfd = str(round_score(score))
+
+    def set_elevation(self, score: float) -> None:
+        if not isinstance(score, float):
+            exception_handler(
+                TypeError,
+                f"Expected elevation-on score of type {float.__name__}, got {type(score).__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
+        if not np.isnan(score):
+            self._elevation = str(round_score(score))
 
     def set_gc_content(self, gc_frac: float) -> None:
         self._gc = str(gc_frac)  # percentage between 0 and 1
@@ -270,7 +290,7 @@ class Guide:
     @property
     def elevationon_score(self) -> str:
         return self._elevationon_score
-    
+
     @property
     def gc(self) -> str:
         return self._gc
@@ -322,6 +342,17 @@ class Guide:
                 True,
             )
         return self._cfd
+
+    @property
+    def elevation(self) -> str:
+        if not hasattr(self, "_elevation"):  # always trace this error
+            exception_handler(
+                AttributeError,
+                f"Missing _elevation attribute on {self.__class__.__name__}",
+                os.EX_DATAERR,
+                True,
+            )
+        return self._elevation
 
 
 class GuideIterator:

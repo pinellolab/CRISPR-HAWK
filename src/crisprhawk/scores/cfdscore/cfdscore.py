@@ -37,10 +37,11 @@ def compute_cfd(
     pamscores: Dict[str, float],
     debug: bool,
 ) -> float:
-    assert len(wildtype) == len(sg) == 20
     score = 1.0  # initialize cfd score
     wildtype, sg = dna2rna(wildtype), dna2rna(sg)  # convert to RNA sequences
     for i, ntsg in enumerate(sg):
+        if i >= 20:  # handle off-targets bulges
+            break
         if wildtype[i].upper() == ntsg.upper():
             score *= 1  # no mismatch, score unchanged
             continue

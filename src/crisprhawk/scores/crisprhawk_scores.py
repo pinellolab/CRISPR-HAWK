@@ -53,7 +53,9 @@ def rs3(guides: List[str]) -> List[float]:
     return list(rs3scores)
 
 
-def cfdon(guide_ref: Union[None, Guide], guides: List[Guide], debug: bool) -> List[float]:
+def cfdon(
+    guide_ref: Union[None, Guide], guides: List[Guide], debug: bool
+) -> List[float]:
     if not guide_ref:
         return [np.nan] * len(guides)
     mmscores, pamscores = load_mismatch_pam_scores(debug)  # load scoring models
@@ -70,7 +72,16 @@ def deepcpf1(guides: List[str]) -> List[float]:
     model.eval()
     return compute_deepcpf1(model, emb_matrix)
 
-def elevationon(guide_groups: Dict[str, Tuple[Union[None, Guide], List[Guide]]]) -> List[Guide]:
+
+def elevation(wildtypes: List[str], offtargets: List[str]) -> List[float]:
+    p = Predict()  # initialize elevation predictor
+    preds = p.execute(wildtypes, offtargets)  # retrieve elevation scores
+    return [s for s in preds["linear-raw-stacker"]]
+
+
+def elevationon(
+    guide_groups: Dict[str, Tuple[Union[None, Guide], List[Guide]]],
+) -> List[Guide]:
     # optimize input for elevation-on score calculation
     wildtype, offtarget, guides = [], [], []
     for _, (guide_ref, guides_g) in guide_groups.items():
@@ -78,15 +89,16 @@ def elevationon(guide_groups: Dict[str, Tuple[Union[None, Guide], List[Guide]]])
             wildtype.extend([guide_ref] * len(guides_g))
             offtarget.extend(guides_g)
         else:
-            guides.extend(guides_g)        
-    p = Predict()  # initialize elevation predictor
+            guides.extend(guides_g)
     # prepare input data for elevation score
     wildtype_ = [g.guidepam.upper() for g in wildtype]
     offtarget_ = [g.guidepam.upper() for g in offtarget]
-    preds = p.execute(wildtype_, offtarget_)  # retrieve elevation scores
-    scores = [s for s in preds["linear-raw-stacker"]]
+    scores = elevation(wildtype_, offtarget_)
     for i, score in enumerate(scores):  # assign scores to guides
         offtarget[i].set_elevationon_score(score)
     for g in guides:  # set NA for guides without reference alternative
         g.set_elevationon_score(np.nan)
-    return guides + [g for g in offtarget]  
+    return guides + [g for g in offtarget]
+
+
+# TODO: aggregate elevation

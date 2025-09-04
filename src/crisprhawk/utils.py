@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import contextlib
 import zipfile
+import shutil
 import sys
 import io
 import os
@@ -383,3 +384,9 @@ def prepare_package() -> None:
     ):
         warning("Extracting Elevation models and data. This may take some time", 1)
         _uncompress_elevation_models(elevationdir)  # uncompress elevation models
+
+
+def command_exists(command: str) -> bool:
+    if shutil.which(command):
+        return True
+    return False

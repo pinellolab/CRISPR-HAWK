@@ -2,22 +2,21 @@
 
 from .crisprhawk_error import (
     CrisprHawkCfdScoreError,
-    CrisprHawkElevationScoreError,
     CrisprHawkAzimuthScoreError,
     CrisprHawkRs3ScoreError,
     CrisprHawkDeepCpf1ScoreError,
     CrisprHawkAnnotationError,
     CrisprHawkGcContentError,
 )
+from .config_crispritz import CrispritzConfig
 from .exception_handlers import exception_handler
 from .scores import azimuth, cfdon, rs3, deepcpf1, elevationon
 from .bedfile import BedAnnotation
 from .guide import Guide, GUIDESEQPAD
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL
 from .region import Region
-from .pam import PAM, CASX, CPF1, SACAS9, SPCAS9, XCAS9
+from .pam import PAM, CPF1, SPCAS9, XCAS9
 from .offtargets import search_offtargets
-from .sequence import Fasta
 
 from collections import defaultdict
 from typing import List, Dict, Union, Set, Tuple
@@ -404,13 +403,20 @@ def gc_content(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     )
     return guides
 
+
 def annotate_guides(
     guides: Dict[Region, List[Guide]],
     annotations: List[str],
     gene_annotations: List[str],
     pam: PAM,
-    genomedir: str,
     estimate_offtargets: bool,
+    crispritz_config: Union[None, CrispritzConfig],
+    mm: int,
+    bdna: int,
+    brna: int,
+    crispritz_index: str,
+    guidelen: int,
+    right: bool,
     outdir: str,
     threads: int,
     verbosity: int,
@@ -435,7 +441,7 @@ def annotate_guides(
             guides_list = cfdon_score(guides_list, verbosity, debug)
         if pam.cas_system == CPF1:  # cpf1 system pam
             guides_list = deepcpf1_score(guides_list, verbosity, debug)
-        if len(guides_list[0].guidepam) == 23 and not guides_list[0].right:
+        if guidelen + len(pam) == 23 and not right:
             # elevation requires 23 bp long sequences, where last 3 bp are pam
             guides_list = elevationon_score(guides_list, verbosity, debug)
         # compute gc content (pam excluded) for each guide
@@ -455,19 +461,23 @@ def annotate_guides(
             )
         # TODO: use crispritz instead
         if estimate_offtargets:  # estimate off-targets for each guide
-            # guides_list = search_offtargets(
-            #     guides_list,
-            #     pam,
-            #     genome,
-            #     region,
-            #     "",  # TODO: fix
-            #     "",
-            #     threads,
-            #     outdir,
-            #     verbosity,
-            #     debug,
-            # )
-            guides_list = search_offtargets(guides_list, pam, genomedir, region, 4, 0, 0, threads, outdir, verbosity, debug)
+            assert crispritz_config  # shouldn't be None if we got here
+            guides_list = search_offtargets(
+                guides_list,
+                pam,
+                crispritz_index,
+                region,
+                crispritz_config,
+                mm,
+                bdna,
+                brna,
+                guidelen,
+                right,
+                threads,
+                outdir,
+                verbosity,
+                debug,
+            )
         # guides[region] = guides_list  # store annotated guides
     print_verbosity(
         f"Annotation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]

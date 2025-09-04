@@ -161,7 +161,8 @@ class CrisprHawkDeepCpf1ScoreError(CrisprHawkScoreError):
 
     def __str__(self):
         return super().__str__()  # string representation for the exception
-    
+
+
 class CrisprHawkGcContentError(CrisprHawkScoreError):
     def __init__(self, value):
         # initialize exception object when raised
@@ -205,7 +206,8 @@ class CrisprHawkPrepareDataError(CrisprHawkError):
 
     def __str__(self):
         return super().__str__()  # string representation for the exception
-    
+
+
 class CrisprHawkCrispritzConfigError(CrisprHawkError):
     def __init__(self, value):
         # initialize exception object when raised

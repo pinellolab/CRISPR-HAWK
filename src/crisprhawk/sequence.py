@@ -244,7 +244,7 @@ class Fasta:
             A string representation of the Fasta object.
         """
         return f"<{self.__class__.__name__} object>"
-    
+
     def __len__(self) -> int:
         return self._length
 

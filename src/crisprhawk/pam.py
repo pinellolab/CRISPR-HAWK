@@ -45,7 +45,7 @@ XCAS9 = 4
 
 
 class PAM:
-    def __init__(self, pamseq: str, debug: bool):
+    def __init__(self, pamseq: str, right: bool, debug: bool):
         """Initializes a PAM object with a given sequence and debug mode.
 
         This method validates the PAM sequence, stores it in uppercase, and
@@ -62,7 +62,7 @@ class PAM:
             )
         self._sequence = pamseq.upper()  # store pam sequence
         self._sequence_rc = reverse_complement(pamseq, debug)  # reverse complement
-        self._assess_cas_system()  # assess pam's cas system
+        self._assess_cas_system(right)  # assess pam's cas system
 
     def __len__(self) -> int:
         """Returns the length of the PAM sequence.
@@ -112,17 +112,17 @@ class PAM:
         """
         return f"{self._sequence}"
 
-    def _assess_cas_system(self) -> None:
+    def _assess_cas_system(self, right: bool) -> None:
         self._cas_system = -1  # unknown cas system pam
         if self._sequence in CASXPAM:  # casx system pam
             self._cas_system = CASX
-        elif self._sequence in CPF1PAM:  # cpf1 cas system pam
+        elif self._sequence in CPF1PAM and right:  # cpf1 cas system pam
             self._cas_system = CPF1
         elif self._sequence in SACAS9PAM:  # sacas9 system pam
             self._cas_system = SACAS9
-        elif self._sequence in SPCAS9PAM:  # spcas9 system pam
+        elif self._sequence in SPCAS9PAM and not right:  # spcas9 system pam
             self._cas_system = SPCAS9
-        elif self._sequence in XCAS9PAM:  # xcas9 pam
+        elif self._sequence in XCAS9PAM and not right:  # xcas9 pam
             self._cas_system = XCAS9
 
     def encode(self, verbosity: int) -> None:

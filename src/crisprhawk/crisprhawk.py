@@ -27,7 +27,7 @@ from time import time
 import sys
 
 
-def encode_pam(pamseq: str, verbosity: int, debug: bool) -> PAM:
+def encode_pam(pamseq: str, right: bool, verbosity: int, debug: bool) -> PAM:
     """Creates and encodes a PAM object from a given sequence.
 
     This function constructs a PAM object, encodes its sequence, and logs the
@@ -44,7 +44,7 @@ def encode_pam(pamseq: str, verbosity: int, debug: bool) -> PAM:
     # construct pam object
     print_verbosity(f"Creating PAM object for PAM {pamseq}", verbosity, VERBOSITYLVL[1])
     start = time()  # encoding start time
-    pam = PAM(pamseq, debug)
+    pam = PAM(pamseq, right, debug)
     pam.encode(verbosity)  # encode pam sequence
     print_verbosity(
         f"PAM object for PAM {pam} created in {time() - start:.2f}s",
@@ -123,9 +123,6 @@ def guides_search(
 
 
 def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
-    print(args.crispritz_config)
-    exit()
-
     # extract genomic regions defined in input bed file
     regions, fastas = construct_regions(
         args.fastas, args.bedfile, args.fasta_idx, args.verbosity, args.debug
@@ -140,7 +137,7 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.debug,
     )
     # encode pam and haplotype sequences in bit for efficient guides search
-    pam = encode_pam(args.pam, args.verbosity, args.debug)
+    pam = encode_pam(args.pam, args.right, args.verbosity, args.debug)
     haplotypes_bits = encode_haplotypes(haplotypes, args.verbosity, args.debug)
     # search guide candidates within input regions
     guides = guides_search(
@@ -160,8 +157,14 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.annotations,
         args.gene_annotations,
         pam,
-        args.fastadir,
         args.estimate_offtargets,
+        args.crispritz_config,
+        args.mm,
+        args.bdna,
+        args.brna,
+        args.crispritz_index,
+        args.guidelen,
+        args.right,
         args.outdir,
         args.threads,
         args.verbosity,
@@ -207,7 +210,7 @@ def crisprhawk_prepare_data_crisprme(args: CrisprHawkPrepareDataInputArgs) -> No
 def crisprhawk_crispritz_config(args: CrisprHawkCrispritzConfigInputArgs) -> None:
     config = CrispritzConfig()  # load current config file
     if args.env_name or args.targets_dir:  # change config data
-        config_crispritz(config, args.env_name, args.targets_dir)  
+        config_crispritz(config, args.env_name, args.targets_dir)
     if args.show:  # display config
         sys.stdout.write(f"Current config:\n{config.show_config()}\n")
     if args.reset:  # reset config file to default values
@@ -217,4 +220,3 @@ def crisprhawk_crispritz_config(args: CrisprHawkCrispritzConfigInputArgs) -> Non
         sys.stdout.write("Validating CRISPRitz config file\n")
         config.validate_config()
         sys.stdout.write("CRISPRitz config file correctly validated\n")
-
