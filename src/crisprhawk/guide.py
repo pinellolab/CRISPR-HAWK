@@ -10,7 +10,7 @@ import numpy as np
 
 import os
 
-GUIDESEQPAD = 10  # upstream and downstream sequence padding for guides scoring
+GUIDESEQPAD = 50  # upstream and downstream sequence padding for guides scoring
 
 
 class Guide:
@@ -47,7 +47,10 @@ class Guide:
         self._initialize_annotations()  # initialize annotations to NAs
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} object; start={self._start} stop={self._stop} sequence={self._sequence} direction={self._direction}>"
+        return (
+            f"<{self.__class__.__name__} object; start={self._start} "
+            f"stop={self._stop} sequence={self._sequence} direction={self._direction}>"
+        )
 
     def __len__(self) -> int:
         return len(self._sequence)
@@ -95,6 +98,7 @@ class Guide:
         self._cfdon_score = "NA"
         self._elevationon_score = "NA"
         self._deepcpf1_score = "NA"
+        self._ooframe_score = "NA"
         self._cfd = "NA"
         self._elevation = "NA"
 
@@ -174,6 +178,16 @@ class Guide:
             )
         if not np.isnan(score):
             self._elevationon_score = str(round_score(score))
+
+    def set_ooframe_score(self, score: int) -> None:
+        if not isinstance(score, int):
+            exception_handler(
+                TypeError,
+                f"Expected out-of-frame score of type {int.__name__}, got {type(score).__name__}",
+                os.EX_DATAERR,
+                self._debug,
+            )
+        self._ooframe_score = str(score)
 
     def set_func_ann(self, annotation: str) -> None:
         self._funcann.append(annotation)
@@ -290,6 +304,10 @@ class Guide:
     @property
     def elevationon_score(self) -> str:
         return self._elevationon_score
+
+    @property
+    def ooframe_score(self) -> str:
+        return self._ooframe_score
 
     @property
     def gc(self) -> str:

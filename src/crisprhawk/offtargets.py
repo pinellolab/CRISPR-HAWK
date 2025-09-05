@@ -158,7 +158,11 @@ def search(
     print_verbosity("Searching off-targets with CRISPRitz", verbosity, VERBOSITYLVL[2])
     # define crispritz command
     targets_prefix = _format_targets_prefix(region, pam, guidelen, crispritz_dir)
-    crispritz_run = f"{crispritz_config.conda} run -n {crispritz_config.env_name} {CRISPRITZ} search {crispritz_index} {pam_fname} {guide_fname} {targets_prefix} -mm {mm} -bDNA {bdna} -bRNA {brna} -th {threads} -r"
+    crispritz_run = (
+        f"{crispritz_config.conda} run -n {crispritz_config.env_name} {CRISPRITZ} "
+        f"search {crispritz_index} {pam_fname} {guide_fname} {targets_prefix} -mm "
+        f"{mm} -bDNA {bdna} -bRNA {brna} -th {threads} -r"
+    )
     try:  # run crispritz to search for off-targets
         with suppress_stdout(), suppress_stderr():
             # suppress stdout and stderr to avoid cluttering the output
@@ -325,35 +329,44 @@ def _calculate_offtargets_map(
     return otmap
 
 
-def _calculate_global_cfd(offtargets: List[Offtarget]) -> float:
+def _calculate_global_cfd(offtargets: List[Offtarget], verbosity: int) -> float:
+    print_verbosity("Computing guide global CFD", verbosity, VERBOSITYLVL[2])
+    start = time()
     cfds = [0 if ot.cfd == "NA" else float(ot.cfd) for ot in offtargets]
+    print_verbosity(
+        f"Global CFD computed in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
     return 100 / (100 + sum(cfds))
 
 
-def _calculate_global_elevation(offtargets: List[Offtarget]) -> float:
+def _calculate_global_elevation(offtargets: List[Offtarget], verbosity: int) -> float:
+    print_verbosity("Computing guide global Elevation", verbosity, VERBOSITYLVL[2])
+    start = time()
     elevations = [
         0 if ot.elevation == "NA" else float(ot.elevation) for ot in offtargets
     ]
+    print_verbosity(
+        f"Global Elevation computed in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
     return 100 / (100 + sum(elevations))
 
 
 def annotate_guides_offtargets(
     offtargets: List[Offtarget], guides: List[Guide], verbosity: int
 ) -> List[Guide]:
-    print_verbosity("Annotating guides with off-targets", verbosity, VERBOSITYLVL[2])
-    start = time()
     otmap = _calculate_offtargets_map(offtargets, guides)
     for guide in guides:
         guide.set_offtargets(len(otmap[guide.guide]))  # set off-targets number
-        guide.set_cfd(_calculate_global_cfd(otmap[guide.guide]))  # set global CFD
+        guide.set_cfd(
+            _calculate_global_cfd(otmap[guide.guide], verbosity)
+        )  # set global CFD
         guide.set_elevation(
-            _calculate_global_elevation(otmap[guide.guide])
+            _calculate_global_elevation(otmap[guide.guide], verbosity)
         )  # set global elevation
-    print_verbosity(
-        f"Guides annotated with off-targets in {time() - start:.2f}s",
-        verbosity,
-        VERBOSITYLVL[3],
-    )
     return guides
 
 

@@ -186,8 +186,10 @@ def extract_guide_sequence(
     )
 
 
-def _valid_guide(pamguide: str, pam: PAM, direction: int, debug: bool) -> bool:
-    p = PAM(pamguide, debug)
+def _valid_guide(
+    pamguide: str, pam: PAM, direction: int, right: bool, debug: bool
+) -> bool:
+    p = PAM(pamguide, right, debug)
     p.encode(0)
     if direction == 0:  # positive
         return all((ntbit & pam.bits[i]).to_bool() for i, ntbit in enumerate(p.bits))
@@ -228,7 +230,7 @@ def resolve_guide(
     return [
         guide
         for guide in guide_alts
-        if _valid_guide(guide[idx : idx + len(pam)], pam, direction, debug)
+        if _valid_guide(guide[idx : idx + len(pam)], pam, direction, right, debug)
     ]
 
 

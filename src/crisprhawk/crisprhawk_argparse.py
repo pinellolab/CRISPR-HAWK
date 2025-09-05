@@ -255,15 +255,17 @@ class CrisprHawkSearchInputArgs:
             )  # always disply this warning
             self._estimate_offtargets = False
             self._crispritz_config = None
-        else:
+        if self._args.estimate_offtargets:
             self._estimate_offtargets = self._args.estimate_offtargets
             self._crispritz_config = CrispritzConfig()  # read crispritz config
             if not self._crispritz_config.set_command() or not check_crispritz_env(
                 self._crispritz_config.env_name
-            ):
-                # check if mamba/conda and crispritz environment are available
+            ):  # check if mamba/conda and crispritz environment are available
                 self._estimate_offtargets = False
                 self._crispritz_config = None
+        else:
+            self._estimate_offtargets = False
+            self._crispritz_config = None
         # crispritz genome index
         if self._args.estimate_offtargets and not self._args.crispritz_index:
             self._parser.error("Genome index required for off-targets estimation")

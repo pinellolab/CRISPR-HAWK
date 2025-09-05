@@ -9,6 +9,7 @@ from .deepCpf1.seqdeepcpf1 import (
     compute_deepcpf1,
     SeqDeepCpf1,
 )
+from .mhscore.microhomology import calculate_microhomology_score
 from .elevation.cmds.predict import Predict
 from ..guide import Guide
 from ..utils import suppress_stdout, suppress_stderr
@@ -73,6 +74,7 @@ def deepcpf1(guides: List[str]) -> List[float]:
     return compute_deepcpf1(model, emb_matrix)
 
 
+# TODO: aggregate elevation (currently using a hack)
 def elevation(wildtypes: List[str], offtargets: List[str]) -> List[float]:
     p = Predict()  # initialize elevation predictor
     preds = p.execute(wildtypes, offtargets)  # retrieve elevation scores
@@ -101,4 +103,9 @@ def elevationon(
     return guides + [g for g in offtarget]
 
 
-# TODO: aggregate elevation
+def ooframe_score(guides: List[Guide], idx: int) -> List[int]:
+    guides_seqs = [g.sequence[idx - 30 : idx + 30] for g in guides]
+    mhscores = [
+        calculate_microhomology_score(gs, int(len(gs) / 2)) for gs in guides_seqs
+    ]
+    return [mhscore.ooframe_score for mhscore in mhscores]

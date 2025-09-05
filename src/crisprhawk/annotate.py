@@ -7,10 +7,11 @@ from .crisprhawk_error import (
     CrisprHawkDeepCpf1ScoreError,
     CrisprHawkAnnotationError,
     CrisprHawkGcContentError,
+    CrisprHawkOOFrameScoreError,
 )
 from .config_crispritz import CrispritzConfig
 from .exception_handlers import exception_handler
-from .scores import azimuth, cfdon, rs3, deepcpf1, elevationon
+from .scores import azimuth, cfdon, rs3, deepcpf1, elevationon, ooframe_score
 from .bedfile import BedAnnotation
 from .guide import Guide, GUIDESEQPAD
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL
@@ -404,6 +405,32 @@ def gc_content(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     return guides
 
 
+def outofframe_score(
+    guides: List[Guide], guidelen: int, right: bool, verbosity: int, debug: bool
+) -> List[Guide]:
+    print_verbosity("Computing out-of-frame score", verbosity, VERBOSITYLVL[3])
+    start = time()  # out-of-frame score calculation start time
+    try:  # compute out-of-frame score
+        idx = GUIDESEQPAD if right else GUIDESEQPAD + guidelen
+        scores = ooframe_score(guides, idx)
+    except Exception as e:
+        exception_handler(
+            CrisprHawkOOFrameScoreError,
+            "Out-of-frame score calculation failed",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
+    for i, score in enumerate(scores):  # set out-of-frame score for each guide
+        guides[i].set_ooframe_score(score)
+    print_verbosity(
+        f"Out-of-frame score computed in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
+    return guides
+
+
 def annotate_guides(
     guides: Dict[Region, List[Guide]],
     annotations: List[str],
@@ -446,6 +473,8 @@ def annotate_guides(
             guides_list = elevationon_score(guides_list, verbosity, debug)
         # compute gc content (pam excluded) for each guide
         guides_list = gc_content(guides_list, verbosity, debug)
+        # compute out-of-frame score
+        guides_list = outofframe_score(guides_list, guidelen, right, verbosity, debug)
         if annotations:  # annotate each guide
             guides_list = ann_guides(
                 guides_list,

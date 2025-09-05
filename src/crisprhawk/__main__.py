@@ -96,30 +96,25 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "Cas9 systems), and DeepCpf1 (for Cpf1 systems) scores, CFDon score (for "
         "Cas systems) to evaluate genetic diversity impact on on-targets, and "
         "automated gRNA annotation",
+        add_help=False,
     )
-    parser_search.add_argument(
+    general_group = parser_search.add_argument_group("General options")
+    general_group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
+    )
+    required_group = parser_search.add_argument_group("Options")
+    required_group.add_argument(
         "-f",
         "--fasta",
         type=str,
         metavar="FASTA-FILE",
         dest="fasta",
         required=True,
-        help="Folder containing genome FASTA files for guide search. Each "
+        help="folder containing genome FASTA files for guide search. Each "
         "chromosome must be in a separate FASTA file (e.g., chr1.fa, chr2.fa). "
         "All files in the folder will be used as the reference genome",
     )
-    parser_search.add_argument(
-        "-i",
-        "--fasta-idx",
-        type=str,
-        metavar="FASTA-IDX",
-        dest="fasta_idx",
-        nargs="?",
-        default="",
-        help="Optional FASTA index file (FAI) for the input reference (default: "
-        "compute FAI)",
-    )
-    parser_search.add_argument(
+    required_group.add_argument(
         "-r",
         "--regions",
         type=str,
@@ -128,18 +123,7 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         required=True,
         help="BED file specifying genomic regions where guides will be searched",
     )
-    parser_search.add_argument(
-        "-v",
-        "--vcf",
-        type=str,
-        metavar="VCF-DIR",
-        dest="vcf",
-        nargs="?",
-        default="",
-        help="Optional folder storing VCF files to consider in the guide design. "
-        "(default: no variant-aware analysis)",
-    )
-    parser_search.add_argument(
+    required_group.add_argument(
         "-p",
         "--pam",
         type=str,
@@ -148,24 +132,16 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         required=True,
         help="PAM sequence used to identify candidate guides (e.g., NGG, NAG, " "etc.)",
     )
-    parser_search.add_argument(
+    required_group.add_argument(
         "-g",
         "--guide-len",
         type=int,
         metavar="GUIDE-LENGTH",
         dest="guidelen",
         required=True,
-        help="Length of the guide (excluding the PAM)",
+        help="length of the guide (excluding the PAM)",
     )
-    parser_search.add_argument(
-        "--right",
-        action="store_true",
-        dest="right",
-        default=False,
-        help="If set, guides are extracted downstream (right side) of the PAM "
-        "site. (default: guides are extracted upstream (left side))",
-    )
-    parser_search.add_argument(
+    required_group.add_argument(
         "-o",
         "--outdir",
         type=str,
@@ -173,50 +149,81 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         dest="outdir",
         nargs="?",
         default=os.getcwd(),
-        help="Output directory where reports and results will be saved. "
+        help="output directory where reports and results will be saved. "
         "(default: current working directory)",
     )
-    parser_search.add_argument(
+    optional_group = parser_search.add_argument_group("Optional arguments")
+    optional_group.add_argument(
+        "-i",
+        "--fasta-idx",
+        type=str,
+        metavar="FASTA-IDX",
+        dest="fasta_idx",
+        nargs="?",
+        default="",
+        help="optional FASTA index file (FAI) for the input reference (default: "
+        "compute FAI)",
+    )
+    optional_group.add_argument(
+        "-v",
+        "--vcf",
+        type=str,
+        metavar="VCF-DIR",
+        dest="vcf",
+        nargs="?",
+        default="",
+        help="optional folder storing VCF files to consider in the guide design. "
+        "(default: no variant-aware analysis)",
+    )
+    optional_group.add_argument(
+        "--right",
+        action="store_true",
+        dest="right",
+        default=False,
+        help="if set, guides are extracted downstream (right side) of the PAM "
+        "site. (default: guides are extracted upstream (left side))",
+    )
+    optional_group.add_argument(
         "--no-filter",
         action="store_true",
         dest="no_filter",
         default=False,
-        help="If set, all variants in the input VCF file will be considered "
+        help="if set, all variants in the input VCF file will be considered "
         "regardless of FILTER status (default: only variants with FILTER == "
         "'PASS' are used)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--annotation",
         type=str,
         metavar="ANNOTATION-BED",
         dest="annotations",
         nargs="*",
         default=[],
-        help="One or more BED files specifying genomic regions used to annotate "
+        help="one or more BED files specifying genomic regions used to annotate "
         "guide candidates. Each file should follow the standard BED format "
         "(at least: chrom, start, end), and should include additional annotation "
         "on the 4th column (default: no annotation)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--annotation-colnames",
         type=str,
         metavar="ANNOTATION-COLNAMES",
         dest="annotation_colnames",
         nargs="*",
         default=[],
-        help="List of custom column names to use in the final report. Each name "
+        help="list of custom column names to use in the final report. Each name "
         "corresponds to one of the input BED files provided with '--annotation'. "
         "Must match the number and order of files in '--annotation' (default: "
         "annotation columns are named 'annotation_<i>')",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--gene-annotation",
         type=str,
         metavar="GENE-ANNOTATION-BED",
         dest="gene_annotations",
         nargs="*",
         default=[],
-        help="One or more BED files specifying gene regions used to annotate guide "
+        help="one or more BED files specifying gene regions used to annotate guide "
         "candidates. The file should follow standard BED format (chrom, start, "
         "end) and should include 9 columns. The 7th column should indicate the "
         "gencode feature (e.g., start_codon, exon, etc.). The 9th column should "
@@ -224,7 +231,7 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "gene_name (e.g., gene_id=ENSG00000281518;gene_name=FOXO6;...;) "
         "(default: no gene annotation)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--gene-annotation-colnames",
         type=str,
         metavar="GENE-ANNOTATION-COLNAMES",
@@ -236,15 +243,15 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "file provided via '--gene-annotation' (default: column names assigned "
         "as 'gene_annotation_<i>')",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--haplotype-table",
         action="store_true",
         dest="haplotype_table",
         default=False,
-        help="When enabled, the haplotype table is returned in the output folder "
+        help="when enabled, the haplotype table is returned in the output folder "
         "as TSV file (default: disabled)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--estimate-offtargets",
         action="store_true",
         dest="estimate_offtargets",
@@ -253,16 +260,16 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "guide RNA candidate using CRISPRitz. This feature is only supported on "
         "Linux-based systems (default: disabled)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--crispritz-index",
         type=str,
         dest="crispritz_index",
         required=False,
         default="",
-        help="Path to the genome index directory generated by CRISPRitz. "
+        help="path to the genome index directory generated by CRISPRitz. "
         "Required only when using --estimate-offtargets (default: ignored)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--mm",
         type=int,
         dest="mm",
@@ -271,25 +278,25 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         help="maximum number of mismatches to consider during off-target "
         "estimation. Only used if --estimate-offtargets is enabled (default: 4)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--bdna",
         type=int,
         dest="bdna",
         required=False,
         default=0,
-        help="Maximum number of DNA bulges to consider during off-target "
+        help="maximum number of DNA bulges to consider during off-target "
         "estimation. Only used if --estimate-offtargets is enabled (default: 0)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--brna",
         type=int,
         dest="brna",
         required=False,
         default=0,
-        help="Maximum number of RNA bulges to consider during off-target "
+        help="maximum number of RNA bulges to consider during off-target "
         "estimation. Only used if --estimate-offtargets is enabled (default: 0)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "-t",
         "--threads",
         type=int,
@@ -297,23 +304,23 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         dest="threads",
         required=False,
         default=1,
-        help="Number of threads. Use 0 for using all available cores (default: 1)",
+        help="number of threads. Use 0 for using all available cores (default: 1)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--verbosity",
         type=int,
         metavar="VERBOSITY",
         dest="verbosity",
         nargs="?",
         default=1,  # minimal output
-        help="Verbosity level of output messages: 0 = Silent, 1 = Normal, 2 = "
+        help="verbosity level of output messages: 0 = Silent, 1 = Normal, 2 = "
         "Verbose, 3 = Debug (default: 1)",
     )
-    parser_search.add_argument(
+    optional_group.add_argument(
         "--debug",
         action="store_true",
         default=False,
-        help="Enter debug mode and trace the full error stack",
+        help="enter debug mode and trace the full error stack",
     )
     return parser_search
 
@@ -329,6 +336,11 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "sample-level information to enable population-aware variant representation.",
         help=f"convert gnomAD VCFs (v3.1 or newer) into {TOOLNAME}-compatible "
         "format",
+        add_help=False,
+    )
+    general_group = parser_converter.add_argument_group("General options")
+    general_group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
     )
     parser_converter.add_argument(
         "-d",
@@ -416,6 +428,11 @@ def create_parser_prepare_data(subparser: _SubParsersAction) -> _SubParsersActio
         "this utility creates a guide file compatible with CRISPRme, enabling "
         "variant- and haplotype-aware off-target prediction",
         help=f"generate CRISPRme-compatible guide files from a CRISPR-HAWK report",
+        add_help=False,
+    )
+    general_group = parser_prepare.add_argument_group("General options")
+    general_group.add_argument(
+        "-h", "--help", action="help", help="show this help message and exit"
     )
     parser_prepare.add_argument(
         "--report",
