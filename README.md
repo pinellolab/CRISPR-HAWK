@@ -4,7 +4,7 @@
 
 # CRISPR-HAWK
 
-CRISPR-HAWK is a comprehensive and scalable tool for designing guide RNAs (gRNAs) in CRISPR-Cas systems. Available as an offline tool with a user-friendly command-line interface, CRISPR-HAWK integrates large-scale human genetic variation datasets—such as the 1000 Genomes Project, the Human Genome Diversity Project (HGDP), and gnomAD—with orthogonal genomic annotations to systematically prioritize gRNAs targeting regions of interest. CRISPR-HAWK is Cas system-independent, supporting a wide range of nucleases including Cas9, SaCas9, Cpf1 (Cas12a), and others. It offers users full flexibility to define custom PAM sequences and guide lengths, enabling compatibility with emerging CRISPR technologies and tailored experimental requirements. The tool accounts for both single-nucleotide variants (SNVs) and small insertions and deletions (indels), and it is capable of handling individual- and population-specific haplotypes. This makes CRISPR-HAWK particularly suitable for both personalized and population-wide gRNA design. CRISPR-HAWK automates the entire workflow—from variant-aware preprocessing to gRNA discovery—delivering comprehensive outputs including ranked tables, annotated sequences, and high-quality figures. Its modular design ensures easy integration with existing pipelines and tools, such as [CRISPRme](https://github.com/pinellolab/CRISPRme) or [CRISPRitz](https://github.com/pinellolab/CRISPRitz), for subsequent off-target prediction and analysis of prioritized gRNAs.
+CRISPR-HAWK is a comprehensive and scalable tool for designing guide RNAs (gRNAs) and assess genetic variants impact on on-target sites in CRISPR-Cas systems. Available as an offline tool with a user-friendly command-line interface, CRISPR-HAWK integrates large-scale human genetic variation datasets—such as the 1000 Genomes Project, the Human Genome Diversity Project (HGDP), and gnomAD—with orthogonal genomic annotations to systematically prioritize gRNAs targeting regions of interest. CRISPR-HAWK is Cas system-independent, supporting a wide range of nucleases including Cas9, SaCas9, Cpf1 (Cas12a), and others. It offers users full flexibility to define custom PAM sequences and guide lengths, enabling compatibility with emerging CRISPR technologies and tailored experimental requirements. The tool accounts for both single-nucleotide variants (SNVs) and small insertions and deletions (indels), and it is capable of handling individual- and population-specific haplotypes. This makes CRISPR-HAWK particularly suitable for both personalized and population-wide gRNA design. CRISPR-HAWK automates the entire workflow—from variant-aware preprocessing to gRNA discovery—delivering comprehensive outputs including ranked tables, annotated sequences, and high-quality figures. Its modular design ensures easy integration with existing pipelines and tools, such as [CRISPRme](https://github.com/pinellolab/CRISPRme) or [CRISPRitz](https://github.com/pinellolab/CRISPRitz), for subsequent off-target prediction and analysis of prioritized gRNAs.
 
 ## Table of Contents
 
@@ -14,6 +14,13 @@ CRISPR-HAWK is a comprehensive and scalable tool for designing guide RNAs (gRNAs
 <br>&nbsp;&nbsp;1.2 [Install CRISPR-HAWK from Docker](#12-install-crispr-hawk-from-docker)
 <br>&nbsp;&nbsp;1.3 [Install CRISPR-HAWK from PyPI](#13-install-crispr-hawk-from-pypi)
 <br>&nbsp;&nbsp;1.4 [Install CRISPR-HAWK from Source Code](#14-install-crispr-hawk-from-source-code)
+<br>&nbsp;&nbsp;1.5 [Install External Software Dependencies](#15-install-external-software-dependencies)
+<br>2 [Usage](#2-usage)
+<br>&nbsp;&nbsp;2.1 [Search](#21-search)
+<br>3 [Test](#3-test)
+<br>4 [Citation](#4-citation)
+<br>5 [Contacts](#5-contacts)
+<br>6 [License](#6-license)
 
 ## 0 System Requirements
 
@@ -32,11 +39,11 @@ To ensure optimal performance, CRISPR-HAWK requires the following system specifi
 
     - Processing large-scale variant datasets (e.g., gnomAD data)
 
-⚠️ Note: For optimal performance and stability, especially when dealing with large-scale variant datasets, ensure that your system meets or exceeds the recommended specifications.
+> ⚠️ Note: For optimal performance and stability, especially when dealing with large-scale variant datasets, ensure that your system meets or exceeds the recommended specifications.
 
 ## 1 Installation
 
-This section provides step-by-step instructions to install CRISPR-HAWK. Choose the method that best suits your environment and preferences:
+This section provides step-by-step instructions to install CRISPR-HAWK and external dependencies. Choose the method that best suits your environment and preferences:
 
 - **[Install CRISPR-HAWK from Mamba/conda](#11-install-crispr-hawk-from-mambaconda)** (recommended)
 <br>Best for users seeking an isolated and reproducible environment with minimal manual dependency handling.
@@ -50,7 +57,7 @@ This section provides step-by-step instructions to install CRISPR-HAWK. Choose t
 - **[Install CRISPR-HAWK from source code](#14-install-crispr-hawk-from-source-code)**
 <br>Suitable for developers or contributors who want full control over the codebase or plan to customize CRISPR-HAWK.
 
-⚠️ **Note:** We recommend using the Mamba/Conda or Docker installation methods for most users, as they ensure the highest compatibility and stability across systems.
+> ⚠️ **Note:** We recommend using the Mamba/Conda or Docker installation methods for most users, as they ensure the highest compatibility and stability across systems.
 
 ### 1.1 Install CRISPR-HAWK from Mamba/Conda
 
@@ -70,7 +77,7 @@ Installing CRISPR-HAWK from source is ideal for developers, contributors, or use
 
 This method assumes you already have **Python 3.8** installed and accessible from your system’s environment.
 
-✅ **Prerequisites**
+**Prerequisites**
 
 - Python **3.8** (strictly required)
 
@@ -78,7 +85,7 @@ This method assumes you already have **Python 3.8** installed and accessible fro
 
 - A virtual environment (optional but recommended)
 
-🧱 **Installation Steps**
+**Installation Steps**
 
 **1. Clone the Repository**
 ```bash
@@ -100,7 +107,7 @@ pip install -e .  # development-mode installation
 
 The `.` tells `pip` to install the current directory as a package, including all dependencies specified in `setup.py` or `pyproject.toml`.
 
-🚀 **Quick Test**
+**Quick Test**
 
 Once installation is complete, verify that the command-line interface is working:
 ```bash
@@ -108,6 +115,50 @@ crisprhawk -h
 ```
 
 If the help message is displayed correctly, CRISPR-HAWK is successfully installed and callable from any directory in your system.
+
+### 1.5 Install External Software Dependencies
+
+CRISPR-HAWK relies on a few external tools for certain optional features, such as genome-wide **off-target nomination**. These dependencies are **not bundled** with the core CRISPR-HAWK installation and must be installed separately if you wish to enable advanced features.
+
+> ⚠️ **Note**: External tools are currently only supported on Linux-based systems. Windows and macOS users can still run the core pipeline (variant-aware gRNA search, scoring, annotation), but **off-target estimation** will not be available.
+
+> 💡 **Note**: Installing these tools requires Mamba or Conda to be available on your system. If you haven't installed Mamba yet, refer to the instructions in [Section 1.1](#11-install-crispr-hawk-from-mambaconda).
+
+#### Install CRISPRitz (for Off-target Estimation)
+
+[CRISPRitz](https://github.com/pinellolab/CRISPRitz) is an efficient tool for nominating CRISPR-Cas off-target sites across large genomes accounting for mismatches and DNA/RNA bulges. CRISPR-HAWK uses it to enable **fast, high-throughput off-target estimation** in the reference genome for the identified candidate gRNAs.
+
+> ⚠️ **Note**: CRISPRitz is required only if you plan to use the `--estimate-offtargets` feature in the `crisprhawk search` command.
+
+**Installation Steps**:
+
+1. Create a dedicated environment for CRISPRitz:
+```bash
+mamba create -n crispritz-crisprhawk python=3.8 -y
+```
+
+2. Activate the environment::
+```bash
+mamba activate crispritz-crisprhawk
+```
+
+3. Install CRISPRitz (latest version):
+```bash
+mamba install crispritz=2.6.6 -y
+```
+
+> 📝 **Why use a separate environment?**
+<br>This prevents potential conflicts between CRISPR-HAWK's and CRISPRitz’s dependencies, and ensures better reproducibility.
+
+
+**Test your installation**
+
+You can confirm that CRISPRitz is correctly installed and functional by running:
+```bash
+mamba run -n crispritz-crisprhawk crispritz.py --help
+```
+
+If everything is working, the CRISPRitz help menu should appear, displaying available options and usage instructions.
 
 ## 2 Usage
 
@@ -122,46 +173,45 @@ The search includes:
 
 * Support for any Cas system (Cas9, Cpf1, SaCas9, etc.)
 * Compatibility with custom PAM sequences and guide lengths
-* Consideration of individual or population-level variants (SNVs/indels) from VCF files
-* Scoring using **Azimuth**, **RS3**, **CFDon**, and **DeepCpf1**
-* Functional and gene annotation using user-specified BED files <!--* Optional estimation and reporting of **off-targets**-->
-* Output in detailed and structured reports (TSV, haplotype tables)
+* Variant-aware design from individual or population-level VCF files (SNVs and indels)
+* Scoring using **Azimuth**, **RS3**, **CFDon**, **Elevation-on**, and **DeepCpf1**
+* Functional and gene annotation using user-specified BED files 
+* Optional estimation and reporting of **off-targets**
+* Output in detailed and structured reports (TSV, haplotype tables, off-target tables)
 
 Usage:
 ```bash
-crisprhawk search -f <fasta> -r <bedfile> -v <vcf> -p <pam> -g <guide-length> -o <output-dir>
+crisprhawk search -f <fasta-dir> -r <bedfile> -v <vcf-dir> -p <pam> -g <guide-length> -o <output-dir>
 ```
+
+> ⚠️ **Note**: All FASTA files in <fasta-dir> must be one per chromosome (e.g., chr1.fa, chr2.fa, etc.).
 
 ---
 
-Arguments and Options:
-
-#### Required
+#### Required Arguments
 
 | Option                       | Description                                                                                                                                    |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-f`, `--fasta <FASTA-FILE>` | Path to the **reference genome** in FASTA format. Guides will be searched on this genome.                                                      |
-| `-r`, `--regions <BED-FILE>` | BED file specifying the **target genomic regions** where gRNAs will be searched (e.g., promoters, exons, or custom loci).                      |
-| `-v`, `--vcf <VCF-DIR>`      | *(Optional but recommended)* Folder containing **VCF files** for the variant-aware design. If omitted, only the reference genome will be used. |
+| `-f`, `--fasta <FASTA-DIR>` | Directory containing chromosome-separated FASTA files for the reference genome. All files will be used as reference input.                                                      |
+| `-r`, `--regions <BED-FILE>` | BED file defining the target regions where candidate gRNAs will be searched (e.g., promoters, exons, enhancers).                      |
+| `-v`, `--vcf <VCF-DIR>`      | *(Optional but recommended)* Directory containing per-chromosome VCF files for variant-aware guide design. If omitted, the tool performs reference-only analysis. |
 | `-p`, `--pam <PAM>`          | PAM sequence used to define valid gRNA targets (e.g., `NGG` for SpCas9, `TTTV` for Cpf1).                                                      |
-| `-g`, `--guide-len <LENGTH>` | Length of the guide RNA, excluding the PAM (typically 20 for SpCas9).                                                                          |
-| `-o`, `--outdir <DIR>`       | Output directory to store results, reports, and intermediate files. If not specified, defaults to the current working directory.               |
+| `-g`, `--guide-len <LENGTH>` | Length of the guide RNA (excluding PAM), e.g., 20 for SpCas9.                                                                         |
 
-#### Optional
+#### Optional Arguments
 
 | Option                                         | Description                                                                                                                                                                       |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `-i`, `--fasta-idx <FAI>`                      | Optional FASTA index file (`.fai`). If not provided, it will be computed automatically.                                                                                           |
 | `--right`                                      | By default, guides are extracted **upstream** of the PAM. Use this flag to extract them **downstream** (right side), useful for Cpf1 or other reverse-PAM systems.                |
 | `--no-filter`                                  | By default, only VCF variants with `FILTER == PASS` are considered. Use this flag to include **all variants**, regardless of filter status.                                       |
-| `--annotation <BED1 BED2 ...>`                 | Provide one or more **BED files** with custom genomic features (e.g., enhancers, DHS, regulatory elements). Must follow BED format and have at least 4 columns (name in the 4th). |
-| `--annotation-colnames <name1 name2 ...>`      | Custom column names for the annotations from the `--annotation` files. Must match the number and order of the provided BEDs.                                                      |
+| `--annotation <BED1 BED2 ...>`                 | Provide one or more BED files with **custom genomic** features (e.g., enhancers, DHS, regulatory elements). Must include a 4th column with annotation name. |
+| `--annotation-colnames <name1 name2 ...>`      | Custom column names for the annotations from the `--annotation` files. Must match the number and order of BED files.                                                      |
 | `--gene-annotation <GENE-BED1 GENE-BED2 ...>`  | One or more **gene annotation BED files** (9-column format). Must follow GENCODE-style structure, with gene name in the 9th column and gene feature (e.g., exon, UTR) in the 7th. |
 | `--gene-annotation-colnames <name1 name2 ...>` | Custom column names for gene annotations, matching the files in `--gene-annotation`.                                                                                              |
 | `--haplotype-table`                            | When enabled, a TSV file reporting haplotype-aware variants and their associated guide matches will be produced.                                                                  |
-| `--estimate-offtargets`                        | Enables **off-target site estimation** for each candidate guide (uses efficient genome-wide search).                                                                              |
-| `--write-offtargets-report`                    | When enabled, generates a detailed **off-target report** for each guide. Disabled by default for performance.                                                                     |
 | `-t`, `--threads <INT>`                        | Number of threads to use for parallel processing. Use `-t 0` to utilize **all available cores**. *(Default: 1)*                                                                   |
+| `-o`, `--outdir <DIR>`       | Output directory to store results, reports, and intermediate files. If not specified, defaults to the current working directory.               |
 | `--verbosity <LEVEL>`                          | Controls the verbosity of logs. Options: `0` = Silent, `1` = Normal, `2` = Verbose, `3` = Debug. *(Default: 1)*                                                                   |
 | `--debug`                                      | Enables **debug mode**, showing full stack traces and internal logs for troubleshooting.                                                                                          |
 
@@ -173,7 +223,7 @@ Example:
 crisprhawk search \
   -f hg38.fa \
   -r targets.bed \
-  -v gnomAD_chr22/ \
+  -v 1000G/ \
   -p NGG \
   -g 20 \
   -o results/ \
@@ -186,12 +236,154 @@ crisprhawk search \
 This will:
 
 * Search 20 bp gRNAs with an NGG PAM in `targets.bed`
-* Consider population variants from VCFs in `gnomAD_chr22/`
-* Annotate guides using custom regulatory and gene annotations <!--* Estimate and report off-targets-->
+* Consider population variants from VCFs in `1000G/`
+* Annotate guides using custom regulatory and gene annotations 
 * Run in parallel using 8 threads
 
+#### Off-targets Estimation (Optional)
+
+> 🐧 **Note**: Off-target estimation is only available on Linux-based operating systems and assumes you have successfully followed the installation instructions in the [Install CRISPRitz](#install-crispritz) section.
+
+CRISPR-HAWK supports genome-wide off-target nomination through integration with [CRISPRitz](https://github.com/pinellolab/CRISPRitz), enabling the identification of potential unintended gRNA binding sites across the reference genome.
+
+> ⚠️ **Important**: Off-target nomination in CRISPR-HAWK is limited to the reference genome only, for performance and scalability reasons. If you need to estimate off-targets while accounting for genetic variants (e.g., SNVs, indels, population haplotypes), we recommend using [CRISPRme](https://github.com/pinellolab/CRISPRme) — a specialized, variant-aware off-target analysis tool.
+
+When enabled, the off-target module allows:
+
+* Comprehensive search of potential off-targets in the reference genome
+
+* Support for mismatches and DNA/RNA bulges
+
+* Output of structured off-target reports for guide prioritization
+
+*Enabling Off-Target Search*
+
+To run off-target estimation, you must enable `--estimate-offtargets` and provide a pre-built genome index compatible with CRISPRitz.
+
+| Option                      | Description                                                                                          |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `--estimate-offtargets`     | Activates the off-target search pipeline for all candidate guides using CRISPRitz.                   |
+| `--crispritz-index <DIR>`   | Directory containing the CRISPRitz genome index. Must match the FASTA files provided with `--fasta`. |
+| `--mm <INT>`                | Max number of mismatches allowed in off-target search (default: 4).                                  |
+| `--bdna <INT>`              | Max number of DNA bulges allowed (default: 0).                                                       |
+| `--brna <INT>`              | Max number of RNA bulges allowed (default: 0).                                                       |
+
+Example:
+```bash
+crisprhawk search \
+  -f genome_fasta/ \
+  -r targets.bed \
+  -v 1000G/ \
+  -p NGG \
+  -g 20 \
+  -o results/ \
+  --estimate-offtargets \
+  --crispritz-index genome_library/NGG_2_hg38/ \
+  --mm 6 \
+  --bdna 1 \
+  --brna 1 \
+  -t 8
+```
+
+This will:
+
+* Design guides from `targets.bed`, using 1000G variants
+
+* Estimate genome-wide off-target sites (up to 6 mismatches, 1 bulge each)
+
+* Save off-targets in a detailed TSV file per guide
+
+* Use 8 threads for faster processing
 
 
+**Build a CRISPRitz Genome Index**
 
+To use CRISPRitz for off-target estimation, you must first generate an indexed version of your reference genome. The `index-genome` command in CRISPRitz precomputes a genome-wide searchable index for a specific PAM and guide configuration — similar to building a BWA index. This index is essential for fast and efficient off-target search, especially when allowing bulges (RNA or DNA) and scanning across large genomes or thousands of guide RNAs.
+
+*Required Inputs*
+
+1. **Output name of the genome index**
+  <br>This is the name of the directory that will store the generated index (e.g., `hg38_index/`).
+
+2. **Directory containing genome FASTA files**
+  <br>The genome must be split by chromosome — i.e., one file per chromosome (e.g., `chr1.fa`, `chr2.fa`, ...).
+
+3. **PAM configuration file**
+  <br>A text file containing:
+
+    * The full gRNA+PAM string with `N`s representing the guide length
+    <br>(e.g., `NNNNNNNNNNNNNNNNNNNNGG`)
+
+    * A space-separated number indicating the PAM length
+    <br>(e.g., `3` for NGG where the PAM is 3 bp)
+
+Example file content (`pamNGG.txt`):
+```
+NNNNNNNNNNNNNNNNNNNNGG 3
+```
+
+4. Maximum number of bulges to index (`-bMax`)
+  <br>This sets the maximum number of **DNA and RNA bulges** that can be used in future off-target searches using this index.
+
+5. Number of threads (`-th`, optional)
+Number of threads for parallelization during indexing.
+
+*Output*
+
+A new directory (named after the first argument, e.g., `hg38_index/`) containing:
+
+* Indexed `.bin` files (one per chromosome)
+
+* These include all candidate target sites for the selected PAM, including padding required to enable bulge-aware search.
+
+*Example Usage*
+```bash
+crispritz.py index-genome hg19_ref hg19_ref/ pam/pamNGG.txt -bMax 2 -th 4
+```
+
+| Parameter        | Description                                                                   |
+| ---------------- | ----------------------------------------------------------------------------- |
+| `hg19_ref`       | Name of the output directory that will store the indexed genome.              |
+| `hg19_ref/`      | Folder containing FASTA files (one per chromosome).                           |
+| `pam/pamNGG.txt` | Path to the PAM specification file (see format above).                        |
+| `-bMax 2`        | Index will support searches with up to **2 RNA bulges** and **2 DNA bulges**. |
+| `-th 4`          | Use 4 threads during index creation (optional, increases performance).        |
+
+
+>💡 **Need more help generating a CRISPRitz index?** 
+<br>Refer to the [CRISPRitz documentation on indexing](https://github.com/pinellolab/CRISPRitz#crispritz-installation-and-usage) for complete details, tips, and supported genome formats.
+
+
+## 3 Test
+
+## 4 Citation
+
+If you use CRISPR-HAWK in your research, please cite:
+
+```bibtex
+@software{crisprhawk2025,
+  title = {CRISPR-HAWK: Haplotype- and vAriant-aWare guide design toolKit},
+  author = {Manuel Tognon},
+  year = {2025},
+  url = {https://github.com/ManuelTgn/CRISPR-HAWK}
+}
+```
+
+## 5 Contacts
+
+* Manuel Tognon
+  <br>manuel.tognon@univr.it
+
+* Rosalba Giugno
+  <br>rosalba.giugno@univr.it
+
+* Luca Pinello
+  <br>lpinello@mgh.harvard.edu
+
+## 6 License
+
+CRISPR-HAWK is licensed under the AGPL-3.0 license, which permits its use for academic research purposes only.
+
+For any commercial or for-profit use, please contact the authors.
 
 

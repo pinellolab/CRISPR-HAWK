@@ -1,21 +1,15 @@
-MIT License
+CRISPR-HAWK is distributed under a dual-license model:  
 
-Copyright (c) 2024 Manuel Tognon
+1. Academic Use 
+    CRISPR-HAWK is freely available for academic research under the GNU Affero 
+    General Public License v3.0 (AGPL-3.0)
+    (https://www.gnu.org/licenses/agpl-3.0.en.html).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+2. Commercial Use 
+    For-profit institutions or users intending to use CRISPR-HAWK for commercial 
+    purposes, before using the software must contact:
+        - Luca Pinello: lpinello@mgh.harvard.edu  
+        - Rosalba Giugno: rosalba.giugno@univr.it
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+For more information on licensing terms and conditions, please reach out to the 
+contacts above.

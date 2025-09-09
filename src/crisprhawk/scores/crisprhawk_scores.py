@@ -18,29 +18,6 @@ from typing import List, Dict, Union, Tuple
 
 import numpy as np
 
-HITSCOREMIT = [
-    0,
-    0,
-    0.014,
-    0,
-    0,
-    0.395,
-    0.317,
-    0,
-    0.389,
-    0.079,
-    0.445,
-    0.508,
-    0.613,
-    0.851,
-    0.732,
-    0.828,
-    0.615,
-    0.804,
-    0.685,
-    0.583,
-]
-
 
 def azimuth(guides: np.ndarray) -> List[float]:
     # wrapper for azimuth predict function
