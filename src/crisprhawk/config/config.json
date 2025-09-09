@@ -1,6 +1,6 @@
 {
   "crispritz": {
-    "env_name": "crispritz",
+    "env_name": "crispritz-crisprhawk",
     "outdir": ".crispritz_targets"
   }
 }

@@ -185,7 +185,7 @@ def _remove_duplicate_patterns(
 
 def calculate_microhomology_score(
     guideseq: str, start: int, lweight: Optional[float] = 20.0
-):
+) -> MicrohomologyResult:
     assert guideseq.isupper()  # must be upper case (handle alternative guides)
     # find all microhomology patterns for current guide
     patterns = _find_microhomology_patterns(guideseq, start, len(guideseq) - start)

@@ -83,6 +83,6 @@ def elevationon(
 def ooframe_score(guides: List[Guide], idx: int) -> List[int]:
     guides_seqs = [g.sequence[idx - 30 : idx + 30] for g in guides]
     mhscores = [
-        calculate_microhomology_score(gs, int(len(gs) / 2)) for gs in guides_seqs
+        calculate_microhomology_score(gs.upper(), int(len(gs) / 2)) for gs in guides_seqs
     ]
     return [mhscore.ooframe_score for mhscore in mhscores]
