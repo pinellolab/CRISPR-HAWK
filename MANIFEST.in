@@ -3,13 +3,14 @@ include requirements.txt
 include LICENSE
 recursive-include src *.py
 recursive-include src/crisprhawk/scripts *
-recursive-include src/crisprhawk/scores/azimuth/saved_models *.pickle
+recursive-include src/crisprhawk/scores/azimuth *.zip
 recursive-include src/crisprhawk/scores/azimuth/data *
 recursive-include src/crisprhawk/scores/azimuth/tests *
 recursive-include src/crisprhawk/scores/azimuth *.csv
 recursive-include src/crisprhawk/scores/azimuth *.txt
-recursive-include src/crisprhawk/scores/cfdscore/models *.pkl
-recursive-include src/crisprhawk/scores/deepCpf1/weights *.h5
+recursive-include src/crisprhawk/scores/cfdscore *.zip
+recursive-include src/crisprhawk/scores/deepCpf1 *.zip
+recursive-include src/crisprhawk/scores/elevation *.zip
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 global-exclude *.pyc
