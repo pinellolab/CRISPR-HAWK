@@ -66,6 +66,9 @@ setup(
         "crisprhawk.scores.elevation": [
             "*.zip",
         ],
+        "crisprhawk.config": [
+            "*.json",
+        ],
     },
     zip_safe=False,
 )

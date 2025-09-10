@@ -2,7 +2,7 @@ include README.md
 include requirements.txt
 include LICENSE
 recursive-include src *.py
-recursive-include src/crisprhawk/scripts *
+recursive-include src/crisprhawk/config *.json
 recursive-include src/crisprhawk/scores/azimuth *.zip
 recursive-include src/crisprhawk/scores/azimuth/data *
 recursive-include src/crisprhawk/scores/azimuth/tests *
