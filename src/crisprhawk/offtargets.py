@@ -325,7 +325,7 @@ def _calculate_offtargets_map(
     otmap = {g.guide.upper(): [] for g in guides}  # offtargets map
     for ot in offtargets:
         # add each spacer to the corresponding guide (no pam)
-        otmap[ot.grna_.upper()].append(ot)
+        otmap[ot.grna_.upper().replace("-", "")].append(ot)
     return otmap
 
 

@@ -488,7 +488,6 @@ def annotate_guides(
             guides_list = ann_guides(
                 guides_list, region.contig, gene_annotations, 1, verbosity, debug
             )
-        # TODO: use crispritz instead
         if estimate_offtargets:  # estimate off-targets for each guide
             assert crispritz_config  # shouldn't be None if we got here
             guides_list = search_offtargets(
@@ -507,7 +506,7 @@ def annotate_guides(
                 verbosity,
                 debug,
             )
-        # guides[region] = guides_list  # store annotated guides
+        guides[region] = guides_list  # store annotated guides
     print_verbosity(
         f"Annotation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )

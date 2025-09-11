@@ -449,7 +449,7 @@ def store_report(
             report = format_report(
                 report, pam, right, annotations, gene_annotations, estimate_offtargets
             )  # format report
-        report.to_csv(guidesreport, sep="\t", index=False)  # store report
+        report.to_csv(guidesreport, sep="\t", index=False, float_format="%.2e")  # store report
     except FileNotFoundError as e:
         exception_handler(
             CrisprHawkGuidesReportError,  # type: ignore
