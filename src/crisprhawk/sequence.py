@@ -7,12 +7,12 @@ utilities for sequence validation, efficient access, and FASTA indexing and fetc
 
 from .exception_handlers import exception_handler
 from .coordinate import Coordinate
-from .utils import IUPAC, warning
+from .utils import IUPAC, VERBOSITYLVL, warning, print_verbosity
 
 from typing import Optional, Union
+from pysam.utils import SamtoolsError
 
 import pysam
-import sys
 import os
 
 FAI = "fai"  # fasta index extension format
@@ -224,16 +224,16 @@ class Fasta:
             self.index_fasta()
         # initialize FastaFile object with the previously computed index
         # (class is a wrapper for pysam FastaFile class)
-        self._fasta = pysam.FastaFile(self._fname, filepath_index=self._faidx)
-        if len(self._fasta.references) != 1:  # fastas are chromosome-wise
+        f = pysam.FastaFile(self._fname, filepath_index=self._faidx)
+        if len(f.references) != 1:  # fastas are chromosome-wise
             exception_handler(
                 ValueError,
-                f"Unexpected number of contigs ({len(self._fasta.references)}) found in FASTA file {self._fname}",
+                f"Unexpected number of contigs ({len(f.references)}) found in FASTA file {self._fname}",
                 os.EX_DATAERR,
                 self._debug,
             )
-        self._contig = self._fasta.references[0]  # add contig name
-        self._length = self._fasta.lengths[0]  # add sequence length
+        self._contig = f.references[0]  # add contig name
+        self._length = f.lengths[0]  # add sequence length
 
     def __repr__(self):
         """Return a string representation of the Fasta object.
@@ -269,7 +269,7 @@ class Fasta:
             if _find_fai(self._fname):  # index found, return it
                 return f"{self._fname}.{FAI}"
             # not found the index, print message and return empty string
-            sys.stdout.write(f"FASTA index not found for {self._fname}\n")
+            print_verbosity(f"FASTA index not found for {self._fname}", self._verbosity, VERBOSITYLVL[3])
             return ""
         # input fasta index index must not be empty
         if not (os.path.isfile(faidx) and os.stat(faidx).st_size > 0):
@@ -294,9 +294,9 @@ class Fasta:
             warning("FASTA index already present, forcing update", self._verbosity)
         # compute fasta index if not provided during object creation or found
         try:  # create index in the same folder of base fasta
-            sys.stdout.write(f"Generating FASTA index...\n")
+            print_verbosity(f"Generating FASTA index for {self._fname}", self._verbosity, VERBOSITYLVL[3])
             pysam.faidx(self._fname)  # index fasta using samtools
-        except OSError as e:
+        except (SamtoolsError, OSError, Exception) as e:
             exception_handler(
                 RuntimeError,
                 f"An error occurred while indexing {self._fname}",
@@ -331,8 +331,9 @@ class Fasta:
                 self._debug,
             )
         try:  # extract sequence in the input range from fasta file
+            f = pysam.FastaFile(self._fname, filepath_index=self._faidx)
             return Sequence(
-                self._fasta.fetch(coord.contig, coord.start - 1, coord.stop).strip(),
+                f.fetch(coord.contig, coord.start - 1, coord.stop).strip(),
                 self._debug,
             )
         except ValueError as e:  # failed extraction

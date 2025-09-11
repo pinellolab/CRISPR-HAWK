@@ -191,13 +191,13 @@ class CrispritzConfig:
             )
 
 
-def check_crispritz_env(env_name: str) -> bool:
+def check_crispritz_env(env_name: str, conda: str) -> bool:
     # check whether crispritz is installed within the environment
     # if not, skip off-targets estimation
     try:
         with suppress_stdout(), suppress_stderr():
             subprocess.check_call(
-                f"mamba run -n {env_name} {CRISPRITZ}",
+                f"{conda} run -n {env_name} {CRISPRITZ}",
                 shell=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,

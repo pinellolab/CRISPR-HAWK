@@ -569,11 +569,11 @@ def collapse_report_entries(
     reportcols = report.columns.tolist()
     group_cols = REPORTCOLS[:5]
     if pam.cas_system in [SPCAS9, XCAS9]:
-        group_cols += REPORTCOLS[6:9] + REPORTCOLS[10:11] + REPORTCOLS[12:20]
+        group_cols += REPORTCOLS[6:9] + REPORTCOLS[10:11] + REPORTCOLS[12:15]
     elif pam.cas_system == CPF1:
-        group_cols += REPORTCOLS[6:7] + REPORTCOLS[9:10] + REPORTCOLS[12:20]
+        group_cols += REPORTCOLS[6:7] + REPORTCOLS[9:10] + REPORTCOLS[12:15]
     else:
-        group_cols += REPORTCOLS[6:7] + REPORTCOLS[12:20]
+        group_cols += REPORTCOLS[6:7] + REPORTCOLS[12:15]
     if REPORTCOLS[11] in reportcols:  # elevationon computed
         group_cols += REPORTCOLS[11:12]
     if annotations:

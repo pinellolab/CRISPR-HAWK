@@ -104,7 +104,7 @@ def construct_regions(
     fasta_idx: str,
     verbosity: int,
     debug: bool,
-) -> Tuple[RegionList, Dict[str, Fasta]]:
+) -> RegionList:
     # read input fasta and bed and construct Region object for each genomic region
     print_verbosity("Retrieving input genomic regions", verbosity, VERBOSITYLVL[1])
     start = time()  # track processing time
@@ -116,4 +116,4 @@ def construct_regions(
         verbosity,
         VERBOSITYLVL[2],
     )
-    return regions, fastas
+    return regions
