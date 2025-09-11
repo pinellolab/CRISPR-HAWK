@@ -11,12 +11,18 @@ CRISPR-HAWK is a comprehensive and scalable tool for designing guide RNAs (gRNAs
 0 [System Requirements](#0-system-requirements)
 <br>1 [Installation](#1-installation)
 <br>&nbsp;&nbsp;1.1 [Install CRISPR-HAWK from Mamba/Conda](#11-install-crispr-hawk-from-mambaconda)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;1.1.1 [Install Conda or Mamba](#111-install-conda-or-mamba)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;1.1.2 [Install CRISPR-HAWK](#112-install-crispr-hawk)
 <br>&nbsp;&nbsp;1.2 [Install CRISPR-HAWK from Docker](#12-install-crispr-hawk-from-docker)
 <br>&nbsp;&nbsp;1.3 [Install CRISPR-HAWK from PyPI](#13-install-crispr-hawk-from-pypi)
 <br>&nbsp;&nbsp;1.4 [Install CRISPR-HAWK from Source Code](#14-install-crispr-hawk-from-source-code)
 <br>&nbsp;&nbsp;1.5 [Install External Software Dependencies](#15-install-external-software-dependencies)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;1.5.1 [Install CRISPRitz (for Off-target Estimation)](#151-install-crispritz-for-off-target-estimation)
 <br>2 [Usage](#2-usage)
-<br>&nbsp;&nbsp;2.1 [Search](#21-search)
+<br>&nbsp;&nbsp;2.1 [General Syntax](#21-general-syntax)
+<br>&nbsp;&nbsp;2.2 [Search](#22-search)
+<br>&nbsp;&nbsp;2.3 [Convert gnomAD VCF](#23-convert-gnomad-vcf)
+<br>&nbsp;&nbsp;2.4 [Prepare Data for CRISPRme](#24-prepare-data-for-crisprme)
 <br>3 [Test](#3-test)
 <br>4 [Citation](#4-citation)
 <br>5 [Contacts](#5-contacts)
@@ -39,7 +45,7 @@ To ensure optimal performance, CRISPR-HAWK requires the following system specifi
 
     - Processing large-scale variant datasets (e.g., gnomAD data)
 
-> ⚠️ Note: For optimal performance and stability, especially when dealing with large-scale variant datasets, ensure that your system meets or exceeds the recommended specifications.
+> ⚠️ **Note**: For optimal performance and stability, especially when dealing with large-scale variant datasets, ensure that your system meets or exceeds the recommended specifications.
 
 ## 1 Installation
 
@@ -60,6 +66,36 @@ This section provides step-by-step instructions to install CRISPR-HAWK and exter
 > ⚠️ **Note:** We recommend using the Mamba/Conda or Docker installation methods for most users, as they ensure the highest compatibility and stability across systems.
 
 ### 1.1 Install CRISPR-HAWK from Mamba/Conda
+
+#### 1.1.1 Install Conda or Mamba
+
+Before installing CRISPR-HAWK, ensure that either **Conda** or **Mamba** is installed on your system. Based on recommendations from the Bioconda community and performance testing during CRISPR-HAWK development, we **recommend using [Mamba](https://mamba.readthedocs.io/en/latest/index.html)** over Conda. Mamba is a fast, efficient drop-in replacement for Conda, built with a high-performance dependency solver in C++.
+
+**Installation Steps**
+
+**1. Install Conda or Mamba**
+
+* To install **Conda**, follow the official instructions:
+<br>[Conda Installation Guide](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
+
+* To install **Mamba**, follow the official instructions:
+<br>[Mamba Installation Guide](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)
+
+**2. Configure Bioconda Channels**
+Once Mamba (or Conda) is installed, configure your environment with the appropriate channels used by CRISPR-HAWK:
+```bash
+mamba config --add channels bioconda
+mamba config --add channels defaults
+mamba config --add channels conda-forge
+mamba config --set channel_priority strict
+```
+
+> 💡 **Tip**: If you are using Conda instead of Mamba, simply replace `mamba` with `conda` in the commands above.
+
+By completing these steps your system will be correctly configured to install CRISPR-HAWK and all required dependencies via Bioconda.
+
+
+#### 1.1.2 Install CRISPR-HAWK
 
 TBA
 
@@ -95,8 +131,8 @@ cd CRISPR-HAWK
 
 **2. (Optional) Create and Activate a Virtual Environment**
 ```bash
-python3.8 -m venv crisprhawk-env
-source crisprhawk-env/bin/activate
+mamba create -n crisprhawk-env python=3.8 -y
+mamba activate crisprhawk-env
 ```
 
 **3. Install CRISPR-HAWK and Its Dependencies**
@@ -122,9 +158,9 @@ CRISPR-HAWK relies on a few external tools for certain optional features, such a
 
 > ⚠️ **Note**: External tools are currently only supported on Linux-based systems. Windows and macOS users can still run the core pipeline (variant-aware gRNA search, scoring, annotation), but **off-target estimation** will not be available.
 
-> 💡 **Note**: Installing these tools requires Mamba or Conda to be available on your system. If you haven't installed Mamba yet, refer to the instructions in [Section 1.1](#11-install-crispr-hawk-from-mambaconda).
+> 💡 **Tip**: Installing these tools requires Mamba or Conda to be available on your system. If you haven't installed Mamba yet, refer to the instructions in [Section 1.1.1](#111-install-conda-or-mamba).
 
-#### Install CRISPRitz (for Off-target Estimation)
+#### 1.5.1 Install CRISPRitz (for Off-target Estimation)
 
 [CRISPRitz](https://github.com/pinellolab/CRISPRitz) is an efficient tool for nominating CRISPR-Cas off-target sites across large genomes accounting for mismatches and DNA/RNA bulges. CRISPR-HAWK uses it to enable **fast, high-throughput off-target estimation** in the reference genome for the identified candidate gRNAs.
 
@@ -162,9 +198,24 @@ If everything is working, the CRISPRitz help menu should appear, displaying avai
 
 ## 2 Usage
 
-This section describes CRISPR-HAWK's fubctionalities
+CRISPR-HAWK provides multiple functionalities designed to support variant- and haplotype-aware CRISPR guide design, gRNA efficiency evaluation, and integration with downstream analysis pipelines. Each command serves a distinct role in the workflow.
 
-### 2.1 Search
+### 2.1 General Syntax
+```bash
+crisprhawk <command> [options]
+```
+
+To view available commands:
+```bash
+crisprhawk --help
+```
+
+To check version:
+```bash
+crisprhawk --version
+```
+
+### 2.2 Search
 
 The `crisprhawk search` command is the core functionality of CRISPR-HAWK, designed to identify and annotate candidate gRNAs in both reference and variant genomes.
 It integrates variant-aware search, functional annotation, and predictive scoring to help you prioritize the most robust and context-aware guides for CRISPR editing.
@@ -184,7 +235,7 @@ Usage:
 crisprhawk search -f <fasta-dir> -r <bedfile> -v <vcf-dir> -p <pam> -g <guide-length> -o <output-dir>
 ```
 
-> ⚠️ **Note**: All FASTA files in <fasta-dir> must be one per chromosome (e.g., chr1.fa, chr2.fa, etc.).
+> ⚠️ **Note**: All FASTA files in `<fasta-dir>` must be one per chromosome (e.g., chr1.fa, chr2.fa, etc.).
 
 ---
 
@@ -242,11 +293,11 @@ This will:
 
 #### Off-targets Estimation (Optional)
 
-> 🐧 **Note**: Off-target estimation is only available on Linux-based operating systems and assumes you have successfully followed the installation instructions in the [Install CRISPRitz](#install-crispritz) section.
+> 🐧 **Note**: Off-target estimation is **only available on Linux-based operating systems** and assumes you have successfully followed the installation instructions in the [Install CRISPRitz](#151-install-crispritz-for-off-target-estimation) section.
 
 CRISPR-HAWK supports genome-wide off-target nomination through integration with [CRISPRitz](https://github.com/pinellolab/CRISPRitz), enabling the identification of potential unintended gRNA binding sites across the reference genome.
 
-> ⚠️ **Important**: Off-target nomination in CRISPR-HAWK is limited to the reference genome only, for performance and scalability reasons. If you need to estimate off-targets while accounting for genetic variants (e.g., SNVs, indels, population haplotypes), we recommend using [CRISPRme](https://github.com/pinellolab/CRISPRme) — a specialized, variant-aware off-target analysis tool.
+> ⚠️ **Note**: Off-target nomination in CRISPR-HAWK is limited to the reference genome only, for performance and scalability reasons. If you need to estimate off-targets while accounting for genetic variants (e.g., SNVs, indels, population haplotypes), we recommend using [CRISPRme](https://github.com/pinellolab/CRISPRme) — a specialized, variant-aware off-target analysis tool.
 
 When enabled, the off-target module allows:
 
@@ -264,9 +315,9 @@ To run off-target estimation, you must enable `--estimate-offtargets` and provid
 | --------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `--estimate-offtargets`     | Activates the off-target search pipeline for all candidate guides using CRISPRitz.                   |
 | `--crispritz-index <DIR>`   | Directory containing the CRISPRitz genome index. Must match the FASTA files provided with `--fasta`. |
-| `--mm <INT>`                | Max number of mismatches allowed in off-target search (default: 4).                                  |
-| `--bdna <INT>`              | Max number of DNA bulges allowed (default: 0).                                                       |
-| `--brna <INT>`              | Max number of RNA bulges allowed (default: 0).                                                       |
+| `--mm <INT>`                | Max number of mismatches allowed in off-target search. *(Default: 4)*                                  |
+| `--bdna <INT>`              | Max number of DNA bulges allowed. *(Default: 0)*                                                       |
+| `--brna <INT>`              | Max number of RNA bulges allowed. *(Default: 0)*                                                       |
 
 Example:
 ```bash
@@ -300,7 +351,7 @@ This will:
 
 To use CRISPRitz for off-target estimation, you must first generate an indexed version of your reference genome. The `index-genome` command in CRISPRitz precomputes a genome-wide searchable index for a specific PAM and guide configuration — similar to building a BWA index. This index is essential for fast and efficient off-target search, especially when allowing bulges (RNA or DNA) and scanning across large genomes or thousands of guide RNAs. 
 
-> 💡 **Tip**: CRISPRitz indexes can be reused multiple times and **do not need to be generated before each run**
+> 💡 **Tip**: CRISPRitz indexes can be reused multiple times and do not need to be generated before each run
 
 *Required Inputs*
 
@@ -352,9 +403,128 @@ crispritz.py index-genome hg19_ref hg19_ref/ pam/pamNGG.txt -bMax 2 -th 4
 | `-th 4`          | Use 4 threads during index creation (optional, increases performance).        |
 
 
->💡 **Need more help generating a CRISPRitz index?** 
+>💡 **Tip**: Need more help generating a CRISPRitz index?
 <br>Refer to the [CRISPRitz documentation on indexing](https://github.com/pinellolab/CRISPRitz#crispritz-installation-and-usage) for complete details, tips, and supported genome formats.
 
+### 2.3 Convert gnomAD VCF
+
+The `crisprhawk convert-gnomad-vcf` command is a utility designed to convert gnomAD VCF files (version ≥ 3.1) into a format compatible with CRISPR-HAWK. This step is essential when working with large-scale population datasets (e.g., gnomAD v3.1, v4.1), ensuring proper variant normalization, filtering, and indexing.
+
+This module:
+
+* Supports both `.vcf.bgz` and `.vcf.gz` formats
+
+* Extracts and preserves **sample-level** genotypes for population-aware haplotype modeling
+
+* Can optionally handle **joint allele frequency files** from gnomAD v4.1 (joint genome/exome releases)
+
+* Supports parallel processing for large-scale datasets
+
+Usage:
+```bash
+crisprhawk convert-gnomad-vcf -d <vcf-dir> -o <output-dir>
+```
+
+> ⚠️ **Note**: All `.vcf.bgz` (or `.vcf.gz`) files in `<vcf-dir>` will be processed. Ensure tabix indices (`.tbi`) are present in the same folder.
+
+#### Required Arguments
+| Option                  | Description                                                                                               |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| `-d`, `--vcf-dir <DIR>` | Directory containing per-chromosome **gnomAD VCF files** (compressed as `.vcf.bgz` or `.vcf.gz`).         |
+| `-o`, `--outdir <DIR>`  | Output directory for the converted VCF files. If not provided, defaults to the current working directory. |
+
+
+#### Optional Arguments
+| Option                  | Description                                                                                                           |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `--joint`               | Enable this flag when using **gnomAD v4.1 joint** genome/exome files. Ensures correct parsing of allele frequencies.  |
+| `--keep`                | Include **all variants**, regardless of the VCF `FILTER` field. By default, only `FILTER=PASS` variants are retained. |
+| `--suffix <SUFFIX>`     | Optional suffix to append to the output VCF filenames (e.g., `_converted`). Useful for traceability.                  |
+| `-t`, `--threads <INT>` | Number of threads to use. Set `-t 0` to use all available CPU cores. *(Default: 1)*                                   |
+| `--verbosity <LEVEL>`   | Logging verbosity. Options: `0` = Silent, `1` = Normal, `2` = Verbose, `3` = Debug *(Default: 1)*                     |
+| `--debug`               | Enable debug mode and print full error tracebacks.                                                                    |
+
+
+**Example**
+```bash
+crisprhawk convert-gnomad-vcf \
+  -d gnomad_v4.1/ \
+  -o converted_vcfs/ \
+  --suffix _crisprhawk \
+  -t 4
+```
+
+This command will:
+
+* Convert all `.vcf.bgz` files in `gnomad_v4.1/`
+
+* Retain only variants with `FILTER=PASS`
+
+* Append `_crisprhawk` to each output filename
+
+* Run using 4 threads
+
+> ⚠️ **Note**: Make sure your input files are correctly indexed (`.tbi`) and are chromosome-specific. CRISPR-HAWK expects one VCF per chromosome.
+
+### 2.4 Prepare Data for CRISPRme
+
+The `crisprhawk prepare-data-crisprme` command transforms a CRISPR-HAWK report into guide files compatible with **[CRISPRme](https://github.com/pinellolab/CRISPRme)**, enabling downstream variant- and haplotype-aware off-target prediction using CRISPRme's framework.
+
+This module:
+
+* Extracts gRNA sequences from a CRISPR-HAWK report
+
+* Creates per-guide FASTA files required by CRISPRme
+
+* Optionally generates a **PAM specification file** compatible with the selected CRISPR system
+
+Usage:
+```bash
+crisprhawk prepare-data-crisprme --report <crisprhawk-report> -o <output-dir>
+```
+
+#### Required Arguments
+
+| Option                         | Description                                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `--report <CRISPRHAWK-REPORT>` | Path to a CRISPR-HAWK report file containing guide sequences.        |
+| `-o`, `--outdir <DIR>`         | Output directory for the CRISPRme-compatible guide files. Defaults to current working directory. |
+
+#### Optional Arguments
+
+| Option              | Description                                                                            |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| `--create-pam-file` | If set, also generates a **PAM file** in CRISPRme format in the same output directory. |
+| `--debug`           | Enable debug mode and print full error tracebacks.                                     |
+
+**Output Structure**
+
+The command will generate:
+
+* One FASTA file per gRNA (named using the guide label or sequence)
+
+* Optionally, a `pam.txt` file for CRISPRme if `--create-pam-file` is specified
+
+These files can be directly used as input to CRISPRme's `--guide` and `--pam` options.
+
+**Example**
+
+```bash
+crisprhawk prepare-data-crisprme \
+  --report results/crisprhawk_report.tsv \
+  -o crisprme_inputs/ \
+  --create-pam-file
+```
+
+This command will:
+
+* Parse all guides listed in the `crisprhawk_report.tsv` report
+
+* Write per-guide FASTA files to the `crisprme_inputs/` folder
+
+* Generate a PAM file (`pam.txt`) compatible with CRISPRme
+
+> 💡 **Tip**: This is especially useful when transitioning from **on-target selection** in CRISPR-HAWK to **off-target analysis** in CRISPRme.
 
 ## 3 Test
 
