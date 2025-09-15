@@ -185,7 +185,7 @@ def search(
     print_verbosity(
         f"Off-targets search with CRISPRitz completed in {time() - start:.2f}s",
         verbosity,
-        VERBOSITYLVL[3],
+        VERBOSITYLVL[2],
     )
     return targets_fname
 
@@ -216,7 +216,7 @@ def _compute_cfd_score(
     print_verbosity(
         f"Computing CFD score for {len(offtargets)} off-targets",
         verbosity,
-        VERBOSITYLVL[2],
+        VERBOSITYLVL[3],
     )
     start = time()
     mmscores, pamscores = load_mismatch_pam_scores(debug)
@@ -243,7 +243,7 @@ def _compute_elevation_score(
     print_verbosity(
         f"Computing Elevation score for {len(offtargets)} off-targets",
         verbosity,
-        VERBOSITYLVL[2],
+        VERBOSITYLVL[3],
     )
     start = time()
     # create wildtype and offtarget lists
@@ -330,7 +330,7 @@ def _calculate_offtargets_map(
 
 
 def _calculate_global_cfd(offtargets: List[Offtarget], verbosity: int) -> float:
-    print_verbosity("Computing guide global CFD", verbosity, VERBOSITYLVL[2])
+    print_verbosity("Computing guide global CFD", verbosity, VERBOSITYLVL[3])
     start = time()
     cfds = [0 if ot.cfd == "NA" else float(ot.cfd) for ot in offtargets]
     print_verbosity(
@@ -342,7 +342,7 @@ def _calculate_global_cfd(offtargets: List[Offtarget], verbosity: int) -> float:
 
 
 def _calculate_global_elevation(offtargets: List[Offtarget], verbosity: int) -> float:
-    print_verbosity("Computing guide global Elevation", verbosity, VERBOSITYLVL[2])
+    print_verbosity("Computing guide global Elevation", verbosity, VERBOSITYLVL[3])
     start = time()
     elevations = [
         0 if ot.elevation == "NA" else float(ot.elevation) for ot in offtargets

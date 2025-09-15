@@ -16,6 +16,7 @@ from .search_guides import search
 from .annotate import annotate_guides
 from .encoder import encode
 from .reports import report_guides
+from .graphical_reports import compute_graphical_reports
 from .converter import convert_gnomad_vcf
 from .crisprme_data import prepare_data_crisprme
 from .bitset import Bitset
@@ -171,7 +172,7 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.debug,
     )
     # construct reports
-    report_guides(
+    reports = report_guides(
         guides,
         args.guidelen,
         pam,
@@ -185,6 +186,8 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.verbosity,
         args.debug,
     )
+    # draw graphical reports
+    compute_graphical_reports(reports, args.outdir, args.verbosity, args.debug)
 
 
 def crisprhawk_converter(args: CrisprHawkConverterInputArgs) -> None:

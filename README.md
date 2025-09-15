@@ -173,14 +173,9 @@ CRISPR-HAWK relies on a few external tools for certain optional features, such a
 mamba create -n crispritz-crisprhawk python=3.8 -y
 ```
 
-2. Activate the environment::
+2. Install CRISPRitz (latest version):
 ```bash
-mamba activate crispritz-crisprhawk
-```
-
-3. Install CRISPRitz (latest version):
-```bash
-mamba install crispritz=2.6.6 -y
+mamba install -n crispritz-crisprhawk crispritz=2.6.6 -y
 ```
 
 > 📝 **Why use a separate environment?**
@@ -191,7 +186,7 @@ mamba install crispritz=2.6.6 -y
 
 You can confirm that CRISPRitz is correctly installed and functional by running:
 ```bash
-mamba run -n crispritz-crisprhawk crispritz.py --help
+mamba run -n crispritz-crisprhawk crispritz.py
 ```
 
 If everything is working, the CRISPRitz help menu should appear, displaying available options and usage instructions.

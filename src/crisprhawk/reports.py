@@ -361,14 +361,14 @@ def _format_elevationon(reportcols: List[str]) -> List[str]:
 
 
 def _format_cfd(reportcols: List[str]) -> List[str]:
-    if REPORTCOLS[20] in reportcols:
-        return REPORTCOLS[20:21]
+    if REPORTCOLS[21] in reportcols:
+        return REPORTCOLS[21:22]
     return []
 
 
 def _format_elevation(reportcols: List[str]) -> List[str]:
-    if REPORTCOLS[21] in reportcols:
-        return REPORTCOLS[21:]
+    if REPORTCOLS[22] in reportcols:
+        return REPORTCOLS[22:]
     return []
 
 
@@ -443,13 +443,14 @@ def store_report(
     gene_annotations: List[str],
     estimate_offtargets: bool,
     debug: bool,
-) -> None:
+) -> str:
     try:
         if not report.empty:
             report = format_report(
                 report, pam, right, annotations, gene_annotations, estimate_offtargets
             )  # format report
-        report.to_csv(guidesreport, sep="\t", index=False, float_format="%.2e")  # store report
+        report.to_csv(guidesreport, sep="\t", index=False)  # store report
+        return guidesreport
     except FileNotFoundError as e:
         exception_handler(
             CrisprHawkGuidesReportError,  # type: ignore
@@ -610,7 +611,7 @@ def report_guides(
     outdir: str,
     verbosity: int,
     debug: bool,
-) -> None:
+) -> Dict[Region, str]:
     print_verbosity("Constructing reports", verbosity, VERBOSITYLVL[1])
     start = time()  # report construction start time
     reports = construct_report(
@@ -622,6 +623,7 @@ def report_guides(
         gene_annotation_colnames,
         estimate_offtargets,
     )  # construct reports
+    reports_fnames = {}  # reports TSVs dictionary
     for region, report in reports.items():  # store reports in output folder
         region_name = (
             f"{region.contig}_{region.start + PADDING}_{region.stop - PADDING}"
@@ -633,7 +635,7 @@ def report_guides(
             report = collapse_report_entries(
                 report, pam, annotations, gene_annotations, estimate_offtargets
             )
-        store_report(
+        reports_fnames[region] = store_report(
             report,
             pam,
             guidesreport,
@@ -646,3 +648,4 @@ def report_guides(
     print_verbosity(
         f"Reports constructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )
+    return reports_fnames

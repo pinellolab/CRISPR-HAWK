@@ -269,6 +269,12 @@ def create_temp_folder(dirname: str) -> str:
     return tempfile.mkdtemp(prefix=f"crisprhawk_{dirname}_")
 
 
+def create_folder(dirname: str) -> str:
+    os.makedirs(dirname)
+    assert os.path.isdir(dirname)
+    return dirname
+
+
 def remove_folder(dirname: str) -> None:
     try:
         subprocess.run(["rm", "-rf", dirname], check=True, capture_output=True)
@@ -390,3 +396,6 @@ def command_exists(command: str) -> bool:
     if shutil.which(command):
         return True
     return False
+
+def is_lowercase(sequence: str) -> bool:
+    return any(c.islower() for c in sequence)

@@ -36,6 +36,7 @@ requests==2.32.3
 rs3==0.0.16
 scikit-learn==1.1.1
 scipy==1.9.1
+saborn==0.13.2
 seqfold==0.7.18
 sglearn==1.2.5
 six==1.16.0

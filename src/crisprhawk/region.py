@@ -37,7 +37,7 @@ class Region:
         """
         return len(self._sequence)
 
-    def __eq__(self, region_query: "Region") -> bool:
+    def __eq__(self, region_query: object) -> bool:
         """Check if the current region is equal to another region.
 
         Checks if the provided region has the same sequence and coordinates as the
@@ -49,6 +49,8 @@ class Region:
         Returns:
             True if the regions are identical, False otherwise.
         """
+        if not isinstance(region_query, Region):
+            return NotImplemented
         return (self._sequence == region_query.sequence) and (
             self._coordinates == region_query._coordinates
         )
