@@ -100,7 +100,6 @@ class Guide:
         self._deepcpf1_score = "NA"
         self._ooframe_score = "NA"
         self._cfd = "NA"
-        self._elevation = "NA"
 
     def _initialize_annotations(self) -> None:
         # initialize annotations for guide to NA

@@ -279,6 +279,7 @@ def report_offtargets(
     region: Region,
     pam: PAM,
     guidelen: int,
+    compute_elevation: bool,
     right: bool,
     outdir: str,
     verbosity: int,
@@ -289,7 +290,9 @@ def report_offtargets(
     offtargets = _read_offtargets(crispritz_targets_file, pam, right, debug)
     if pam.cas_system in [SPCAS9, XCAS9]:  # compute CFD score
         offtargets = _compute_cfd_score(offtargets, verbosity, debug)
-    if guidelen + len(pam) == 23 and not right:  # compute elevation score
+    if compute_elevation and (
+        guidelen + len(pam) == 23 and not right
+    ):  # compute elevation score
         offtargets = _compute_elevation_score(offtargets, verbosity, debug)
     print_verbosity("Writing off-targets report", verbosity, VERBOSITYLVL[1])
     report_fname = os.path.join(
@@ -341,20 +344,6 @@ def _calculate_global_cfd(offtargets: List[Offtarget], verbosity: int) -> float:
     return 100 / (100 + sum(cfds))
 
 
-def _calculate_global_elevation(offtargets: List[Offtarget], verbosity: int) -> float:
-    print_verbosity("Computing guide global Elevation", verbosity, VERBOSITYLVL[3])
-    start = time()
-    elevations = [
-        0 if ot.elevation == "NA" else float(ot.elevation) for ot in offtargets
-    ]
-    print_verbosity(
-        f"Global Elevation computed in {time() - start:.2f}s",
-        verbosity,
-        VERBOSITYLVL[3],
-    )
-    return 100 / (100 + sum(elevations))
-
-
 def annotate_guides_offtargets(
     offtargets: List[Offtarget], guides: List[Guide], verbosity: int
 ) -> List[Guide]:
@@ -364,9 +353,6 @@ def annotate_guides_offtargets(
         guide.set_cfd(
             _calculate_global_cfd(otmap[guide.guide], verbosity)
         )  # set global CFD
-        guide.set_elevation(
-            _calculate_global_elevation(otmap[guide.guide], verbosity)
-        )  # set global elevation
     return guides
 
 
@@ -380,6 +366,7 @@ def search_offtargets(
     bdna: int,
     brna: int,
     guidelen: int,
+    compute_elevation: bool,
     right: bool,
     threads: int,
     outdir: str,
@@ -411,7 +398,15 @@ def search_offtargets(
         debug,
     )
     offtargets = report_offtargets(
-        targets_fname, region, pam, guidelen, right, outdir, verbosity, debug
+        targets_fname,
+        region,
+        pam,
+        guidelen,
+        compute_elevation,
+        right,
+        outdir,
+        verbosity,
+        debug,
     )
     guides = annotate_guides_offtargets(offtargets, guides, verbosity)
     print_verbosity(

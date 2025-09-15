@@ -158,6 +158,7 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.annotations,
         args.gene_annotations,
         pam,
+        args.compute_elevation,
         args.estimate_offtargets,
         args.crispritz_config,
         args.mm,
@@ -182,12 +183,14 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.gene_annotations,
         args.gene_annotation_colnames,
         args.estimate_offtargets,
+        args.compute_elevation,
         args.outdir,
         args.verbosity,
         args.debug,
     )
     # draw graphical reports
-    compute_graphical_reports(reports, args.outdir, args.verbosity, args.debug)
+    if args.graphical_reports:
+        compute_graphical_reports(reports, args.outdir, args.verbosity, args.debug)
 
 
 def crisprhawk_converter(args: CrisprHawkConverterInputArgs) -> None:

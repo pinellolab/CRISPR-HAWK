@@ -436,6 +436,7 @@ def annotate_guides(
     annotations: List[str],
     gene_annotations: List[str],
     pam: PAM,
+    compute_elevation: bool,
     estimate_offtargets: bool,
     crispritz_config: Union[None, CrispritzConfig],
     mm: int,
@@ -468,7 +469,7 @@ def annotate_guides(
             guides_list = cfdon_score(guides_list, verbosity, debug)
         if pam.cas_system == CPF1:  # cpf1 system pam
             guides_list = deepcpf1_score(guides_list, verbosity, debug)
-        if guidelen + len(pam) == 23 and not right:
+        if compute_elevation and (guidelen + len(pam) == 23 and not right):
             # elevation requires 23 bp long sequences, where last 3 bp are pam
             guides_list = elevationon_score(guides_list, verbosity, debug)
         # compute gc content (pam excluded) for each guide
@@ -500,6 +501,7 @@ def annotate_guides(
                 bdna,
                 brna,
                 guidelen,
+                compute_elevation,
                 right,
                 threads,
                 outdir,

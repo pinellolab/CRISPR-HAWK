@@ -269,7 +269,11 @@ class Fasta:
             if _find_fai(self._fname):  # index found, return it
                 return f"{self._fname}.{FAI}"
             # not found the index, print message and return empty string
-            print_verbosity(f"FASTA index not found for {self._fname}", self._verbosity, VERBOSITYLVL[3])
+            print_verbosity(
+                f"FASTA index not found for {self._fname}",
+                self._verbosity,
+                VERBOSITYLVL[3],
+            )
             return ""
         # input fasta index index must not be empty
         if not (os.path.isfile(faidx) and os.stat(faidx).st_size > 0):
@@ -294,7 +298,11 @@ class Fasta:
             warning("FASTA index already present, forcing update", self._verbosity)
         # compute fasta index if not provided during object creation or found
         try:  # create index in the same folder of base fasta
-            print_verbosity(f"Generating FASTA index for {self._fname}", self._verbosity, VERBOSITYLVL[3])
+            print_verbosity(
+                f"Generating FASTA index for {self._fname}",
+                self._verbosity,
+                VERBOSITYLVL[3],
+            )
             pysam.faidx(self._fname)  # index fasta using samtools
         except (SamtoolsError, OSError, Exception) as e:
             exception_handler(

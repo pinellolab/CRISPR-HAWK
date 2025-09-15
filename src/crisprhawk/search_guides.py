@@ -315,8 +315,9 @@ def retrieve_guides(
     debug: bool,
 ) -> List[Guide]:
     guides = []  # list of haplotype-specific guides
+    s = "-" if direction == 1 else "+"
     print_verbosity(
-        f"Retrieving guides from haplotype {haplotype.samples}",
+        f"Retrieving guides from haplotype {haplotype.samples} (strand: {s})",
         verbosity,
         VERBOSITYLVL[3],
     )

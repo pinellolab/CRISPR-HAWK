@@ -244,6 +244,16 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "as 'gene_annotation_<i>')",
     )
     optional_group.add_argument(
+        "--compute-elevation-score",
+        action="store_true",
+        dest="compute_elevation",
+        default=False,
+        help="compute Elevation and Elevation-on scores to evaluate guide "
+        "efficiency. This requires that the combined length of the guide and "
+        "PAM is exactly 23 bp, and that the guide sequence is located downstream "
+        "of the PAM (default: disabled)",
+    )
+    optional_group.add_argument(
         "--haplotype-table",
         action="store_true",
         dest="haplotype_table",
@@ -295,6 +305,17 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         default=0,
         help="maximum number of RNA bulges to consider during off-target "
         "estimation. Only used if --estimate-offtargets is enabled (default: 0)",
+    )
+    optional_group.add_argument(
+        "--graphical-reports",
+        action="store_true",
+        dest="graphical_reports",
+        default=False,
+        help="generate graphical reports to summarize findings. Includes a pie "
+        "chart showing the distribution of guide types (reference, spacer+PAM "
+        "alternative, spacer alternative, PAM alternative) and delta plots "
+        "illustrating the impact of genetic diversity on guide efficiency and "
+        "on-target activity (default: disabled)",
     )
     optional_group.add_argument(
         "-t",

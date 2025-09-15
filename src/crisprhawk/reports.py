@@ -73,6 +73,7 @@ def _update_report_fields_spcas9(
     guide: Guide,
     pamclass: str,
     pamlen: int,
+    compute_elevation: bool,
 ) -> Dict[str, List[str]]:
     # update report fields for spcas9 system pam
     report[REPORTCOLS[1]].append(guide.start)  # start and stop position
@@ -85,7 +86,9 @@ def _update_report_fields_spcas9(
     report[REPORTCOLS[7]].append(guide.azimuth_score)  # azimuth score
     report[REPORTCOLS[8]].append(guide.rs3_score)  # rs3 score
     report[REPORTCOLS[10]].append(guide.cfdon_score)  # cfdon score
-    if guide.guidelen + pamlen == 23 and not guide.right:  # elevationon score
+    if compute_elevation and (
+        guide.guidelen + pamlen == 23 and not guide.right
+    ):  # elevationon score
         report[REPORTCOLS[11]].append(guide.elevationon_score)
     report[REPORTCOLS[12]].append(guide.gc)  # gc content
     report[REPORTCOLS[13]].append(guide.ooframe_score)  # out-of-frame score
@@ -104,6 +107,7 @@ def _update_report_fields_cpf1(
     guide: Guide,
     pamclass: str,
     pamlen: int,
+    compute_elevation: bool,
 ) -> Dict[str, List[str]]:
     # update report fields for cpf1 system pam
     report[REPORTCOLS[1]].append(guide.start)  # start and stop position
@@ -114,7 +118,9 @@ def _update_report_fields_cpf1(
     # strand orientation
     report[REPORTCOLS[6]].append(compute_strand_orientation(guide.strand))
     report[REPORTCOLS[9]].append(guide.deepcpf1_score)  # deepcpf1 score
-    if guide.guidelen + pamlen == 23 and not guide.right:  # elevationon score
+    if compute_elevation and (
+        guide.guidelen + pamlen == 23 and not guide.right
+    ):  # elevationon score
         report[REPORTCOLS[11]].append(guide.elevationon_score)
     report[REPORTCOLS[12]].append(guide.gc)  # gc content
     report[REPORTCOLS[13]].append(guide.ooframe_score)  # out-of-frame score
@@ -133,6 +139,7 @@ def _update_report_fields_other(
     guide: Guide,
     pamclass: str,
     pamlen: int,
+    compute_elevation: bool,
 ) -> Dict[str, List[str]]:
     # update report fields for other pam
     report[REPORTCOLS[1]].append(guide.start)  # start and stop position
@@ -142,7 +149,9 @@ def _update_report_fields_other(
     report[REPORTCOLS[5]].append(pamclass)  # extended pam class
     # strand orientation
     report[REPORTCOLS[6]].append(compute_strand_orientation(guide.strand))
-    if guide.guidelen + pamlen == 23 and not guide.right:  # elevationon score
+    if compute_elevation and (
+        guide.guidelen + pamlen == 23 and not guide.right
+    ):  # elevationon score
         report[REPORTCOLS[11]].append(guide.elevationon_score)
     report[REPORTCOLS[12]].append(guide.gc)  # gc content
     report[REPORTCOLS[13]].append(guide.ooframe_score)  # out-of-frame score
@@ -161,17 +170,18 @@ def update_report_fields(
     guide: Guide,
     pam: PAM,
     pamclass: str,
+    compute_elevation: bool,
 ) -> Dict[str, List[str]]:
     if pam.cas_system in [SPCAS9, XCAS9]:  # spcas9 system pam
         return _update_report_fields_spcas9(
-            report, region_coordinates, guide, pamclass, len(pam)
+            report, region_coordinates, guide, pamclass, len(pam), compute_elevation
         )
     elif pam.cas_system == CPF1:  # cpf1 system pam
         return _update_report_fields_cpf1(
-            report, region_coordinates, guide, pamclass, len(pam)
+            report, region_coordinates, guide, pamclass, len(pam), compute_elevation
         )
     return _update_report_fields_other(
-        report, region_coordinates, guide, pamclass, len(pam)
+        report, region_coordinates, guide, pamclass, len(pam), compute_elevation
     )
 
 
@@ -303,6 +313,7 @@ def process_data(
     gene_annotations: List[str],
     gene_annotation_colnames: List[str],
     estimate_offtargets: bool,
+    compute_elevation: bool,
 ) -> pd.DataFrame:
     report = {
         cname: []
@@ -322,7 +333,9 @@ def process_data(
     for guide in guides:  # iterate over guides and add to report
         report[REPORTCOLS[0]].append(region.contig)  # region contig (chrom)
         # update report with current guide data
-        report = update_report_fields(report, region_coordinates, guide, pam, pamclass)
+        report = update_report_fields(
+            report, region_coordinates, guide, pam, pamclass, compute_elevation
+        )
         report = update_optional_report_fields(
             report, guide, pam, annotations, gene_annotations, estimate_offtargets
         )
@@ -338,6 +351,7 @@ def construct_report(
     gene_annotations: List[str],
     gene_annotation_colnames: List[str],
     estimate_offtargets: bool,
+    compute_elevation: bool,
 ) -> Dict[Region, pd.DataFrame]:
     return {
         region: process_data(
@@ -349,6 +363,7 @@ def construct_report(
             gene_annotations,
             gene_annotation_colnames,
             estimate_offtargets,
+            compute_elevation,
         )
         for region, guides_list in guides.items()
     }
@@ -608,6 +623,7 @@ def report_guides(
     gene_annotations: List[str],
     gene_annotation_colnames: List[str],
     estimate_offtargets: bool,
+    compute_elevation: bool,
     outdir: str,
     verbosity: int,
     debug: bool,
@@ -622,6 +638,7 @@ def report_guides(
         gene_annotations,
         gene_annotation_colnames,
         estimate_offtargets,
+        compute_elevation,
     )  # construct reports
     reports_fnames = {}  # reports TSVs dictionary
     for region, report in reports.items():  # store reports in output folder

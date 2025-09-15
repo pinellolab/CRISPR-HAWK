@@ -246,6 +246,15 @@ class CrisprHawkSearchInputArgs:
             self._parser.error(
                 f"Mismatching number of gene annotation files and gene annotation column names"
             )
+        # elevation score
+        if self._args.compute_elevation and (
+            self._args.guidelen + len(self._args.pam) != 23 or self._args.right
+        ):
+            self._parser.error(
+                "Elevation score requires that the combined length of the guide "
+                "and PAM is exactly 23 bp, and that the guide sequence is located "
+                "downstream of the PAM"
+            )
         # off-targets estimation
         if self._args.estimate_offtargets and platform.system() != OSSYSTEMS[0]:
             warning(
@@ -354,6 +363,10 @@ class CrisprHawkSearchInputArgs:
         return self._args.haplotype_table
 
     @property
+    def compute_elevation(self) -> bool:
+        return self._args.compute_elevation
+
+    @property
     def estimate_offtargets(self) -> bool:
         return self._estimate_offtargets
 
@@ -376,6 +389,10 @@ class CrisprHawkSearchInputArgs:
     @property
     def brna(self) -> int:
         return self._args.brna
+
+    @property
+    def graphical_reports(self) -> bool:
+        return self._args.graphical_reports
 
     @property
     def threads(self) -> int:

@@ -397,5 +397,6 @@ def command_exists(command: str) -> bool:
         return True
     return False
 
+
 def is_lowercase(sequence: str) -> bool:
     return any(c.islower() for c in sequence)
