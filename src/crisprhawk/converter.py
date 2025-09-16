@@ -37,6 +37,22 @@ GT = ["0/0", "0/1"]  # 0/0 -> absence, 0/1 -> occurrence
 
 
 def tabix_index(vcf_fname: str, verbosity: int, debug: bool) -> str:
+    """Indexes a VCF file using Tabix and returns the path to the index file.
+
+    This function creates a Tabix index for the specified VCF file, checks for 
+    errors, and returns the index file path.
+
+    Args:
+        vcf_fname (str): Path to the VCF file to index.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        str: The path to the created Tabix index file.
+
+    Raises:
+        CrisprHawkConverterError: If indexing fails or the index file is not created.
+    """
     print_verbosity(
         f"Indexing VCF {os.path.basename(vcf_fname)}", verbosity, VERBOSITYLVL[2]
     )
@@ -58,6 +74,19 @@ def tabix_index(vcf_fname: str, verbosity: int, debug: bool) -> str:
 
 
 def load_vcf(vcf_fname: str, verbosity: int, debug: bool) -> VariantFile:
+    """Loads a VCF file with an associated Tabix index.
+
+    This function checks for an existing Tabix index for the VCF file, creates 
+    one if necessary, and returns a VariantFile object for reading the VCF.
+
+    Args:
+        vcf_fname (str): Path to the VCF file to load.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        VariantFile: A pysam VariantFile object for the indexed VCF file.
+    """
     # search for tabix index, if not found index the current vcf
     tbi_index = (
         f"{vcf_fname}.{TBI}"
@@ -68,15 +97,48 @@ def load_vcf(vcf_fname: str, verbosity: int, debug: bool) -> VariantFile:
 
 
 def format_ac(joint: bool) -> List[str]:
+    """Constructs the allele count (AC) field names for gnomAD VCFs by population.
+
+    Returns a list of formatted AC field names for each population, using either 
+    the joint or standard prefix.
+
+    Args:
+        joint (bool): Whether to use the joint AC field format.
+
+    Returns:
+        List[str]: A list of formatted AC field names for all gnomAD populations.
+    """
     # construct the AC field format in gnomad vcf for each population
     return [f"AC_joint_{p}" if joint else f"AC_{p}" for p in GNOMADPOPS]
 
 
 def variant_observed(allele_count: Tuple[int]) -> bool:
+    """Determines if any allele in the count tuple is observed.
+
+    Returns True if at least one allele count is greater than zero, otherwise False.
+
+    Args:
+        allele_count (Tuple[int]): A tuple of allele counts.
+
+    Returns:
+        bool: True if any count is greater than zero, False otherwise.
+    """
     return any(ac > 0 for ac in allele_count)  # at least one count for allele
 
 
 def _update_header(header: VariantHeader, joint: bool) -> str:
+    """Updates the VCF header with genotype and population sample information.
+
+    Adds the GT FORMAT field and population samples to the header, and adjusts 
+    the AF field if joint is True.
+
+    Args:
+        header (VariantHeader): The VCF header to update.
+        joint (bool): Whether to adjust the AF field for joint VCFs.
+
+    Returns:
+        str: The updated VCF header as a string.
+    """
     header.add_line(GTLINE)  # add FORMAT metadata field (genotype)
     header.add_samples(GNOMADPOPS)  # add populations as samples in header
     header = str(header).replace("<ID=AF_joint,", "<ID=AF,") if joint else str(header)  # type: ignore
@@ -86,6 +148,23 @@ def _update_header(header: VariantHeader, joint: bool) -> str:
 def _asses_genotype(
     variant: VariantRecord, ac_formatted: List[str], debug: bool
 ) -> str:
+    """Assesses the genotype for each population based on allele counts in a variant.
+
+    Returns a tab-separated string of genotype calls for each population, using 
+    GT[1] if the allele is observed and GT[0] otherwise.
+
+    Args:
+        variant (VariantRecord): The variant record containing allele count information.
+        ac_formatted (List[str]): List of allele count field names for each population.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        str: Tab-separated genotype calls for each population.
+
+    Raises:
+        CrisprHawkConverterError: If genotype assessment fails due to missing or 
+            invalid data.
+    """
     try:
         return "\t".join(
             [
@@ -93,7 +172,7 @@ def _asses_genotype(
                 for acf in ac_formatted
             ]
         )
-    except (ValueError, KeyError, Exception) as e:
+    except Exception as e:
         exception_handler(
             CrisprHawkConverterError,
             f"Failed genotyoe assessment on variant {variant}",
@@ -104,6 +183,18 @@ def _asses_genotype(
 
 
 def _format_vrecord(variant: VariantRecord, genotypes: str) -> str:
+    """Formats a VariantRecord and genotype string into a VCF record line.
+
+    Constructs a tab-separated VCF record string from the variant's fields and
+    provided genotype information, handling missing allele frequencies as needed.
+
+    Args:
+        variant (VariantRecord): The variant record to format.
+        genotypes (str): The genotype string to include in the record.
+
+    Returns:
+        str: The formatted VCF record as a tab-separated string.
+    """
     try:
         af = ",".join(list(map(str, variant.info["AF"])))
     except KeyError:  # catch potential AF missing in variant INFO
@@ -131,6 +222,23 @@ def _convert(
     keep: bool,
     debug: bool,
 ) -> None:
+    """Converts a VCF file to a new format with updated header and genotype information.
+
+    Writes a new VCF file with an updated header, filters variants based on the 
+    'keep' flag, and includes formatted genotype information for each variant.
+
+    Args:
+        vcf (VariantFile): The input VCF file to convert.
+        vcf_outfname (str): The output filename for the converted VCF.
+        ac_formatted (List[str]): List of allele count field names for each population.
+        joint (bool): Whether the VCF is a joint file (affects header formatting).
+        keep (bool): Whether to retain all variants or only those with 'PASS' in 
+            the filter.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Raises:
+        CrisprHawkConverterError: If an I/O error occurs or the output VCF is empty.
+    """
     try:
         with open(vcf_outfname, mode="w") as outfile:
             # write the updated header
@@ -158,6 +266,20 @@ def _convert(
 
 
 def _compress(vcf_fname_tmp: str, vcf_fname: str, verbosity: int, debug: bool) -> None:
+    """Compresses a VCF file using bgzip and removes the temporary file.
+
+    This function compresses the specified VCF file with bgzip, handles errors, 
+    removes the temporary file, and logs the operation.
+
+    Args:
+        vcf_fname_tmp (str): Path to the temporary VCF file to compress.
+        vcf_fname (str): Path to the output compressed VCF file.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Raises:
+        CrisprHawkConverterError: If bgzip compression fails.
+    """
     print_verbosity(
         f"Compressing {os.path.basename(vcf_fname)}", verbosity, VERBOSITYLVL[2]
     )
@@ -189,6 +311,21 @@ def convert_vcf(
     verbosity: int,
     debug: bool,
 ) -> None:
+    """Converts a VCF file to a CRISPR-HAWK compatible format and compresses it.
+
+    This function loads a VCF file, reformats it with updated genotype and population 
+    information, compresses the result, and logs the process.
+
+    Args:
+        vcf_fname (str): Path to the input VCF file.
+        joint (bool): Whether the VCF is a joint file (affects AC field formatting).
+        keep (bool): Whether to retain all variants or only those with 'PASS' in 
+            the filter.
+        suffix (str): Suffix to append to the output file name.
+        outdir (str): Output directory for the converted VCF.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+    """
     print_verbosity(
         f"Converting VCF {os.path.basename(vcf_fname)}", verbosity, VERBOSITYLVL[2]
     )
@@ -233,6 +370,25 @@ def convert_gnomad_vcf(
     verbosity: int,
     debug: bool,
 ) -> None:
+    """Converts multiple gnomAD VCF files to CRISPR-HAWK compatible format in parallel.
+
+    This function uses multiprocessing to convert a list of gnomAD VCF files, applying 
+    the specified options to each file and handling errors as needed.
+
+    Args:
+        gnomad_vcfs (List[str]): List of input gnomAD VCF file paths.
+        joint (bool): Whether the VCFs are joint files (affects AC field formatting).
+        keep (bool): Whether to retain all variants or only those with 'PASS' in the 
+            filter.
+        suffix (str): Suffix to append to each output file name.
+        outdir (str): Output directory for the converted VCFs.
+        threads (int): Number of parallel processes to use.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Raises:
+        CrisprHawkConverterError: If an error occurs during the conversion process.
+    """
     pool = multiprocessing.Pool(processes=threads)  # create processes pool
     try:
         convert_vcf_ = partial(

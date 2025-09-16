@@ -296,8 +296,31 @@ def _parse_bed_line(
 
 
 class BedAnnotation:
+    """Provides access to indexed BED annotation files for genomic feature queries.
+
+    This class manages Tabix-indexed BED files, allowing efficient retrieval of 
+    genomic features for specified regions and contigs.
+
+    Attributes:
+        _debug (bool): Flag indicating whether debug mode is enabled.
+        _verbosity (int): Verbosity level for logging and warnings.
+        _fname (str): Path to the BED file.
+        _bedidx (str): Path to the Tabix index file for the BED file.
+        _bed (TabixFile): pysam TabixFile object for querying the indexed BED file.
+    """
 
     def __init__(self, fname: str, verbosity: int, debug: bool) -> None:
+        """Initializes a BedAnnotation object for querying genomic features from 
+        a BED file.
+
+        Sets up the Tabix-indexed BED file for efficient feature retrieval and 
+        stores configuration parameters.
+
+        Args:
+            fname (str): Path to the BED file.
+            verbosity (int): Verbosity level for logging and warnings.
+            debug (bool): Flag indicating whether debug mode is enabled.
+        """
         self._debug = debug  # store debug flag
         self._verbosity = verbosity  # store verbosity level
         self._fname = fname  # store input file name
@@ -366,6 +389,20 @@ class BedAnnotation:
     def fetch_features(
         self, contig: str, start: int, stop: int
     ) -> Union[List[str], None]:
+        """Fetches genomic features from the indexed BED file for a given region.
+
+        Retrieves all features overlapping the specified contig and region from 
+        the Tabix-indexed BED file.
+
+        Args:
+            contig (str): The chromosome or contig name to query.
+            start (int): The start coordinate of the region.
+            stop (int): The stop coordinate of the region.
+
+        Returns:
+            Union[List[str], None]: A list of feature strings if found, or None 
+                if the contig is not present.
+        """
         if contig not in self._bed.contigs:
             return None
         return [e.strip() for e in self._bed.fetch(contig, start, stop)]

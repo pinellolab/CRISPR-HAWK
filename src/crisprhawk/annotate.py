@@ -1,4 +1,13 @@
-""" """
+"""
+This module provides functions and utilities for annotating CRISPR guide RNAs with
+various scores, sequence features, variant information, and functional or gene 
+annotations.
+
+It supports the calculation of efficiency and specificity scores, variant annotation,
+allele frequency assignment, GC content, out-of-frame scores, and integration with
+external tools for off-target prediction. The module is designed to process and
+enrich guide RNA data for downstream analysis in genome editing applications.
+"""
 
 from .crisprhawk_error import (
     CrisprHawkCfdScoreError,
@@ -34,6 +43,18 @@ ANNDIR = os.path.join(
 
 
 def reverse_guides(guides: List[Guide], verbosity: int) -> List[Guide]:
+    """Reverses the sequence of guides that are located on the reverse strand.
+
+    This function computes the reverse complement for each guide on the reverse 
+    strand and updates their sequences accordingly.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to process.
+        verbosity (int): Verbosity level for logging.
+
+    Returns:
+        List[Guide]: The list of guides with reverse strand guides reversed.
+    """
     # compute reverse complement sequence for guides occurring on reverse strand
     print_verbosity(
         "Reversing guides occurring on reverse strand", verbosity, VERBOSITYLVL[3]
@@ -49,6 +70,19 @@ def reverse_guides(guides: List[Guide], verbosity: int) -> List[Guide]:
 
 
 def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    """Computes Azimuth scores for a list of guide RNAs.
+
+    This function calculates the Azimuth efficiency score for each guide and updates 
+    the guide objects with the computed values.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to score.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with Azimuth scores assigned.
+    """
     # create guides np.ndarray required by azimuth; each guide must have 4 nts
     # upstream the guide sequence, and 3 nts downstream the pam
     if not guides:
@@ -81,6 +115,19 @@ def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guid
 
 
 def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    """Computes RS3 scores for a list of guide RNAs.
+
+    This function calculates the RS3 efficiency score for each guide and updates 
+    the guide objects with the computed values.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to score.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with RS3 scores assigned.
+    """
     if not guides:
         return guides
     print_verbosity("Computing RS3 score", verbosity, VERBOSITYLVL[3])
@@ -109,6 +156,19 @@ def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
 
 
 def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    """Computes DeepCpf1 scores for a list of guide RNAs.
+
+    This function calculates the DeepCpf1 efficiency score for each guide and 
+    updates the guide objects with the computed values.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to score.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with DeepCpf1 scores assigned.
+    """
     if not guides:
         return guides
     print_verbosity("Computing DeepCpf1 score", verbosity, VERBOSITYLVL[3])
@@ -139,8 +199,28 @@ def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Gui
 def group_guides_position(
     guides: List[Guide], debug: bool
 ) -> Dict[str, Tuple[Union[None, Guide], List[Guide]]]:
+    """Groups guides by their genomic position and strand.
+
+    This function organizes guides into groups based on their start position and 
+    strand, identifying the reference guide and associated variant guides for each 
+    group.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to group.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        Dict[str, Tuple[Union[None, Guide], List[Guide]]]: A dictionary mapping 
+            position keys to tuples containing the reference guide and a list of 
+            guides at that position.
+    """
 
     class _GuideGroup:
+        """Helper class to group guides by position and strand.
+
+        This class stores a reference guide and a list of guides for a specific 
+        genomic position and strand.
+        """
         def __init__(self) -> None:
             self._refguide = None
             self._guides = []
@@ -165,6 +245,19 @@ def group_guides_position(
 
 
 def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    """Computes CFDon scores for a list of guide RNAs.
+
+    This function calculates the CFDon specificity score for each guide and updates 
+    the guide objects with the computed values.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to score.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with CFDon scores assigned.
+    """
     print_verbosity("Computing CFDon score", verbosity, VERBOSITYLVL[3])
     start = time()  # cfdon start time
     guide_groups = group_guides_position(guides, debug)  # group guides by positions
@@ -190,6 +283,19 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
 
 
 def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    """Computes Elevation-on scores for a list of guide RNAs.
+
+    This function calculates the Elevation-on efficiency score for each guide and 
+    updates the guide objects with the computed values.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to score.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with Elevation-on scores assigned.
+    """
     print_verbosity("Computing Elevation-on score", verbosity, VERBOSITYLVL[3])
     start = time()  # cfdon start time
     guide_groups = group_guides_position(guides, debug)  # group guides by positions
@@ -203,6 +309,19 @@ def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[
 
 
 def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
+    """Validates and filters variants that overlap with a guide sequence.
+
+    This function checks each variant to ensure it matches the expected sequence 
+    context within the guide and returns only validated variants.
+
+    Args:
+        guide (Guide): The guide object whose sequence is used for validation.
+        variants (Set[str]): Set of variant identifiers to validate.
+
+    Returns:
+        Set[str]: The set of validated variant identifiers that match the guide 
+            sequence.
+    """
     # map variant positions to variant strings for quick lookup
     varposmap = {int(variant.split("-")[1]): variant for variant in variants}
     validated_variants = set()
@@ -229,6 +348,19 @@ def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
 
 
 def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    """Annotates guides with variants that overlap their sequence.
+
+    This function identifies and validates variants that occur within each guide's 
+    sequence and updates the guide objects with the relevant variant information.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to annotate.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with annotated variant information.
+    """
     guides_lst = []  # reported guides
     print_verbosity(
         "Annotating variants occurring in guides", verbosity, VERBOSITYLVL[3]
@@ -270,9 +402,19 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
     return guides_lst
 
 
-def annotate_variants_afs(
-    guides: List[Guide], verbosity: int, debug: bool
-) -> List[Guide]:
+def annotate_variants_afs(guides: List[Guide], verbosity: int) -> List[Guide]:
+    """Annotates guides with allele frequencies for variants in their sequence.
+
+    This function assigns allele frequency values to each guide based on the 
+    variants present in its sequence.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to annotate.
+        verbosity (int): Verbosity level for logging.
+
+    Returns:
+        List[Guide]: The list of guides with annotated allele frequency information.
+    """
     guides_lst = []  # reported guides
     print_verbosity(
         "Annotating variants allele frequencies in guides", verbosity, VERBOSITYLVL[3]
@@ -300,6 +442,20 @@ def annotate_variants_afs(
 def _funcann(
     guide: Guide, bedannotation: BedAnnotation, contig: str, debug: bool
 ) -> Guide:
+    """Annotates a guide with functional features from a BED annotation.
+
+    This function fetches annotation features overlapping the guide and assigns 
+    the relevant annotation to the guide object.
+
+    Args:
+        guide (Guide): The guide object to annotate.
+        bedannotation (BedAnnotation): The BED annotation object to query.
+        contig (str): The contig or chromosome name.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        Guide: The guide object with functional annotation set.
+    """
     try:  # fetch annotation features overlapping input guide
         annotation = bedannotation.fetch_features(contig, guide.start, guide.stop)
     except Exception as e:
@@ -317,16 +473,38 @@ def _funcann(
 
 
 def _retrieve_gene_name(field: str) -> str:
+    """Extracts the gene name from a semicolon-separated annotation field.
+
+    This function searches for the 'gene_name=' substring and returns the corresponding 
+    gene name if present.
+
+    Args:
+        field (str): The annotation field string to search.
+
+    Returns:
+        str: The extracted gene name, or an empty string if not found.
+    """
     i = field.find("gene_name=")
-    if i == -1:  # gene name not found
-        return ""
-    j = field.find(";", i + 10)
-    return field[i + 10 : j]  # return gene name
+    return "" if i == -1 else field[i + 10:field.find(";", i + 10)]
 
 
 def _geneann(
     guide: Guide, bedannotation: BedAnnotation, contig: str, debug: bool
 ) -> Guide:
+    """Annotates a guide with gene features from a BED annotation.
+
+    This function fetches gene annotation features overlapping the guide and 
+    assigns the relevant gene annotation to the guide object.
+
+    Args:
+        guide (Guide): The guide object to annotate.
+        bedannotation (BedAnnotation): The BED annotation object to query.
+        contig (str): The contig or chromosome name.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        Guide: The guide object with gene annotation set.
+    """
     try:  # fetch annotation features overlapping input guide
         annotation = bedannotation.fetch_features(contig, guide.start, guide.stop)
     except Exception as e:
@@ -361,6 +539,22 @@ def ann_guides(
     verbosity: int,
     debug: bool,
 ) -> List[Guide]:
+    """Annotates guides with functional or gene features from BED files.
+
+    This function applies either regular or gene annotation to each guide using 
+    the provided BED annotation files.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to annotate.
+        contig (str): The contig or chromosome name.
+        annotations (List[str]): List of BED annotation file paths.
+        atype (int): Annotation type (0 for regular annotation, 1 for gene annotation).
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with applied annotations.
+    """
     print_verbosity("Starting guides annotation", verbosity, VERBOSITYLVL[3])
     start = time()  # functional annotation start time
     assert atype in {0, 1}  # used to set the proper field in guides
@@ -382,10 +576,23 @@ def ann_guides(
         verbosity,
         VERBOSITYLVL[3],
     )
-    return guides_ann if guides_ann else guides
+    return guides_ann or guides
 
 
 def gc_content(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+    """Computes the GC content for each guide RNA sequence.
+
+    This function calculates the GC content (excluding the PAM) for each guide 
+    and updates the guide objects with the computed values.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to process.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with GC content assigned.
+    """
     print_verbosity("Computing GC content", verbosity, VERBOSITYLVL[3])
     start = time()  # GC content calculation start time
     try:  # compute gc content (PAM excluded)
@@ -408,6 +615,22 @@ def gc_content(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
 def outofframe_score(
     guides: List[Guide], guidelen: int, right: bool, verbosity: int, debug: bool
 ) -> List[Guide]:
+    """Computes the out-of-frame score for each guide RNA sequence.
+
+    This function calculates the likelihood that a guide induces an out-of-frame 
+    mutation and updates the guide objects with the computed values.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to process.
+        guidelen (int): Length of the guide sequence.
+        right (bool): Whether the guide is extracted downstream (right side) of 
+            the PAM.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with out-of-frame scores assigned.
+    """
     print_verbosity("Computing out-of-frame score", verbosity, VERBOSITYLVL[3])
     start = time()  # out-of-frame score calculation start time
     try:  # compute out-of-frame score
@@ -450,6 +673,40 @@ def annotate_guides(
     verbosity: int,
     debug: bool,
 ) -> Dict[Region, List[Guide]]:
+    """Annotates guides with scores, sequence features, and functional or gene 
+    information.
+
+    This function processes each region's guides by annotating them with variant, 
+    efficiency, specificity, and functional or gene features, as well as off-target 
+    predictions if requested.
+
+    Args:
+        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists 
+            of Guide objects.
+        annotations (List[str]): List of BED annotation file paths for functional 
+            annotation.
+        gene_annotations (List[str]): List of BED annotation file paths for gene 
+            annotation.
+        pam (PAM): PAM object specifying the CRISPR system.
+        compute_elevation (bool): Whether to compute Elevation-on scores.
+        estimate_offtargets (bool): Whether to estimate off-targets using CRISPRitz.
+        crispritz_config (Union[None, CrispritzConfig]): CRISPRitz configuration 
+            object.
+        mm (int): Maximum number of mismatches for off-target search.
+        bdna (int): Maximum number of DNA bulges for off-target search.
+        brna (int): Maximum number of RNA bulges for off-target search.
+        crispritz_index (str): Path to the CRISPRitz genome index.
+        guidelen (int): Length of the guide sequence.
+        right (bool): Whether the guide is extracted downstream (right side) of 
+            the PAM.
+        outdir (str): Output directory for results.
+        threads (int): Number of threads to use.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        Dict[Region, List[Guide]]: The dictionary of regions with annotated guides.
+    """
     # annotate guides with scores, variants and adjust positions
     print_verbosity("Annotating guides", verbosity, VERBOSITYLVL[1])
     start = time()  # annotation start time
@@ -457,7 +714,7 @@ def annotate_guides(
         # set variants for current guide
         guides_list = annotate_variants(guides_list, verbosity, debug)
         # add allele frequencies for variants occurring in guides
-        guides_list = annotate_variants_afs(guides_list, verbosity, debug)
+        guides_list = annotate_variants_afs(guides_list, verbosity)
         # compute reverse complement for guides occurring on rev strand
         guides_list = reverse_guides(guides_list, verbosity)
         if pam.cas_system in [SPCAS9, XCAS9]:  # cas9 system pam
