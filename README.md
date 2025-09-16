@@ -24,6 +24,10 @@ CRISPR-HAWK is a comprehensive and scalable tool for designing guide RNAs (gRNAs
 <br>&nbsp;&nbsp;2.3 [Convert gnomAD VCF](#23-convert-gnomad-vcf)
 <br>&nbsp;&nbsp;2.4 [Prepare Data for CRISPRme](#24-prepare-data-for-crisprme)
 <br>3 [Test](#3-test)
+<br>&nbsp;&nbsp;3.1 [Quick Test After Installation](#31-quick-test-after-installation)
+<br>&nbsp;&nbsp;3.2 [Run Full Test Suite with PyTest](#32-run-full-test-suite-with-pytest)
+<br>&nbsp;&nbsp; 3.3 [Troubleshooting](#33-troubleshooting)
+<br>&nbsp;&nbsp; 3.4 [Reporting Issues](#34-reporting-issues)
 <br>4 [Citation](#4-citation)
 <br>5 [Contacts](#5-contacts)
 <br>6 [License](#6-license)
@@ -524,6 +528,97 @@ This command will:
 > 💡 **Tip**: This is especially useful when transitioning from **on-target selection** in CRISPR-HAWK to **off-target analysis** in CRISPRme.
 
 ## 3 Test
+
+Once installed CRISPR‑HAWK, you can verify that everything is working as expected. Below are instructions for running the full test suite with pytest, as well as a quick smoke test to ensure basic functionality.
+
+### 3.1 Quick Test After Installation
+
+If you just want a quick check that CRISPR‑HAWK is installed correctly and its CLI is working, try the following:
+
+```bash
+crisprhawk --help
+```
+
+You should see the usage message with available commands. If this works, then:
+
+```bash
+crisprhawk search -h
+```
+
+This should display help text for the `search` command and show all its options.
+
+If both commands complete without error, your installation is likely successful.
+
+### 3.2 Run Full Test Suite with PyTest
+
+Make sure you’ve installed the development dependencies first (pytest, etc.). Then from the root of the repository, run:
+
+```bash
+pytest
+```
+
+This will run all tests in the `tests/` directory. If everything passes, CRISPR‑HAWK is behaving correctly end‑to‑end.
+
+You can also run more specific tests:
+
+```bash
+pytest tests/test_utils.py
+pytest tests/test_utils.py::test_some_specific_function
+```
+
+### 3.3 Troubleshooting
+
+* **Import errors or missing modules when running `pytest`**
+  <br>Ensure the package is correctly installed. We recommend installing in editable mode during development:
+
+  ```bash
+  pip install -e .[dev]
+  ```
+
+  Also check that the `src/` directory is properly referenced in your project structure.
+
+* **Command not found (`crisprhawk`)**
+  <br>Make sure your virtual environment is activated (if used), or that the `bin/` path where `crisprhawk` is installed is in your system's `$PATH`.
+
+* **Unexpected behavior or crashes**
+  <br>Run the command with increased verbosity or debug mode:
+
+  ```bash
+  crisprhawk <command> <args> --verbosity 3 --debug
+  ```
+
+  This will print internal logs and full stack traces to help identify the issue.
+
+
+### 3.4 Reporting Issues
+
+If you encounter a problem that isn't resolved by the above suggestions:
+
+1. **Check existing issues**
+   <br>Visit the [GitHub Issues page](https://github.com/pinellolab/CRISPR-HAWK/issues) to see if the problem has already been reported or discussed.
+
+2. **Open a new issue**
+   <br>If your problem is not listed, please open a new issue and include the following:
+
+   * **Description** of the problem or unexpected behavior
+   * **Steps to reproduce** the error (including input data or command-line arguments, if applicable)
+   * **Platform details**:
+
+     * OS (e.g. Ubuntu 22.04, macOS 13)
+     * Python version
+     * CRISPR-HAWK version (or commit hash if using a development version)
+   * **Full error message and traceback**, if available (please use a code block for readability)
+   * Optionally, include the output of:
+
+     ```bash
+     crisprhawk --version
+     pip list
+     ```
+
+3. **Contact**
+   <br>If the issue involves sensitive data or requires direct contact, please email the maintainer(s) listed in the repository.
+
+> 💬 Got suggestions or issues? We’d love to hear from you — your input helps us build a better CRISPR‑HAWK. Thank you!
 
 ## 4 Citation
 
