@@ -47,7 +47,6 @@ REPORTCOLS = [
     "haplotype_id",  # 19
     "offtargets",  # 20
     "cfd",  # 21
-    "elevation",  # 22
 ]
 
 
@@ -208,8 +207,6 @@ def update_optional_report_fields(
         report[REPORTCOLS[20]].append(guide.offtargets)
         if pam.cas_system in [SPCAS9, XCAS9]:  # spcas9 system pam
             report[REPORTCOLS[21]].append(guide.cfd)
-        if guide.guidelen + len(pam) == 23 and not guide.right:
-            report[REPORTCOLS[22]].append(guide.elevation)
     return report
 
 
@@ -241,10 +238,8 @@ def insert_offtargets_reportcols(
 ) -> List[str]:
     reportcols = []
     if estimate_offtargets:
-        reportcols = REPORTCOLS[19:20]
+        reportcols = REPORTCOLS[20:21]
         if cas_system in [SPCAS9, XCAS9]:  # add CFD score
-            reportcols += REPORTCOLS[20:21]
-        if guidepam_len == 23 and not right:  # add elevation
             reportcols += REPORTCOLS[21:]
     return reportcols
 
@@ -381,12 +376,6 @@ def _format_cfd(reportcols: List[str]) -> List[str]:
     return []
 
 
-def _format_elevation(reportcols: List[str]) -> List[str]:
-    if REPORTCOLS[22] in reportcols:
-        return REPORTCOLS[22:]
-    return []
-
-
 def format_reportcols(
     pam: PAM,
     right: bool,
@@ -416,7 +405,6 @@ def format_reportcols(
     if estimate_offtargets:
         reportcols_sorted += reportcols[20:21]
         reportcols_sorted += _format_cfd(reportcols)
-        reportcols_sorted += _format_elevation(reportcols)
     reportcols_sorted += REPORTCOLS[18:20]
     return reportcols_sorted
 
@@ -604,8 +592,6 @@ def collapse_report_entries(
         group_cols.append(REPORTCOLS[20])
         if REPORTCOLS[21] in reportcols:
             group_cols.append(REPORTCOLS[21])
-        if REPORTCOLS[22] in reportcols:
-            group_cols.append(REPORTCOLS[22])
     return report.groupby(group_cols, as_index=False).agg(
         collapsed_fields(
             pam, annotations, gene_annotations, estimate_offtargets, reportcols
