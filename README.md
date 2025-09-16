@@ -629,7 +629,7 @@ If you use CRISPR-HAWK in your research, please cite:
   title = {CRISPR-HAWK: Haplotype- and vAriant-aWare guide design toolKit},
   author = {Manuel Tognon},
   year = {2025},
-  url = {https://github.com/ManuelTgn/CRISPR-HAWK}
+  url = {https://github.com/pinellolab/CRISPR-HAWK}
 }
 ```
 
