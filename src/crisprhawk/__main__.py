@@ -73,7 +73,6 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
     )
     # crisprhawk search command
     parser_search = create_search_parser(subparsers)
-    # crisprhawk graphical-reports command
     # crisprhawk convert-gnomad-vcf command
     parser_converter = create_converter_parser(subparsers)
     # crisprhawk prepare-data-crisprme command
@@ -587,7 +586,7 @@ def main():
             crisprhawk_crispritz_config(
                 CrisprHawkCrispritzConfigInputArgs(args, parser)
             )
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         sigint_handler()  # catch SIGINT and exit gracefully
     sys.stdout.write(f"{TOOLNAME} - Elapsed time {(time() - start):.2f}s\n")
 
