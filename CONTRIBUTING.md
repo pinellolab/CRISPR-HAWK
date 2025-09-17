@@ -64,8 +64,8 @@ We recommend using a virtual environment or \[conda/mamba] for isolation.
 1. Create a virtual environment:
 
    ```bash
-   python3 -m venv venv
-   source venv/bin/activate
+   mamba create -n crisprhawk-dev python=3.8 -y
+   mamba activate crisprhawk-dev
    ```
 
 2. Install the package in editable mode with dev dependencies:
@@ -88,7 +88,7 @@ pytest
 To run a specific test:
 
 ```bash
-pytest tests/test_utils.py::test_function_name
+pytest tests/test_<module_name>.py::<test_function_name>
 ```
 
 If your contribution includes new functionality, please add corresponding unit tests under the `tests/` directory.
