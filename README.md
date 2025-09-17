@@ -39,6 +39,9 @@ To ensure optimal performance, CRISPR-HAWK requires the following system specifi
 - **Operating System**:
 <br>macOS or any modern Linux distribution (e.g., Ubuntu, CentOS)
 
+- **Required Disk Space**:
+<br> 3.5 GB
+
 - **Minimum RAM**:
 <br>16 GB — sufficient for standard use cases and small to medium-sized datasets
 
@@ -98,6 +101,36 @@ mamba config --set channel_priority strict
 
 By completing these steps your system will be correctly configured to install CRISPR-HAWK and all required dependencies via Bioconda.
 
+**Apple Silicon (M1/M2/M3) Support**
+
+If you're using a Mac with Apple Silicon, follow these additional steps to ensure compatibility with Bioconda packages (which are primarily built for Intel)
+
+> 💡 **Tip**: Not sure if your Mac uses Apple Silicon (M1, M2, or M3)? You can check by visiting Apple’s official support page: [Identify your Mac model and chip](https://support.apple.com/en-us/116943)
+
+**System-wide (Recommended)**
+
+Make sure [Rosetta](https://support.apple.com/en-us/102527) is installed:
+```zsh
+softwareupdate --install-rosetta
+```
+
+Configure Mamba (or Conda) to prefer Intel (x86_64) builds:
+```zsh
+mamba config --add subdirs osx-64
+```
+
+This will allow Bioconda to fetch compatible packages globally across all environments.
+
+**Environment-specific (Alternative)**
+
+You can also enable Intel compatibility in a specific environment only:
+```zsh
+CONDA_SUBDIR=osx-64 mamba create -n crisprhawk-env -c bioconda crispr-hawk
+```
+
+
+⚠️ If you use this method, remember to prepend CONDA_SUBDIR=osx-64 to every future conda install command within this environment — or set the variable globally in your shell profile.
+
 
 #### 1.1.2 Install CRISPR-HAWK
 
@@ -129,7 +162,7 @@ This method assumes you already have **Python 3.8** installed and accessible fro
 
 **1. Clone the Repository**
 ```bash
-git clone https://github.com/ManuelTgn/CRISPR-HAWK.git
+git clone https://github.com/pinellolab/CRISPR-HAWK.git
 cd CRISPR-HAWK
 ```
 

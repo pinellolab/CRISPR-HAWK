@@ -1,8 +1,3 @@
-import os
-import tempfile
-import shutil
-import pytest
-
 from crisprhawk.converter import (
     tabix_index,
     load_vcf,
@@ -11,16 +6,13 @@ from crisprhawk.converter import (
     _update_header,
     _asses_genotype,
     _format_vrecord,
-    _convert,
-    _compress,
-    convert_vcf,
     convert_gnomad_vcf,
     GNOMADPOPS,
     GT,
-    GTLINE,
 )
 from crisprhawk.crisprhawk_error import CrisprHawkConverterError
 
+import pytest
 import pysam
 
 
