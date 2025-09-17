@@ -1,4 +1,10 @@
-""" """
+"""
+This module provides functions for encoding nucleotide sequences into bitset
+representations using IUPAC codes.
+
+It enables efficient sequence matching by converting nucleotides and ambiguous
+codes into Bitset objects for downstream analysis.
+"""
 
 from .exception_handlers import exception_handler
 from .utils import IUPAC, VERBOSITYLVL, print_verbosity

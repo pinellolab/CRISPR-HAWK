@@ -298,7 +298,7 @@ def _parse_bed_line(
 class BedAnnotation:
     """Provides access to indexed BED annotation files for genomic feature queries.
 
-    This class manages Tabix-indexed BED files, allowing efficient retrieval of 
+    This class manages Tabix-indexed BED files, allowing efficient retrieval of
     genomic features for specified regions and contigs.
 
     Attributes:
@@ -310,10 +310,10 @@ class BedAnnotation:
     """
 
     def __init__(self, fname: str, verbosity: int, debug: bool) -> None:
-        """Initializes a BedAnnotation object for querying genomic features from 
+        """Initializes a BedAnnotation object for querying genomic features from
         a BED file.
 
-        Sets up the Tabix-indexed BED file for efficient feature retrieval and 
+        Sets up the Tabix-indexed BED file for efficient feature retrieval and
         stores configuration parameters.
 
         Args:
@@ -391,7 +391,7 @@ class BedAnnotation:
     ) -> Union[List[str], None]:
         """Fetches genomic features from the indexed BED file for a given region.
 
-        Retrieves all features overlapping the specified contig and region from 
+        Retrieves all features overlapping the specified contig and region from
         the Tabix-indexed BED file.
 
         Args:
@@ -400,7 +400,7 @@ class BedAnnotation:
             stop (int): The stop coordinate of the region.
 
         Returns:
-            Union[List[str], None]: A list of feature strings if found, or None 
+            Union[List[str], None]: A list of feature strings if found, or None
                 if the contig is not present.
         """
         if contig not in self._bed.contigs:

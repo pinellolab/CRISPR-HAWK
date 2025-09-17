@@ -23,9 +23,9 @@ CRISPRITZ = "crispritz.py"
 class CrispritzConfig:
     """Manages configuration for CRISPRitz environment and output directory.
 
-    This class loads, saves, and validates configuration settings for the CRISPRitz 
-    tool, including environment name and output directory. It provides methods to 
-    update, reset, and display configuration, as well as to set the conda/mamba 
+    This class loads, saves, and validates configuration settings for the CRISPRitz
+    tool, including environment name and output directory. It provides methods to
+    update, reset, and display configuration, as well as to set the conda/mamba
     command for environment management.
 
     Attributes:
@@ -33,10 +33,11 @@ class CrispritzConfig:
         _conda (str): The conda or mamba command used for environment management.
         _config (dict): The loaded configuration dictionary.
     """
+
     def __init__(self) -> None:
         """Initializes a CrispritzConfig object for managing CRISPRitz configuration.
 
-        Loads the configuration file, sets the default conda command, and prepares 
+        Loads the configuration file, sets the default conda command, and prepares
         the configuration dictionary.
         """
         self._config_file = CONFIG
@@ -44,7 +45,7 @@ class CrispritzConfig:
         self._config = self._load_config()
 
     def __str__(self) -> str:
-        """Returns a human-readable string representation of the CrispritzConfig 
+        """Returns a human-readable string representation of the CrispritzConfig
         object.
 
         The string includes the current environment name and output directory.
@@ -57,7 +58,7 @@ class CrispritzConfig:
     def __repr__(self) -> str:
         """Returns a detailed string representation of the CrispritzConfig object.
 
-        The representation includes the config file path, environment name, and 
+        The representation includes the config file path, environment name, and
         output directory.
 
         Returns:
@@ -68,14 +69,14 @@ class CrispritzConfig:
     def _load_config(self) -> dict:
         """Loads the CRISPRitz configuration from the config file.
 
-        Reads the configuration JSON file, creates a default config if missing, 
+        Reads the configuration JSON file, creates a default config if missing,
         and ensures required fields are present.
 
         Returns:
             dict: The loaded configuration dictionary.
 
         Raises:
-            CrisprHawkCrispritzConfigError: If the config file cannot be loaded 
+            CrisprHawkCrispritzConfigError: If the config file cannot be loaded
                 or parsed.
         """
         if not os.path.exists(self._config_file) and os.path.isfile(self._config_file):
@@ -107,11 +108,11 @@ class CrispritzConfig:
     def _save_config(self, config: Optional[Dict[str, Dict[str, str]]] = None) -> None:
         """Saves the CRISPRitz configuration to the config file.
 
-        Writes the provided configuration dictionary (or the current config) to 
+        Writes the provided configuration dictionary (or the current config) to
         the JSON config file, creating the directory if necessary.
 
         Args:
-            config (Optional[Dict[str, Dict[str, str]]]): The configuration dictionary 
+            config (Optional[Dict[str, Dict[str, str]]]): The configuration dictionary
                 to save. If None, saves the current config.
 
         Raises:
@@ -140,7 +141,7 @@ class CrispritzConfig:
     def env_name(self, value: str) -> None:
         """Sets the environment name for the CRISPRitz configuration.
 
-        Validates that the provided value is a non-empty string and updates the 
+        Validates that the provided value is a non-empty string and updates the
         configuration.
 
         Args:
@@ -203,8 +204,8 @@ class CrispritzConfig:
     def set_command(self) -> bool:
         """Sets the conda or mamba command for CRISPRitz environment management.
 
-        This method checks for the availability of mamba or conda and sets the 
-        internal command accordingly. If neither is found, it issues a warning and 
+        This method checks for the availability of mamba or conda and sets the
+        internal command accordingly. If neither is found, it issues a warning and
         returns False.
 
         Returns:
@@ -222,16 +223,16 @@ class CrispritzConfig:
     def update_config(
         self, env_name: Optional[str] = None, outdir: Optional[str] = None
     ) -> None:
-        """Updates the CRISPRitz configuration with new environment name and/or 
+        """Updates the CRISPRitz configuration with new environment name and/or
         output directory.
 
-        This method sets the environment name and output directory if provided, 
+        This method sets the environment name and output directory if provided,
         updating the configuration accordingly.
 
         Args:
-            env_name (Optional[str]): The new environment name to set. If None, 
+            env_name (Optional[str]): The new environment name to set. If None,
                 the environment name is not changed.
-            outdir (Optional[str]): The new output directory to set. If None, the 
+            outdir (Optional[str]): The new output directory to set. If None, the
                 output directory is not changed.
         """
         if env_name is not None:
@@ -242,7 +243,7 @@ class CrispritzConfig:
     def reset_to_defaults(self) -> None:
         """Resets the CRISPRitz configuration to default values.
 
-        This method restores the environment name and output directory to their 
+        This method restores the environment name and output directory to their
         default settings and saves the updated configuration.
         """
         self._config["crispritz"] = {
@@ -254,7 +255,7 @@ class CrispritzConfig:
     def show_config(self) -> str:
         """Returns the current CRISPRitz configuration as a formatted JSON string.
 
-        This method provides a human-readable representation of the loaded 
+        This method provides a human-readable representation of the loaded
         configuration.
 
         Returns:
@@ -263,14 +264,14 @@ class CrispritzConfig:
         return json.dumps(self._config, indent=2, sort_keys=True)
 
     def validate_config(self) -> None:
-        """Validates the current CRISPRitz configuration for required fields and 
+        """Validates the current CRISPRitz configuration for required fields and
         types.
 
-        This method checks that the configuration contains the necessary fields 
+        This method checks that the configuration contains the necessary fields
         and that they are properly formatted.
 
         Raises:
-            CrisprHawkCrispritzConfigError: If any required field is missing or 
+            CrisprHawkCrispritzConfigError: If any required field is missing or
                 has an invalid type or value.
         """
         if "crispritz" not in self._config:  # check if crispritz section exists
@@ -316,7 +317,7 @@ class CrispritzConfig:
 def check_crispritz_env(env_name: str, conda: str) -> bool:
     """Checks if CRISPRitz is installed in the specified conda or mamba environment.
 
-    Attempts to run CRISPRitz in the given environment and returns True if successful, 
+    Attempts to run CRISPRitz in the given environment and returns True if successful,
     otherwise issues a warning and returns False.
 
     Args:
@@ -348,7 +349,7 @@ def check_crispritz_env(env_name: str, conda: str) -> bool:
 def config_crispritz(config: CrispritzConfig, env_name: str, targets_dir: str) -> None:
     """Configures the CRISPRitz environment and output directory.
 
-    This function updates the CRISPRitz configuration with a new environment name 
+    This function updates the CRISPRitz configuration with a new environment name
     and/or output directory, reloads the configuration, and validates it.
 
     Args:

@@ -1,6 +1,6 @@
 """
 This module provides functions and utilities for annotating CRISPR guide RNAs with
-various scores, sequence features, variant information, and functional or gene 
+various scores, sequence features, variant information, and functional or gene
 annotations.
 
 It supports the calculation of efficiency and specificity scores, variant annotation,
@@ -45,7 +45,7 @@ ANNDIR = os.path.join(
 def reverse_guides(guides: List[Guide], verbosity: int) -> List[Guide]:
     """Reverses the sequence of guides that are located on the reverse strand.
 
-    This function computes the reverse complement for each guide on the reverse 
+    This function computes the reverse complement for each guide on the reverse
     strand and updates their sequences accordingly.
 
     Args:
@@ -72,7 +72,7 @@ def reverse_guides(guides: List[Guide], verbosity: int) -> List[Guide]:
 def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Computes Azimuth scores for a list of guide RNAs.
 
-    This function calculates the Azimuth efficiency score for each guide and updates 
+    This function calculates the Azimuth efficiency score for each guide and updates
     the guide objects with the computed values.
 
     Args:
@@ -117,7 +117,7 @@ def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guid
 def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Computes RS3 scores for a list of guide RNAs.
 
-    This function calculates the RS3 efficiency score for each guide and updates 
+    This function calculates the RS3 efficiency score for each guide and updates
     the guide objects with the computed values.
 
     Args:
@@ -158,7 +158,7 @@ def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
 def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Computes DeepCpf1 scores for a list of guide RNAs.
 
-    This function calculates the DeepCpf1 efficiency score for each guide and 
+    This function calculates the DeepCpf1 efficiency score for each guide and
     updates the guide objects with the computed values.
 
     Args:
@@ -201,8 +201,8 @@ def group_guides_position(
 ) -> Dict[str, Tuple[Union[None, Guide], List[Guide]]]:
     """Groups guides by their genomic position and strand.
 
-    This function organizes guides into groups based on their start position and 
-    strand, identifying the reference guide and associated variant guides for each 
+    This function organizes guides into groups based on their start position and
+    strand, identifying the reference guide and associated variant guides for each
     group.
 
     Args:
@@ -210,17 +210,18 @@ def group_guides_position(
         debug (bool): Flag to enable debug mode for error handling.
 
     Returns:
-        Dict[str, Tuple[Union[None, Guide], List[Guide]]]: A dictionary mapping 
-            position keys to tuples containing the reference guide and a list of 
+        Dict[str, Tuple[Union[None, Guide], List[Guide]]]: A dictionary mapping
+            position keys to tuples containing the reference guide and a list of
             guides at that position.
     """
 
     class _GuideGroup:
         """Helper class to group guides by position and strand.
 
-        This class stores a reference guide and a list of guides for a specific 
+        This class stores a reference guide and a list of guides for a specific
         genomic position and strand.
         """
+
         def __init__(self) -> None:
             self._refguide = None
             self._guides = []
@@ -247,7 +248,7 @@ def group_guides_position(
 def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Computes CFDon scores for a list of guide RNAs.
 
-    This function calculates the CFDon specificity score for each guide and updates 
+    This function calculates the CFDon specificity score for each guide and updates
     the guide objects with the computed values.
 
     Args:
@@ -285,7 +286,7 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
 def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Computes Elevation-on scores for a list of guide RNAs.
 
-    This function calculates the Elevation-on efficiency score for each guide and 
+    This function calculates the Elevation-on efficiency score for each guide and
     updates the guide objects with the computed values.
 
     Args:
@@ -311,7 +312,7 @@ def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[
 def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
     """Validates and filters variants that overlap with a guide sequence.
 
-    This function checks each variant to ensure it matches the expected sequence 
+    This function checks each variant to ensure it matches the expected sequence
     context within the guide and returns only validated variants.
 
     Args:
@@ -319,7 +320,7 @@ def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
         variants (Set[str]): Set of variant identifiers to validate.
 
     Returns:
-        Set[str]: The set of validated variant identifiers that match the guide 
+        Set[str]: The set of validated variant identifiers that match the guide
             sequence.
     """
     # map variant positions to variant strings for quick lookup
@@ -350,7 +351,7 @@ def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
 def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Annotates guides with variants that overlap their sequence.
 
-    This function identifies and validates variants that occur within each guide's 
+    This function identifies and validates variants that occur within each guide's
     sequence and updates the guide objects with the relevant variant information.
 
     Args:
@@ -405,7 +406,7 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
 def annotate_variants_afs(guides: List[Guide], verbosity: int) -> List[Guide]:
     """Annotates guides with allele frequencies for variants in their sequence.
 
-    This function assigns allele frequency values to each guide based on the 
+    This function assigns allele frequency values to each guide based on the
     variants present in its sequence.
 
     Args:
@@ -444,7 +445,7 @@ def _funcann(
 ) -> Guide:
     """Annotates a guide with functional features from a BED annotation.
 
-    This function fetches annotation features overlapping the guide and assigns 
+    This function fetches annotation features overlapping the guide and assigns
     the relevant annotation to the guide object.
 
     Args:
@@ -475,7 +476,7 @@ def _funcann(
 def _retrieve_gene_name(field: str) -> str:
     """Extracts the gene name from a semicolon-separated annotation field.
 
-    This function searches for the 'gene_name=' substring and returns the corresponding 
+    This function searches for the 'gene_name=' substring and returns the corresponding
     gene name if present.
 
     Args:
@@ -485,7 +486,7 @@ def _retrieve_gene_name(field: str) -> str:
         str: The extracted gene name, or an empty string if not found.
     """
     i = field.find("gene_name=")
-    return "" if i == -1 else field[i + 10:field.find(";", i + 10)]
+    return "" if i == -1 else field[i + 10 : field.find(";", i + 10)]
 
 
 def _geneann(
@@ -493,7 +494,7 @@ def _geneann(
 ) -> Guide:
     """Annotates a guide with gene features from a BED annotation.
 
-    This function fetches gene annotation features overlapping the guide and 
+    This function fetches gene annotation features overlapping the guide and
     assigns the relevant gene annotation to the guide object.
 
     Args:
@@ -541,7 +542,7 @@ def ann_guides(
 ) -> List[Guide]:
     """Annotates guides with functional or gene features from BED files.
 
-    This function applies either regular or gene annotation to each guide using 
+    This function applies either regular or gene annotation to each guide using
     the provided BED annotation files.
 
     Args:
@@ -582,7 +583,7 @@ def ann_guides(
 def gc_content(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Computes the GC content for each guide RNA sequence.
 
-    This function calculates the GC content (excluding the PAM) for each guide 
+    This function calculates the GC content (excluding the PAM) for each guide
     and updates the guide objects with the computed values.
 
     Args:
@@ -617,13 +618,13 @@ def outofframe_score(
 ) -> List[Guide]:
     """Computes the out-of-frame score for each guide RNA sequence.
 
-    This function calculates the likelihood that a guide induces an out-of-frame 
+    This function calculates the likelihood that a guide induces an out-of-frame
     mutation and updates the guide objects with the computed values.
 
     Args:
         guides (List[Guide]): List of Guide objects to process.
         guidelen (int): Length of the guide sequence.
-        right (bool): Whether the guide is extracted downstream (right side) of 
+        right (bool): Whether the guide is extracted downstream (right side) of
             the PAM.
         verbosity (int): Verbosity level for logging.
         debug (bool): Flag to enable debug mode for error handling.
@@ -673,31 +674,31 @@ def annotate_guides(
     verbosity: int,
     debug: bool,
 ) -> Dict[Region, List[Guide]]:
-    """Annotates guides with scores, sequence features, and functional or gene 
+    """Annotates guides with scores, sequence features, and functional or gene
     information.
 
-    This function processes each region's guides by annotating them with variant, 
-    efficiency, specificity, and functional or gene features, as well as off-target 
+    This function processes each region's guides by annotating them with variant,
+    efficiency, specificity, and functional or gene features, as well as off-target
     predictions if requested.
 
     Args:
-        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists 
+        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists
             of Guide objects.
-        annotations (List[str]): List of BED annotation file paths for functional 
+        annotations (List[str]): List of BED annotation file paths for functional
             annotation.
-        gene_annotations (List[str]): List of BED annotation file paths for gene 
+        gene_annotations (List[str]): List of BED annotation file paths for gene
             annotation.
         pam (PAM): PAM object specifying the CRISPR system.
         compute_elevation (bool): Whether to compute Elevation-on scores.
         estimate_offtargets (bool): Whether to estimate off-targets using CRISPRitz.
-        crispritz_config (Union[None, CrispritzConfig]): CRISPRitz configuration 
+        crispritz_config (Union[None, CrispritzConfig]): CRISPRitz configuration
             object.
         mm (int): Maximum number of mismatches for off-target search.
         bdna (int): Maximum number of DNA bulges for off-target search.
         brna (int): Maximum number of RNA bulges for off-target search.
         crispritz_index (str): Path to the CRISPRitz genome index.
         guidelen (int): Length of the guide sequence.
-        right (bool): Whether the guide is extracted downstream (right side) of 
+        right (bool): Whether the guide is extracted downstream (right side) of
             the PAM.
         outdir (str): Output directory for results.
         threads (int): Number of threads to use.

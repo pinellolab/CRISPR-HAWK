@@ -1,4 +1,10 @@
-""" """
+"""Main workflow and utility functions for the CRISPR-HAWK tool.
+
+This module implements the core logic for CRISPR-HAWK, including guide search,
+haplotype encoding, VCF conversion, data preparation for CRISPRme, and CRISPRitz
+configuration management. It provides high-level functions that orchestrate the
+various steps of the CRISPR-HAWK analysis pipeline.
+"""
 
 from .crisprhawk_argparse import (
     CrisprHawkSearchInputArgs,
@@ -99,6 +105,26 @@ def guides_search(
     verbosity: int,
     debug: bool,
 ) -> Dict[Region, List[Guide]]:
+    """Searches for guide candidates on encoded haplotypes for each genomic region.
+
+    This function performs guide search using the provided PAM, haplotypes, and
+    bit-encoded haplotypes, returning a dictionary of guides per region.
+
+    Args:
+        pam: The PAM object used for guide search.
+        haplotypes: A dictionary mapping regions to lists of Haplotype objects.
+        haplotypes_bits: A dictionary mapping regions to lists of bit-encoded haplotypes.
+        guidelen: The length of the guide sequence.
+        right: Whether the guide is located downstream of the PAM.
+        variants_present: Whether variants are present in the haplotypes.
+        phased: Whether the haplotypes are phased.
+        verbosity: The verbosity level for logging.
+        debug: Whether to enable debug mode for error handling.
+
+    Returns:
+        Dict[Region, List[Guide]]: A dictionary mapping regions to lists of found
+            Guide objects.
+    """
     # search guide candidates on encoded haplotypes
     print_verbosity("Searching guides on haplotypes", verbosity, VERBOSITYLVL[1])
     start = time()  # search start time
@@ -124,6 +150,15 @@ def guides_search(
 
 
 def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
+    """Executes the CRISPR-HAWK guide search workflow for the provided input arguments.
+
+    This function orchestrates region extraction, haplotype reconstruction, guide
+    search, annotation, reporting, and optional graphical report generation.
+
+    Args:
+        args (CrisprHawkSearchInputArgs): The parsed and validated input arguments
+            for the search workflow.
+    """
     # extract genomic regions defined in input bed file
     regions = construct_regions(
         args.fastas, args.bedfile, args.fasta_idx, args.verbosity, args.debug
@@ -194,6 +229,15 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
 
 
 def crisprhawk_converter(args: CrisprHawkConverterInputArgs) -> None:
+    """Converts gnomAD VCF files for CRISPR-HAWK analysis using the provided arguments.
+
+    This function processes and converts VCF files, adding genotyping fields and
+    assigning genotypes based on population-wise allele counts.
+
+    Args:
+        args (CrisprHawkConverterInputArgs): The parsed and validated input arguments
+            for the VCF conversion workflow.
+    """
     # convert gnomad vcfs; vcfs keep the fundamental data, but add a genotyping
     # field to the vcf; genotypes are assigned based on population-wise allele
     # counts; populations are treated as samples
@@ -210,10 +254,28 @@ def crisprhawk_converter(args: CrisprHawkConverterInputArgs) -> None:
 
 
 def crisprhawk_prepare_data_crisprme(args: CrisprHawkPrepareDataInputArgs) -> None:
+    """Prepares input data for CRISPRme using the provided arguments.
+
+    This function processes the CRISPR-HAWK report and prepares the necessary files
+    for CRISPRme analysis.
+
+    Args:
+        args (CrisprHawkPrepareDataInputArgs): The parsed and validated input arguments
+            for CRISPRme data preparation.
+    """
     prepare_data_crisprme(args.report, args.create_pam, args.outdir, args.debug)
 
 
 def crisprhawk_crispritz_config(args: CrisprHawkCrispritzConfigInputArgs) -> None:
+    """Configures CRISPRitz settings for CRISPR-HAWK using the provided arguments.
+
+    This function manages CRISPRitz configuration, including updating, displaying,
+    resetting, and validating the configuration file.
+
+    Args:
+        args (CrisprHawkCrispritzConfigInputArgs): The parsed and validated input
+            arguments for CRISPRitz configuration.
+    """
     config = CrispritzConfig()  # load current config file
     if args.env_name or args.targets_dir:  # change config data
         config_crispritz(config, args.env_name, args.targets_dir)

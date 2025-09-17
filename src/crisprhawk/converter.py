@@ -39,7 +39,7 @@ GT = ["0/0", "0/1"]  # 0/0 -> absence, 0/1 -> occurrence
 def tabix_index(vcf_fname: str, verbosity: int, debug: bool) -> str:
     """Indexes a VCF file using Tabix and returns the path to the index file.
 
-    This function creates a Tabix index for the specified VCF file, checks for 
+    This function creates a Tabix index for the specified VCF file, checks for
     errors, and returns the index file path.
 
     Args:
@@ -76,7 +76,7 @@ def tabix_index(vcf_fname: str, verbosity: int, debug: bool) -> str:
 def load_vcf(vcf_fname: str, verbosity: int, debug: bool) -> VariantFile:
     """Loads a VCF file with an associated Tabix index.
 
-    This function checks for an existing Tabix index for the VCF file, creates 
+    This function checks for an existing Tabix index for the VCF file, creates
     one if necessary, and returns a VariantFile object for reading the VCF.
 
     Args:
@@ -99,7 +99,7 @@ def load_vcf(vcf_fname: str, verbosity: int, debug: bool) -> VariantFile:
 def format_ac(joint: bool) -> List[str]:
     """Constructs the allele count (AC) field names for gnomAD VCFs by population.
 
-    Returns a list of formatted AC field names for each population, using either 
+    Returns a list of formatted AC field names for each population, using either
     the joint or standard prefix.
 
     Args:
@@ -129,7 +129,7 @@ def variant_observed(allele_count: Tuple[int]) -> bool:
 def _update_header(header: VariantHeader, joint: bool) -> str:
     """Updates the VCF header with genotype and population sample information.
 
-    Adds the GT FORMAT field and population samples to the header, and adjusts 
+    Adds the GT FORMAT field and population samples to the header, and adjusts
     the AF field if joint is True.
 
     Args:
@@ -150,7 +150,7 @@ def _asses_genotype(
 ) -> str:
     """Assesses the genotype for each population based on allele counts in a variant.
 
-    Returns a tab-separated string of genotype calls for each population, using 
+    Returns a tab-separated string of genotype calls for each population, using
     GT[1] if the allele is observed and GT[0] otherwise.
 
     Args:
@@ -162,7 +162,7 @@ def _asses_genotype(
         str: Tab-separated genotype calls for each population.
 
     Raises:
-        CrisprHawkConverterError: If genotype assessment fails due to missing or 
+        CrisprHawkConverterError: If genotype assessment fails due to missing or
             invalid data.
     """
     try:
@@ -224,7 +224,7 @@ def _convert(
 ) -> None:
     """Converts a VCF file to a new format with updated header and genotype information.
 
-    Writes a new VCF file with an updated header, filters variants based on the 
+    Writes a new VCF file with an updated header, filters variants based on the
     'keep' flag, and includes formatted genotype information for each variant.
 
     Args:
@@ -232,7 +232,7 @@ def _convert(
         vcf_outfname (str): The output filename for the converted VCF.
         ac_formatted (List[str]): List of allele count field names for each population.
         joint (bool): Whether the VCF is a joint file (affects header formatting).
-        keep (bool): Whether to retain all variants or only those with 'PASS' in 
+        keep (bool): Whether to retain all variants or only those with 'PASS' in
             the filter.
         debug (bool): Flag to enable debug mode for error handling.
 
@@ -268,7 +268,7 @@ def _convert(
 def _compress(vcf_fname_tmp: str, vcf_fname: str, verbosity: int, debug: bool) -> None:
     """Compresses a VCF file using bgzip and removes the temporary file.
 
-    This function compresses the specified VCF file with bgzip, handles errors, 
+    This function compresses the specified VCF file with bgzip, handles errors,
     removes the temporary file, and logs the operation.
 
     Args:
@@ -313,13 +313,13 @@ def convert_vcf(
 ) -> None:
     """Converts a VCF file to a CRISPR-HAWK compatible format and compresses it.
 
-    This function loads a VCF file, reformats it with updated genotype and population 
+    This function loads a VCF file, reformats it with updated genotype and population
     information, compresses the result, and logs the process.
 
     Args:
         vcf_fname (str): Path to the input VCF file.
         joint (bool): Whether the VCF is a joint file (affects AC field formatting).
-        keep (bool): Whether to retain all variants or only those with 'PASS' in 
+        keep (bool): Whether to retain all variants or only those with 'PASS' in
             the filter.
         suffix (str): Suffix to append to the output file name.
         outdir (str): Output directory for the converted VCF.
@@ -372,13 +372,13 @@ def convert_gnomad_vcf(
 ) -> None:
     """Converts multiple gnomAD VCF files to CRISPR-HAWK compatible format in parallel.
 
-    This function uses multiprocessing to convert a list of gnomAD VCF files, applying 
+    This function uses multiprocessing to convert a list of gnomAD VCF files, applying
     the specified options to each file and handling errors as needed.
 
     Args:
         gnomad_vcfs (List[str]): List of input gnomAD VCF file paths.
         joint (bool): Whether the VCFs are joint files (affects AC field formatting).
-        keep (bool): Whether to retain all variants or only those with 'PASS' in the 
+        keep (bool): Whether to retain all variants or only those with 'PASS' in the
             filter.
         suffix (str): Suffix to append to each output file name.
         outdir (str): Output directory for the converted VCFs.

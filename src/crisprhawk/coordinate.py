@@ -58,9 +58,16 @@ class Coordinate:
             return NotImplemented
         return (
             (self._contig == coord_query.contig)
-            and (self._start == coord_query.start)
-            and (self._stop == coord_query.stop)
+            and (self._startp == coord_query.start)
+            and (self._stopp == coord_query.stop)
         )
+
+    def __hash__(self) -> int:
+        """Return a hash value for the Coordinate object.
+
+        The hash is based on the contig, start, and stop values of the coordinate.
+        """
+        return hash((self.contig, self.start, self.stop))
 
     def __repr__(self) -> str:
         """Return a string representation of the Coordinate object.

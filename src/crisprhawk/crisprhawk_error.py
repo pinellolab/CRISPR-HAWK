@@ -1,4 +1,9 @@
-""" """
+"""Custom exception classes for CRISPR-HAWK error handling.
+
+This module defines a hierarchy of exception classes for specific error types
+encountered in the CRISPR-HAWK tool, enabling precise and descriptive error
+reporting throughout the codebase.
+"""
 
 
 class CrisprHawkError(Exception):

@@ -51,10 +51,10 @@ COMMANDS = [SEARCH, CONVERTGNOMADVCF, PREPAREDATACRISPRME, CRISPRPITZCONFIG]
 
 def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
     """Creates and configures the main argument parser for the CRISPR-HAWK CLI.
-    
-    This function sets up the command-line interface, including all available 
+
+    This function sets up the command-line interface, including all available
     commands and their arguments, for the CRISPR-HAWK toolkit.
-    
+
     Returns:
         CrisprHawkArgumentParser: The configured argument parser for CRISPR-HAWK.
     """
@@ -93,11 +93,11 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
 def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
     """Creates the argument parser for the CRISPR-HAWK search command.
 
-    This function defines and configures all arguments and options available for 
+    This function defines and configures all arguments and options available for
     the search functionality of CRISPR-HAWK.
 
     Args:
-        subparser (_SubParsersAction): The subparsers object to which the search 
+        subparser (_SubParsersAction): The subparsers object to which the search
             parser will be added.
 
     Returns:
@@ -368,11 +368,11 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
 def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
     """Creates the argument parser for the CRISPR-HAWK convert-gnomad-vcf command.
 
-    This function defines and configures all arguments and options available for 
+    This function defines and configures all arguments and options available for
     converting gnomAD VCF files to a CRISPR-HAWK compatible format.
 
     Args:
-        subparser (_SubParsersAction): The subparsers object to which the converter 
+        subparser (_SubParsersAction): The subparsers object to which the converter
             parser will be added.
 
     Returns:
@@ -472,11 +472,11 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
 def create_parser_prepare_data(subparser: _SubParsersAction) -> _SubParsersAction:
     """Creates the argument parser for the CRISPR-HAWK prepare-data-crisprme command.
 
-    This function defines and configures all arguments and options available for 
+    This function defines and configures all arguments and options available for
     generating CRISPRme-compatible guide files from a CRISPR-HAWK report.
 
     Args:
-        subparser (_SubParsersAction): The subparsers object to which the 
+        subparser (_SubParsersAction): The subparsers object to which the
             prepare-data-crisprme parser will be added.
 
     Returns:
@@ -536,12 +536,12 @@ def create_parser_prepare_data(subparser: _SubParsersAction) -> _SubParsersActio
 def create_crispritz_config_parser(subparser: _SubParsersAction) -> _SubParsersAction:
     """Creates the argument parser for the CRISPR-HAWK crispritz-config command.
 
-    This function defines and configures all arguments and options for managing 
-    CRISPRitz integration settings, including environment and target directory 
+    This function defines and configures all arguments and options for managing
+    CRISPRitz integration settings, including environment and target directory
     configuration.
 
     Args:
-        subparser (_SubParsersAction): The subparsers object to which the 
+        subparser (_SubParsersAction): The subparsers object to which the
             crispritz-config parser will be added.
 
     Returns:
@@ -626,7 +626,7 @@ def create_crispritz_config_parser(subparser: _SubParsersAction) -> _SubParsersA
 def main():
     """Entry point for the CRISPR-HAWK command-line interface.
 
-    This function parses command-line arguments and dispatches execution to the 
+    This function parses command-line arguments and dispatches execution to the
     appropriate CRISPR-HAWK command handler.
     """
     prepare_package()  # check if models and data are available and uncompressed

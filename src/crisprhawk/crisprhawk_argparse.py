@@ -1,8 +1,13 @@
-""" """
+"""Argument parsing and validation for the CRISPR-HAWK command-line interface.
+
+This module defines custom argument parsers and input argument handler classes for
+the CRISPR-HAWK tool, supporting search, VCF conversion, data preparation, and
+CRISPRitz configuration workflows. It ensures input consistency, provides helpful
+error messages, and exposes validated arguments as convenient properties.
+"""
 
 from .utils import (
     warning,
-    command_exists,
     COMMAND,
     IUPAC,
     VERBOSITYLVL,
@@ -10,7 +15,7 @@ from .utils import (
     OSSYSTEMS,
 )
 from .crisprhawk_version import __version__
-from .config_crispritz import CrispritzConfig, check_crispritz_env, MAMBA
+from .config_crispritz import CrispritzConfig, check_crispritz_env
 
 from argparse import (
     SUPPRESS,
@@ -152,7 +157,7 @@ class CrisprHawkSearchInputArgs:
         self._parser = parser
         self._check_consistency()  # check input args consistency
 
-    def _check_consistency(self):
+    def _check_consistency(self):  # sourcery skip: low-code-quality
         """Check the consistency and validity of parsed input arguments.
 
         Validates the existence, type, and content of input files and directories,
@@ -222,7 +227,7 @@ class CrisprHawkSearchInputArgs:
             len(self._args.annotation_colnames) != len(self._args.annotations)
         ):
             self._parser.error(
-                f"Mismatching number of annotation files and annotation column names"
+                "Mismatching number of annotation files and annotation column names"
             )
         # gene annotation bed
         if self._args.gene_annotations and (
@@ -244,7 +249,7 @@ class CrisprHawkSearchInputArgs:
             len(self._args.gene_annotation_colnames) != len(self._args.gene_annotations)
         ):
             self._parser.error(
-                f"Mismatching number of gene annotation files and gene annotation column names"
+                "Mismatching number of gene annotation files and gene annotation column names"
             )
         # elevation score
         if self._args.compute_elevation and (
@@ -408,13 +413,34 @@ class CrisprHawkSearchInputArgs:
 
 
 class CrisprHawkConverterInputArgs:
+    """Handles and validates parsed command-line arguments for CRISPR-HAWK VCF
+    conversion.
+
+    This class checks the consistency of input arguments for VCF conversion and
+    provides convenient access to validated argument values as properties.
+
+    Attributes:
+        _args (Namespace): The parsed arguments namespace.
+        _parser (CrisprHawkArgumentParser): The argument parser instance.
+    """
 
     def __init__(self, args: Namespace, parser: CrisprHawkArgumentParser) -> None:
+        """Initializes the CrisprHawkConverterInputArgs with parsed arguments and
+        parser.
+
+        Stores the parsed arguments and parser, then checks argument consistency.
+        """
         self._args = args
         self._parser = parser
         self._check_consistency()  # check input args consistency
 
-    def _check_consistency(self):
+    def _check_consistency(self) -> None:
+        """Check the consistency and validity of parsed input arguments for VCF
+        conversion.
+
+        Validates the existence and content of input VCF directories, output
+        directories, thread count, and verbosity level.
+        """
         # vcf folder
         if self._args.gnomad_vcf_dir and (not os.path.isdir(self._args.gnomad_vcf_dir)):
             self._parser.error(f"Cannot find VCF folder {self._args.gnomad_vcf_dir}")
@@ -433,7 +459,8 @@ class CrisprHawkConverterInputArgs:
         # threads number
         if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
             self._parser.error(
-                f"Forbidden number of threads provided ({self._args.threads}). Max number of available cores: {multiprocessing.cpu_count()}"
+                f"Forbidden number of threads provided ({self._args.threads}). "
+                f"Max number of available cores: {multiprocessing.cpu_count()}"
             )
         if self._args.threads == 0:  # use all cores
             self._args.threads = multiprocessing.cpu_count()
@@ -477,13 +504,37 @@ class CrisprHawkConverterInputArgs:
 
 
 class CrisprHawkPrepareDataInputArgs:
+    """Handles and validates parsed command-line arguments for CRISPR-HAWK
+    CRISPRme's input data preparation.
+
+    This class checks the consistency of input arguments for data preparation and
+    provides convenient access to validated argument values as properties.
+
+    Attributes:
+        _args (Namespace): The parsed arguments namespace.
+        _parser (CrisprHawkArgumentParser): The argument parser instance.
+    """
 
     def __init__(self, args: Namespace, parser: CrisprHawkArgumentParser) -> None:
+        """Initialize CrisprHawkPrepareDataInputArgs with parsed arguments and
+        parser.
+
+        Stores the parsed arguments and parser, then checks argument consistency.
+
+        Args:
+            args (Namespace): The parsed arguments namespace.
+            parser (CrisprHawkArgumentParser): The argument parser instance.
+        """
         self._args = args
         self._parser = parser
         self._check_consistency()  # check input args consistency
 
-    def _check_consistency(self):
+    def _check_consistency(self) -> None:
+        """Check the consistency and validity of parsed input arguments for
+        CRISPRme's data preparation.
+
+        Validates the existence of the CRISPR-HAWK report file and output directory.
+        """
         # crisprhawk report
         if self._args.report and (not os.path.isfile(self._args.report)):
             self._parser.error(f"Cannot find {TOOLNAME} report {self._args.report}")
@@ -511,21 +562,46 @@ class CrisprHawkPrepareDataInputArgs:
 
 
 class CrisprHawkCrispritzConfigInputArgs:
+    """Handles and validates parsed command-line arguments for CRISPR-HAWK Crispritz
+    configuration.
+
+    This class checks the consistency of input arguments for configuring Crispritz
+    and provides convenient access to validated argument values as properties.
+
+    Attributes:
+        _args (Namespace): The parsed arguments namespace.
+        _parser (CrisprHawkArgumentParser): The argument parser instance.
+    """
 
     def __init__(self, args: Namespace, parser: CrisprHawkArgumentParser) -> None:
+        """Initialize CrisprHawkCrispritzConfigInputArgs with parsed arguments and
+        parser.
+
+        Stores the parsed arguments and parser, then checks argument consistency.
+
+        Args:
+            args (Namespace): The parsed arguments namespace.
+            parser (CrisprHawkArgumentParser): The argument parser instance.
+        """
         self._args = args
         self._parser = parser
         self._check_consistency()  # check input args consistency
 
-    def _check_consistency(self):
+    def _check_consistency(self) -> None:
+        """Check the consistency and validity of parsed input arguments for Crispritz
+        configuration.
+
+        Validates the exclusivity and correctness of configuration options such
+        as targets directory, environment name, show, reset, and validate.
+        """
         # crispritz config file
-        if self._args.targets_dir:
-            if not os.path.exists(self._args.targets_dir) and not os.path.isdir(
-                self._args.targets_dir
-            ):
-                self._parser.error(
-                    f"Cannot find targets directory {self._args.targets_dir}"
-                )
+        if self._args.targets_dir and (
+            not os.path.exists(self._args.targets_dir)
+            and not os.path.isdir(self._args.targets_dir)
+        ):
+            self._parser.error(
+                f"Cannot find targets directory {self._args.targets_dir}"
+            )
         # show option
         if (
             self._args.env_name
@@ -534,7 +610,7 @@ class CrisprHawkCrispritzConfigInputArgs:
             or self._args.validate
         ) and self._args.show:
             self._parser.error(
-                f"--show options cannot be used with other input arguments"
+                "--show options cannot be used with other input arguments"
             )
         # reset option
         if (
@@ -544,7 +620,7 @@ class CrisprHawkCrispritzConfigInputArgs:
             or self._args.validate
         ) and self._args.reset:
             self._parser.error(
-                f"--reset options cannot be used with other input arguments"
+                "--reset options cannot be used with other input arguments"
             )
         # validate option
         if (
@@ -554,7 +630,7 @@ class CrisprHawkCrispritzConfigInputArgs:
             or self._args.show
         ) and self._args.validate:
             self._parser.error(
-                f"--validate options cannot be used with other input arguments"
+                "--validate options cannot be used with other input arguments"
             )
 
     @property
