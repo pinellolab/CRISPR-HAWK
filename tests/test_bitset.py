@@ -3,11 +3,14 @@ from crisprhawk.crisprhawk_error import CrisprHawkBitsetError
 
 import pytest
 
+
 class DummyException(Exception):
     pass
 
+
 def dummy_exception_handler(exc_type, message, code, debug):
     raise exc_type(message)
+
 
 def test_bitset_init_valid(monkeypatch):
     # Patch exception_handler to raise immediately
@@ -17,10 +20,12 @@ def test_bitset_init_valid(monkeypatch):
     assert b.bits == 0
     assert str(b) == "0000"
 
+
 def test_bitset_init_invalid(monkeypatch):
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
     with pytest.raises(CrisprHawkBitsetError):
         Bitset(0, debug=True)
+
 
 def test_set_and_test(monkeypatch):  # sourcery skip: extract-duplicate-method
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
@@ -32,11 +37,13 @@ def test_set_and_test(monkeypatch):  # sourcery skip: extract-duplicate-method
     assert b.test(0) is True
     assert str(b) == "0101"
 
+
 def test_set_out_of_bounds(monkeypatch):
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
     b = Bitset(4, debug=True)
     with pytest.raises(CrisprHawkBitsetError):
         b.set(4)
+
 
 def test_reset_and_test(monkeypatch):
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
@@ -48,11 +55,13 @@ def test_reset_and_test(monkeypatch):
     assert b.test(2) is True
     assert str(b) == "0100"
 
+
 def test_reset_out_of_bounds(monkeypatch):
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
     b = Bitset(4, debug=True)
     with pytest.raises(CrisprHawkBitsetError):
         b.reset(4)
+
 
 def test_set_bits(monkeypatch):
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
@@ -62,11 +71,13 @@ def test_set_bits(monkeypatch):
     b.set_bits("0000")
     assert str(b) == "0000"
 
+
 def test_set_bits_invalid(monkeypatch):
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
     b = Bitset(4, debug=True)
     with pytest.raises(CrisprHawkBitsetError):
         b.set_bits("10a0")
+
 
 def test_and_operator(monkeypatch):
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
@@ -78,6 +89,7 @@ def test_and_operator(monkeypatch):
     assert isinstance(b3, Bitset)
     assert str(b3) == "1000"
 
+
 def test_and_operator_size_mismatch(monkeypatch):
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
     b1 = Bitset(4, debug=True)
@@ -85,12 +97,14 @@ def test_and_operator_size_mismatch(monkeypatch):
     with pytest.raises(CrisprHawkBitsetError):
         _ = b1 & b2
 
+
 def test_to_bool(monkeypatch):
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
     b = Bitset(4, debug=False)
     assert b.to_bool() is False
     b.set(1)
     assert b.to_bool() is True
+
 
 def test_str_and_repr(monkeypatch):
     monkeypatch.setattr("crisprhawk.bitset.exception_handler", dummy_exception_handler)
