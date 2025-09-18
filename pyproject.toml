@@ -17,7 +17,7 @@ authors = [
 maintainers = [
     {name = "Manuel Tognon", email = "manu.tognon@gmail.com"}
 ]
-license = {text = "MIT"}
+license = {text = "AGPL-3"}
 keywords = ["CRISPR", "guide RNA", "haplotype", "variant", "bioinformatics"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -71,15 +71,16 @@ where = ["src"]
 [tool.setuptools.package-data]
 "crisprhawk" = ["scripts/*"]
 "crisprhawk.scores.azimuth" = [
-    "saved_models/*.pickle",
-    "azure_models/*.pickle", 
+    "*.zip",
     "data/*",
     "tests/*",
     "LICENSE.txt",
     "*.csv",
 ]
-"crisprhawk.scores.cfdscore" = ["models/*.pkl"]
-"crisprhawk.scores.deepCpf1" = ["weights/*.h5"]
+"crisprhawk.scores.cfdscore" = ["*.zip"]
+"crisprhawk.scores.deepCpf1" = ["*.zip"]
+"crisprhawk.scores.elevation" = ["*.zip"]
+"crisprhawk.config" = ["*.json"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
