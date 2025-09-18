@@ -1,9 +1,10 @@
-"""Provides classes and functions for working with BED files.
+"""Provides classes and utilities for handling genomic regions and annotations from 
+BED files.
 
-This module defines the Bed class for representing genomic regions from a BED file,
-along with associated iterator and parsing functions. It allows for reading,
-manipulating, and extracting regions from BED files, and integrating with FASTA
-files for sequence retrieval.
+This module defines the Bed class for reading and managing genomic intervals from 
+BED files, the BedIterator for iterating over these regions, and BedAnnotation for
+querying features from Tabix-indexed BED annotation files. It also includes helper 
+functions for parsing BED lines and checking for Tabix index files.
 """
 
 from .coordinate import Coordinate
@@ -190,6 +191,21 @@ class Bed:
         return coordinates
 
     def extract_regions(self, fastas: Dict[str, Fasta]) -> RegionList:
+        """Extracts genomic regions and their sequences using provided FASTA files.
+
+        This method retrieves the sequence for each region in the BED file using 
+        the corresponding FASTA file and returns a RegionList of these regions.
+
+        Args:
+            fastas (Dict[str, Fasta]): A dictionary mapping contig names to Fasta 
+                objects.
+
+        Returns:
+            RegionList: A list of Region objects with extracted sequences.
+
+        Raises:
+            AttributeError: If the coordinates list is missing.
+        """
         if not hasattr(self, "_coordinates") or self._coordinates is None:
             raise AttributeError("Missing coordinates list, cannot extract sequences")
         return RegionList(

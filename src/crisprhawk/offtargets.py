@@ -349,9 +349,9 @@ def annotate_guides_offtargets(
 ) -> List[Guide]:
     otmap = _calculate_offtargets_map(offtargets, guides)
     for guide in guides:
-        guide.set_offtargets(len(otmap[guide.guide]))  # set off-targets number
-        guide.set_cfd(
-            _calculate_global_cfd(otmap[guide.guide], verbosity)
+        guide.offtargets = len(otmap[guide.guide])  # set off-targets number
+        guide.cfd = _calculate_global_cfd(
+            otmap[guide.guide], verbosity
         )  # set global CFD
     return guides
 

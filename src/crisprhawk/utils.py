@@ -366,25 +366,25 @@ def prepare_package() -> None:
     scoresdir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scores")
     azimuthdir = os.path.join(scoresdir, "azimuth")  # azimuth
     if not os.path.isdir(azimuthdir):  # always trace these errors
-        raise FileNotFoundError(f"Cannot find Azimuth score modules")
+        raise FileNotFoundError("Cannot find Azimuth score modules")
     if not os.path.isdir(os.path.join(azimuthdir, "saved_models")):
         warning("Extracting Azimuth models. This may take some time", 1)
         _uncompress_azimuth_models(azimuthdir)  # uncompress azimuth models
     cfdscoredir = os.path.join(scoresdir, "cfdscore")  # cfd
     if not os.path.isdir(cfdscoredir):  # always trace these errors
-        raise FileNotFoundError(f"Cannot find CFD score modules")
+        raise FileNotFoundError("Cannot find CFD score modules")
     if not os.path.isdir(os.path.join(cfdscoredir, "models")):
         warning("Extracting CFD models. This may take some time", 1)
         _uncompress_cfd_models(cfdscoredir)  # uncompress CFD models
     deepcpf1dir = os.path.join(scoresdir, "deepCpf1")  # deepCpf1
     if not os.path.isdir(deepcpf1dir):  # always trace these errors
-        raise FileNotFoundError(f"Cannot find DeepCpf1 score modules")
+        raise FileNotFoundError("Cannot find DeepCpf1 score modules")
     if not os.path.isdir(os.path.join(deepcpf1dir, "weights")):
         warning("Extracting DeepCpf1 models. This may take some time", 1)
         _uncompress_deepcpf1_models(deepcpf1dir)  # uncompress deepCpf1 models
     elevationdir = os.path.join(scoresdir, "elevation")  # Elevation
     if not os.path.isdir(elevationdir):  # always trace these errors
-        raise FileNotFoundError(f"Cannot find Elevation score modules")
+        raise FileNotFoundError("Cannot find Elevation score modules")
     if not os.path.isdir(os.path.join(elevationdir, "models")) and not os.path.isdir(
         os.path.join(elevationdir, "CRISPR")
     ):
@@ -393,9 +393,7 @@ def prepare_package() -> None:
 
 
 def command_exists(command: str) -> bool:
-    if shutil.which(command):
-        return True
-    return False
+    return bool(shutil.which(command))
 
 
 def is_lowercase(sequence: str) -> bool:

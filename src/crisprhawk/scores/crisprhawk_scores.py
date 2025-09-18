@@ -55,7 +55,7 @@ def deepcpf1(guides: List[str]) -> List[float]:
 def elevation(wildtypes: List[str], offtargets: List[str]) -> List[float]:
     p = Predict()  # initialize elevation predictor
     preds = p.execute(wildtypes, offtargets)  # retrieve elevation scores
-    return [s for s in preds["linear-raw-stacker"]]
+    return list(preds["linear-raw-stacker"])
 
 
 def elevationon(
@@ -63,7 +63,7 @@ def elevationon(
 ) -> List[Guide]:
     # optimize input for elevation-on score calculation
     wildtype, offtarget, guides = [], [], []
-    for _, (guide_ref, guides_g) in guide_groups.items():
+    for guide_ref, guides_g in guide_groups.values():
         if guide_ref:
             wildtype.extend([guide_ref] * len(guides_g))
             offtarget.extend(guides_g)
@@ -74,15 +74,16 @@ def elevationon(
     offtarget_ = [g.guidepam.upper() for g in offtarget]
     scores = elevation(wildtype_, offtarget_)
     for i, score in enumerate(scores):  # assign scores to guides
-        offtarget[i].set_elevationon_score(score)
+        offtarget[i].elevationon_score = score
     for g in guides:  # set NA for guides without reference alternative
-        g.set_elevationon_score(np.nan)
-    return guides + [g for g in offtarget]
+        g.elevationon_score = np.nan
+    return guides + list(offtarget)
 
 
 def ooframe_score(guides: List[Guide], idx: int) -> List[int]:
     guides_seqs = [g.sequence[idx - 30 : idx + 30] for g in guides]
     mhscores = [
-        calculate_microhomology_score(gs.upper(), int(len(gs) / 2)) for gs in guides_seqs
+        calculate_microhomology_score(gs.upper(), len(gs) // 2)
+        for gs in guides_seqs
     ]
     return [mhscore.ooframe_score for mhscore in mhscores]

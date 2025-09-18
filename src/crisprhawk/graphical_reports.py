@@ -1,4 +1,10 @@
-""" """
+"""Provides functions for generating graphical reports for CRISPR guide analysis.
+
+This module includes utilities for creating pie charts and delta dot plots to
+visualize guide type distributions and score variations across genomic regions.
+It supports processing guide data, ranking guides, and saving publication-ready
+figures for downstream analysis.
+"""
 
 from .crisprhawk_error import CrisprHawkGraphicalReportsError
 from .region_constructor import PADDING
@@ -55,27 +61,70 @@ REPRESENTATIVE_SAMPLES = 30
 
 
 def _format_region(region: Region) -> str:
+    """Formats a Region object into a string for use in plot naming and reporting.
+
+    The returned string includes the contig, padded start, and padded stop positions.
+
+    Args:
+        region: A Region object containing contig, start, and stop attributes.
+
+    Returns:
+        str: A formatted string representing the region.
+    """
     return f"{region.contig}_{region.start + PADDING}_{region.stop - PADDING}"
 
 
 def compute_guide_id(
     chrom: str, start: int, stop: int, strand: str, sgrna: str, pam: str
 ) -> str:
+    """Generates a unique identifier string for a guide based on its genomic
+    coordinates and sequence.
+
+    The identifier includes chromosome, start, stop, strand, sgRNA sequence, and
+    PAM sequence.
+
+    Args:
+        chrom: Chromosome name.
+        start: Start position of the guide.
+        stop: Stop position of the guide.
+        strand: Strand orientation ('+' or '-').
+        sgrna: sgRNA sequence.
+        pam: PAM sequence.
+
+    Returns:
+        str: A unique identifier string for the guide.
+    """
     return f"{chrom}_{start}_{stop}_{strand}_{sgrna}_{pam}"
 
 
-def assign_guide_type(origin: str, sgrna: str, pam: str, debug: bool):
+def assign_guide_type(origin: str, sgrna: str, pam: str, debug: bool) -> int:
+    """Assigns a guide type based on its origin, sgRNA, and PAM sequence.
+
+    Returns an integer representing the guide type: reference, spacer+PAM alternative,
+    spacer alternative, or PAM alternative.
+
+    Args:
+        origin: The origin of the guide ('ref' for reference, otherwise alternative).
+        sgrna: The sgRNA sequence.
+        pam: The PAM sequence.
+        debug: Boolean flag for debug mode.
+
+    Returns:
+        int: Guide type (0 for reference, 1 for spacer+PAM alternative, 2 for
+            spacer alternative, 3 for PAM alternative).
+
+    Raises:
+        CrisprHawkGraphicalReportsError: If the guide type cannot be determined.
+    """
     # types: 0 -> ref; 1 -> spacer+pam alt; 2 -> spacer alt; 3 -> pam alt
     if origin == "ref":  # reference type guide
         return 0
     assert origin != "ref"  # asses alternative guide type
     sgrna_alt = is_lowercase(sgrna)  # check sgrna
     pam_alt = is_lowercase(pam)  # check pam
-    if sgrna_alt and pam_alt:  # spacer+pam alt
-        return 1
-    if sgrna_alt and not pam_alt:  # spacer alt
-        return 2
-    if not sgrna_alt and pam_alt:  # pam alt
+    if sgrna_alt:  # spacer alt or spacer+pam alt
+        return 1 if pam_alt else 2
+    if pam_alt:  # pam alt
         return 3
     # this chunk of code should never be reached
     exception_handler(
@@ -87,6 +136,19 @@ def assign_guide_type(origin: str, sgrna: str, pam: str, debug: bool):
 
 
 def _count_guide_type(guide_types: List[int]) -> Dict[str, int]:
+    """Counts the number of guides for each guide type and returns a summary
+    dictionary.
+
+    The function returns a dictionary mapping guide type labels to their respective
+    counts.
+
+    Args:
+        guide_types: A list of integers representing guide types.
+
+    Returns:
+        Dict[str, int]: A dictionary with guide type labels as keys and counts
+            as values.
+    """
     types_data = {label: 0 for _, label in GUIDETYPES.items()}
     for gt in guide_types:  # count number of guides for each type
         types_data[GUIDETYPES[gt]] += 1
@@ -96,6 +158,20 @@ def _count_guide_type(guide_types: List[int]) -> Dict[str, int]:
 def _draw_piechart(
     data: Dict[str, int], region_format: str, prefix: str, outdir: str
 ) -> None:
+    """Draws and saves a pie chart visualizing the distribution of guide types
+    for a region.
+
+    The pie chart is saved as a PNG file in the specified output directory.
+
+    Args:
+        data: Dictionary mapping guide type labels to their counts.
+        region_format: String representing the region for labeling the chart.
+        prefix: Prefix for the output file name.
+        outdir: Directory where the pie chart image will be saved.
+
+    Returns:
+        None
+    """
     labels = list(data.keys())  # pie chart labels
     values = list(data.values())  # pie chart data
     colors = ["#5f8dd3ff", "#0055d4ff", "#ff6600ff", "#ffcc00ff"]
@@ -127,6 +203,23 @@ def piechart_guides_type(
     verbosity: int,
     debug: bool,
 ) -> None:
+    """Generates and saves a pie chart showing the distribution of guide types
+    for a genomic region.
+
+    The function processes the report DataFrame, assigns guide types, and visualizes
+    their proportions in a pie chart.
+
+    Args:
+        report: DataFrame containing guide information.
+        region: Region object representing the genomic region.
+        prefix: Prefix for the output file name.
+        outdir: Directory where the pie chart image will be saved.
+        verbosity: Verbosity level for logging.
+        debug: Boolean flag for debug mode.
+
+    Returns:
+        None
+    """
     print_verbosity("Computing guide type pie chart", verbosity, VERBOSITYLVL[3])
     start = time()
     # compute guide ids and drop non unique sites
@@ -157,10 +250,41 @@ def piechart_guides_type(
 
 
 def compute_guide_coord(chrom: str, start: int, stop: int, strand: str) -> str:
+    """Creates a string identifier for a guide using its chromosome, start, stop,
+    and strand.
+
+    The identifier is useful for uniquely referencing guides in downstream analyses.
+
+    Args:
+        chrom: Chromosome name.
+        start: Start position of the guide.
+        stop: Stop position of the guide.
+        strand: Strand orientation ('+' or '-').
+
+    Returns:
+        str: A formatted string representing the guide coordinates.
+    """
     return f"{chrom}_{start}_{stop}_{strand}"
 
 
 def _add_guide_ids(df: pd.DataFrame, debug: bool) -> pd.DataFrame:
+    """Adds a 'guide_id' column to the DataFrame by computing guide coordinates
+    for each row.
+
+    The function returns the DataFrame with the new 'guide_id' column, or raises
+    an error if guide IDs cannot be generated.
+
+    Args:
+        df: DataFrame containing guide information.
+        debug: Boolean flag for debug mode.
+
+    Returns:
+        pd.DataFrame: The input DataFrame with an added 'guide_id' column.
+
+    Raises:
+        CrisprHawkGraphicalReportsError: If guide IDs cannot be generated due to
+            missing or invalid data.
+    """
     try:
         df["guide_id"] = df.apply(
             lambda x: compute_guide_coord(x.iloc[0], x.iloc[1], x.iloc[2], x.iloc[6]),
@@ -177,6 +301,19 @@ def _add_guide_ids(df: pd.DataFrame, debug: bool) -> pd.DataFrame:
 
 
 def _compute_group_delta(group: pd.DataFrame, score: str) -> pd.DataFrame:
+    """Calculates the delta score for each guide in a group relative to the
+    reference guide.
+
+    The function adds a 'delta' column to the group DataFrame, representing the
+    score difference from the reference.
+
+    Args:
+        group: DataFrame containing guides for a single guide ID.
+        score: The score column to use for delta calculation.
+
+    Returns:
+        pd.DataFrame: The input group DataFrame with an added 'delta' column.
+    """
     reference_row = group[group["origin"] == "ref"]
     if reference_row.empty:
         return group  # no reference, leave delta to 0
@@ -186,6 +323,19 @@ def _compute_group_delta(group: pd.DataFrame, score: str) -> pd.DataFrame:
 
 
 def calculate_deltas(report: pd.DataFrame, score: str) -> pd.DataFrame:
+    """Calculates delta scores for each guide in the report relative to the
+    reference guide.
+
+    The function adds a 'delta' column to the report DataFrame, representing the
+    score difference from the reference for each guide.
+
+    Args:
+        report: DataFrame containing guide information.
+        score: The score column to use for delta calculation.
+
+    Returns:
+        pd.DataFrame: The input report DataFrame with an added 'delta' column.
+    """
     report["delta"] = 0.0  # initialize delta scores
     report = report.groupby("guide_id", group_keys=False).apply(
         lambda group: _compute_group_delta(group, score)
@@ -196,24 +346,49 @@ def calculate_deltas(report: pd.DataFrame, score: str) -> pd.DataFrame:
 def _build_alternatives_list(
     valid_alts: pd.DataFrame, score_col: str
 ) -> List[Dict[str, Any]]:
-    alt_list = []
-    for _, alt in valid_alts.iterrows():
-        alt_list.append(
-            {
-                "alt_sgRNA": alt["sgRNA_sequence"],
-                "pam": alt["pam"],
-                "alt_score": alt[score_col],
-                "delta": alt["delta"],
-                "samples": alt["samples"],
-                "variant_id": alt["variant_id"],
-            }
-        )
-    return alt_list
+    """Builds a list of dictionaries containing information about valid alternative
+    guides.
+
+    Each dictionary includes the alternative sgRNA, PAM, score, delta, sample count,
+    and variant ID.
+
+    Args:
+        valid_alts: DataFrame containing valid alternative guides.
+        score_col: The score column to extract for each alternative.
+
+    Returns:
+        List[Dict[str, Any]]: A list of dictionaries with alternative guide information.
+    """
+    return [
+        {
+            "alt_sgRNA": alt["sgRNA_sequence"],
+            "pam": alt["pam"],
+            "alt_score": alt[score_col],
+            "delta": alt["delta"],
+            "samples": alt["samples"],
+            "variant_id": alt["variant_id"],
+        }
+        for _, alt in valid_alts.iterrows()
+    ]
 
 
 def _process_single_guide(
     group: pd.DataFrame, score_col: str
 ) -> Optional[Dict[str, Any]]:
+    """Processes a group of guides to extract reference and valid alternative
+    guide information.
+
+    Returns a dictionary containing reference guide details and a list of valid
+    alternatives, or None if no reference is found.
+
+    Args:
+        group: DataFrame containing guides for a single guide ID.
+        score_col: The score column to use for filtering alternatives.
+
+    Returns:
+        Optional[Dict[str, Any]]: Dictionary with reference and alternative guide
+            information, or None if no reference guide exists.
+    """
     ref = group[group["origin"] == "ref"]
     alts = group[group["origin"] == "alt"]
     if ref.empty:
@@ -232,9 +407,7 @@ def _process_single_guide(
             "ref_score": ref_score,
             "alts": [],
         }
-    alt_list = []  # build alternatives list
-    if not valid_alts.empty:
-        alt_list = _build_alternatives_list(valid_alts, score_col)
+    alt_list = _build_alternatives_list(valid_alts, score_col)
     return {
         "ref_sgRNA": ref_seq,
         "pam": ref_pam,
@@ -244,6 +417,20 @@ def _process_single_guide(
 
 
 def _build_guide_data(df: pd.DataFrame, score_col: str) -> Dict[str, Dict[str, Any]]:
+    """Builds a dictionary of guide data for each guide ID, including reference
+    and alternative guides.
+
+    The function groups the DataFrame by guide ID and processes each group to
+    extract relevant guide information.
+
+    Args:
+        df: DataFrame containing guide information.
+        score_col: The score column to use for processing guides.
+
+    Returns:
+        Dict[str, Dict[str, Any]]: A dictionary mapping guide IDs to their reference
+            and alternative guide data.
+    """
     grouped = df.groupby("guide_id", sort=False)
     guide_rows = {}
     for guide_id, group in grouped:
@@ -254,6 +441,19 @@ def _build_guide_data(df: pd.DataFrame, score_col: str) -> Dict[str, Dict[str, A
 
 
 def _select_top_guides_by_delta(guide_rows: Dict[str, Dict[str, Any]]) -> pd.DataFrame:
+    """Selects the top guides with the worst delta values and ranks them.
+
+    The function returns a DataFrame of the top 25 guides sorted by their minimum
+    delta values.
+
+    Args:
+        guide_rows: Dictionary mapping guide IDs to their reference and alternative
+            guide data.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the top 25 guides with their delta
+            values and ranks.
+    """
     worst_deltas = []  # calculate worst delta for each guide
     for guide_id, data in guide_rows.items():
         if not data["alts"]:
@@ -274,6 +474,19 @@ def _select_top_guides_by_delta(guide_rows: Dict[str, Dict[str, Any]]) -> pd.Dat
 def _add_alternative_columns(
     out_row: Dict[str, Any], alts: List[Dict[str, Any]], max_alts: int
 ) -> None:
+    """Adds alternative guide information to an output row dictionary.
+
+    The function updates the output row with data for each alternative guide,
+    filling missing alternatives with NaN values.
+
+    Args:
+        out_row: Dictionary representing a row in the output table.
+        alts: List of dictionaries containing alternative guide information.
+        max_alts: Maximum number of alternatives to include.
+
+    Returns:
+        None
+    """
     for i in range(max_alts):
         alt_prefix = f"alt{i+1}"
         if i < len(alts):  # add data for existing alternative
@@ -304,11 +517,28 @@ def _add_alternative_columns(
 def _build_output_table(
     final_guides: pd.DataFrame, guide_rows: Dict[str, Dict[str, Any]]
 ) -> pd.DataFrame:
+    """Constructs a wide-format output table summarizing reference and alternative
+    guide information for top-ranked guides.
+
+    The function returns a DataFrame with columns for guide ID, rank, reference
+    guide details, and alternative guide details.
+
+    Args:
+        final_guides: DataFrame containing the top-ranked guides and their ranks.
+        guide_rows: Dictionary mapping guide IDs to their reference and alternative
+            guide data.
+
+    Returns:
+        pd.DataFrame: Wide-format DataFrame summarizing guide and alternative
+            information.
+    """
     # determine maximum number of alternatives across all selected guides
     max_alts = (
-        max(len(guide_rows[guide_id]["alts"]) for guide_id in final_guides["guide_id"])
-        if not final_guides.empty
-        else 0
+        0
+        if final_guides.empty
+        else max(
+            len(guide_rows[guide_id]["alts"]) for guide_id in final_guides["guide_id"]
+        )
     )
     rows = []
     for _, row in final_guides.iterrows():
@@ -330,6 +560,27 @@ def _build_output_table(
 
 
 def compute_score_table(report: pd.DataFrame, score: str, debug: bool) -> pd.DataFrame:
+    """Generates a wide-format score table summarizing reference and alternative
+    guide information.
+
+    The function validates the input report, computes guide IDs and delta scores,
+    processes guides, ranks them, and returns a table of top guides and their
+    alternatives.
+
+    Args:
+        report: DataFrame containing guide information.
+        score: The score column to use for calculations.
+        debug: Boolean flag for debug mode.
+
+    Returns:
+        pd.DataFrame: Wide-format DataFrame summarizing reference and alternative
+            guide information.
+
+    Raises:
+        CrisprHawkGraphicalReportsError: If required columns are missing, the report
+            is empty, or no valid guides are found.
+    """
+
     # validate input data
     required_columns = ["origin", "sgRNA_sequence", "pam", score, "variant_id"]
     if any(col not in report.columns for col in required_columns):
@@ -360,16 +611,40 @@ def compute_score_table(report: pd.DataFrame, score: str, debug: bool) -> pd.Dat
         )
     # rank guides by worst delta and select top N
     final_guides = _select_top_guides_by_delta(guide_rows)
-
-    # Build wide-format output table
+    # build wide-format output table
     return _build_output_table(final_guides, guide_rows)
 
 
 def _get_alternative_columns(df: pd.DataFrame) -> List[str]:
-    return [c for c in df.columns if c.startswith("alt") and c.endswith(f"_samples")]
+    """Retrieves the column names for alternative guide sample counts from the
+    DataFrame.
+
+    The function returns a list of column names that start with 'alt' and end
+    with '_samples'.
+
+    Args:
+        df: DataFrame containing guide and alternative information.
+
+    Returns:
+        List[str]: List of column names for alternative guide sample counts.
+    """
+    return [c for c in df.columns if c.startswith("alt") and c.endswith("_samples")]
 
 
 def _prepare_plot_data(df: pd.DataFrame) -> Dict:
+    """Prepares plot data for visualization by selecting top guides and extracting
+    alternative columns.
+
+    The function returns a dictionary containing the top guides DataFrame, the
+    samples column name, and alternative guide columns.
+
+    Args:
+        df: DataFrame containing guide and alternative information.
+
+    Returns:
+        Dict: Dictionary with keys 'top_df', 'samples_col', and 'alt_cols' for
+            plotting.
+    """
     top_df = df.sort_values("Rank").head(25).copy()
     # create rank-chromosome-start labels
     top_df["rank_chr_start"] = top_df.apply(
@@ -384,12 +659,22 @@ def _prepare_plot_data(df: pd.DataFrame) -> Dict:
 
 
 def _create_color_palette(n_colors: int) -> List[Tuple[float, float, float]]:
+    """Creates a color palette for plotting variant-associated guides.
+
+    The function generates a list of RGB color tuples, extending the palette if
+    more colors are needed.
+
+    Args:
+        n_colors: Number of colors required in the palette.
+
+    Returns:
+        List[Tuple[float, float, float]]: List of RGB color tuples for plotting.
+    """
     palette = [sns.color_palette(cmap, 9)[7] for cmap in BASE_CMAPS]
     if n_colors > len(palette):  # extend palette if needed
         extra_colors = []
         for i in range(6, 9):
-            for cmap in BASE_CMAPS:
-                extra_colors.append(sns.color_palette(cmap, 9)[i])
+            extra_colors.extend(sns.color_palette(cmap, 9)[i] for cmap in BASE_CMAPS)
         palette += extra_colors[: n_colors - len(palette)]
     random.shuffle(palette)
     return palette
@@ -398,6 +683,18 @@ def _create_color_palette(n_colors: int) -> List[Tuple[float, float, float]]:
 def _generate_variant_colors(
     top_df: pd.DataFrame,
 ) -> Dict[str, Tuple[float, float, float]]:
+    """Generates a color mapping for variant-associated guides for plotting.
+
+    The function returns a dictionary mapping unique variant keys to RGB color
+    tuples.
+
+    Args:
+        top_df: DataFrame containing the top guides and their alternative information.
+
+    Returns:
+        Dict[str, Tuple[float, float, float]]: Dictionary mapping variant keys to
+            RGB color tuples.
+    """
     alt_cols = _get_alternative_columns(top_df)  # retrieve alternative guides columns
     variant_keys = set()  # collect unique variant keys
     for _, row in top_df.iterrows():
@@ -411,6 +708,18 @@ def _generate_variant_colors(
 
 
 def _plot_reference_point(row: pd.Series, x: int) -> None:
+    """Plots the reference guide score as a black dot on the scatter plot.
+
+    The function adds a single reference point for each guide at the specified x
+    position.
+
+    Args:
+        row: A pandas Series containing guide information for a single row.
+        x: The x-axis position for the reference point.
+
+    Returns:
+        None
+    """
     plt.scatter(
         x,
         row["ref_score"],
@@ -424,6 +733,17 @@ def _plot_reference_point(row: pd.Series, x: int) -> None:
 
 
 def _extract_sample_count(samples_value) -> int:
+    """Extracts the number of samples from a guide's sample value.
+
+    Returns 1 if the value is 'REF' or missing, otherwise returns the count of
+    comma-separated samples.
+
+    Args:
+        samples_value: The value representing samples for a guide.
+
+    Returns:
+        int: Number of samples associated with the guide.
+    """
     if samples_value == "REF" or pd.isna(samples_value):
         return 1
     return len(str(samples_value).split(","))
@@ -432,6 +752,19 @@ def _extract_sample_count(samples_value) -> int:
 def _plot_alternative_points(
     row: pd.Series, x: int, variant_colors: Dict[str, Tuple[float, float, float]]
 ) -> None:
+    """Plots alternative guide scores as colored dots on the scatter plot.
+
+    The function iterates through available alternative guides for a row and plots
+    each as a dot, with color and size reflecting variant and sample count.
+
+    Args:
+        row: A pandas Series containing guide information for a single row.
+        x: The x-axis position for the alternative points.
+        variant_colors: Dictionary mapping variant keys to RGB color tuples.
+
+    Returns:
+        None
+    """
     alt_num = 1
     max_iterations = 1000  # safety limit
     while alt_num <= max_iterations:
@@ -454,6 +787,18 @@ def _plot_alternative_points(
 def _plot_data_points(
     plot_data: Dict, variant_colors: Dict[str, Tuple[float, float, float]]
 ) -> None:
+    """Plots reference and alternative guide data points for each top-ranked guide.
+
+    The function iterates through the top guides and plots both reference and
+    alternative points on the scatter plot.
+
+    Args:
+        plot_data: Dictionary containing top guides DataFrame and plotting information.
+        variant_colors: Dictionary mapping variant keys to RGB color tuples.
+
+    Returns:
+        None
+    """
     top_df = plot_data["top_df"]
     for _, row in top_df.iterrows():
         x = row["Rank"]
@@ -464,11 +809,24 @@ def _plot_data_points(
 def _configure_plot_appearance(
     top_df: pd.DataFrame, region_format: str, score_col: str
 ) -> None:
+    """Configures the appearance of the plot for guide score visualization.
+
+    The function sets x-tick labels, axis labels, and the plot title based on
+    the top guides and region information.
+
+    Args:
+        top_df: DataFrame containing the top guides.
+        region_format: String representing the region for labeling the plot.
+        score_col: The score column used for y-axis labeling.
+
+    Returns:
+        None
+    """
     plt.xticks(top_df["Rank"], labels=top_df["ref_sgRNA"], rotation=90, fontsize=14)
     plt.xlabel("Rank", fontsize=16)
     ylabel = (
         "On Target Score for Mismatching Guides"
-        if score_col in ["score_cfdon", "score_elevationon"]
+        if score_col in {"score_cfdon", "score_elevationon"}
         else score_col
     )
     plt.ylabel(ylabel, fontsize=16)
@@ -479,6 +837,17 @@ def _configure_plot_appearance(
 
 
 def _create_variant_patches(variant_colors: Dict[str, Tuple[float, float, float]]) -> List[plt.Line2D]:  # type: ignore
+    """Creates legend patches for variant-associated guides for plot legends.
+
+    The function returns a list of Line2D objects representing colored legend items
+    for each variant.
+
+    Args:
+        variant_colors: Dictionary mapping variant keys to RGB color tuples.
+
+    Returns:
+        List[plt.Line2D]: List of Line2D objects for legend patches.
+    """
     legend_items = sorted(
         variant_colors.items(),
         key=lambda x: int(x[0].split(",")[0].replace("Rank ", "").strip()),
@@ -502,6 +871,19 @@ def _create_variant_patches(variant_colors: Dict[str, Tuple[float, float, float]
 def _add_main_legend(
     variant_colors: Dict[str, Tuple[float, float, float]], df: pd.DataFrame
 ) -> None:
+    """Adds the main legend to the plot, showing reference and variant-associated
+    guide colors.
+
+    The function creates legend handles for reference and variant guides and adds
+    them to the plot.
+
+    Args:
+        variant_colors: Dictionary mapping variant keys to RGB color tuples.
+        df: DataFrame containing guide and variant information.
+
+    Returns:
+        None
+    """
     # create basic legend handles
     ref_patch = plt.Line2D([0], [0], marker="o", color="w", label="Reference", markerfacecolor="black", markersize=np.sqrt(250), alpha=0.6)  # type: ignore
     legend_handles = [ref_patch]
@@ -525,6 +907,14 @@ def _add_main_legend(
 
 
 def _add_size_legend() -> None:
+    """Adds a legend to the plot indicating the dot size for different sample counts.
+
+    The function creates legend handles for various sample count ranges and adds
+    them to the plot.
+
+    Returns:
+        None
+    """
     legend_config = [
         ("1 sample", 1, "D"),
         ("2-20 samples", 10, "o"),
@@ -564,11 +954,34 @@ def _add_size_legend() -> None:
 def _add_legends(
     variant_colors: Dict[str, Tuple[float, float, float]], df: pd.DataFrame
 ) -> None:
+    """Adds legends to the plot for guide color and sample size.
+
+    The function adds both the main legend for guide colors and the size legend
+    for sample counts to the plot.
+
+    Args:
+        variant_colors: Dictionary mapping variant keys to RGB color tuples.
+        df: DataFrame containing guide and variant information.
+
+    Returns:
+        None
+    """
     _add_main_legend(variant_colors, df)
     _add_size_legend()
 
 
 def _apply_plot_styling(score_col: str) -> None:
+    """Applies styling and axis limits to the plot based on the score column.
+
+    The function sets y-axis limits, grid, and layout for the plot depending on
+    the score type.
+
+    Args:
+        score_col: The score column used to determine axis limits.
+
+    Returns:
+        None
+    """
     if score_col == "score_deepcpf1":  # set y-axis limits based on score type
         plt.ylim(-0.2, 102)
     else:
@@ -579,6 +992,18 @@ def _apply_plot_styling(score_col: str) -> None:
 
 
 def _save_plot(output_prefix: str, score_col: str, output_dir: str) -> str:
+    """Saves the current plot to a PNG file in the specified output directory.
+
+    The function returns the path to the saved plot file.
+
+    Args:
+        output_prefix: Prefix for the output file name.
+        score_col: The score column used in the plot, included in the file name.
+        output_dir: Directory where the plot image will be saved.
+
+    Returns:
+        str: Path to the saved plot file.
+    """
     filename = f"{output_prefix}_{score_col}_delta.png"
     output_path = os.path.join(output_dir, filename)
     plt.savefig(output_path, format="png", dpi=DPI, bbox_inches="tight")
@@ -588,6 +1013,22 @@ def _save_plot(output_prefix: str, score_col: str, output_dir: str) -> str:
 def _draw_delta_dotplot(
     df: pd.DataFrame, region: Region, score_col: str, prefix: str, outdir: str
 ) -> str:
+    """Draws and saves a delta dot plot visualizing guide score variation for a
+    genomic region.
+
+    The function prepares plot data, configures appearance, adds legends, applies
+    styling, and saves the plot to a file.
+
+    Args:
+        df: DataFrame containing guide and alternative information.
+        region: Region object representing the genomic region.
+        score_col: The score column to visualize.
+        prefix: Prefix for the output file name.
+        outdir: Directory where the plot image will be saved.
+
+    Returns:
+        str: Path to the saved plot file.
+    """
     plot_data = _prepare_plot_data(df)  # prepare data
     fig, ax = plt.subplots(figsize=FIGURE_SIZE)  # set up the plot
     # generate colors for variants
@@ -611,6 +1052,24 @@ def compute_delta_dotplot(
     verbosity: int,
     debug: bool,
 ) -> None:
+    """Generates and saves a delta dot plot for guide score variation in a genomic
+    region.
+
+    The function computes the score table, draws the delta dot plot, and logs progress
+    and timing information.
+
+    Args:
+        report: DataFrame containing guide information.
+        region: Region object representing the genomic region.
+        score: The score column to visualize.
+        prefix: Prefix for the output file name.
+        outdir: Directory where the plot image will be saved.
+        verbosity: Verbosity level for logging.
+        debug: Boolean flag for debug mode.
+
+    Returns:
+        None
+    """
     print_verbosity(
         f"Computing delta dot plot for score: {score}", verbosity, VERBOSITYLVL[3]
     )
@@ -625,6 +1084,21 @@ def compute_delta_dotplot(
 def compute_graphical_reports(
     reports: Dict[Region, str], outdir: str, verbosity: int, debug: bool
 ) -> None:
+    """Generates and saves graphical reports for CRISPR guide analysis across
+    multiple regions.
+
+    The function creates pie charts and delta dot plots for each region and score,
+    saving the results to the output directory.
+
+    Args:
+        reports: Dictionary mapping Region objects to report file paths.
+        outdir: Output directory for saving graphical reports.
+        verbosity: Verbosity level for logging.
+        debug: Boolean flag for debug mode.
+
+    Returns:
+        None
+    """
     # create figures folder in output directory
     outdir_gr = os.path.join(outdir, "figures")
     if not os.path.isdir(outdir_gr):

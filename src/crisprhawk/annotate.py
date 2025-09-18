@@ -107,7 +107,7 @@ def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guid
         )
     assert len(azimuth_scores) == len(guides)  # should match
     for i, score in enumerate(azimuth_scores):
-        guides[i].set_azimuth_score(score)  # assign score to each guide
+        guides[i].azimuth_score = score  # assign score to each guide
     print_verbosity(
         f"Azimuth scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
@@ -148,7 +148,7 @@ def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
         )
     assert len(rs3_scores) == len(guides)  # should match
     for i, score in enumerate(rs3_scores):
-        guides[i].set_rs3_score(score)  # assign score to each guide
+        guides[i].rs3_score = score  # assign score to each guide
     print_verbosity(
         f"RS3 scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
@@ -189,7 +189,7 @@ def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Gui
         )
     assert len(deepcpf1_scores) == len(guides)  # should match
     for i, score in enumerate(deepcpf1_scores):
-        guides[i].set_deepcpf1_score(score)  # assign score to each guide
+        guides[i].deepcpf1_score = score  # assign score to each guide
     print_verbosity(
         f"DeepCpf1 scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
@@ -274,7 +274,7 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
                 e,
             )
         for i, score in enumerate(cfdon_scores):
-            guides_g[i].set_cfdon_score(score)
+            guides_g[i].cfdon_score = score
     # revert grouped guides by position into list
     guides = flatten_list([guides_g for _, (_, guides_g) in guide_groups.items()])
     print_verbosity(
@@ -395,7 +395,7 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
         if guide_vars:  # process guides with variants
             if not is_reference:  # polish variants to validate sequence matches
                 guide_vars = polish_variants_annotation(guide, guide_vars)
-            guide.set_variants(",".join(sorted(guide_vars)))
+            guide.variants = ",".join(sorted(guide_vars))
             guides_lst.append(guide)
     print_verbosity(
         f"Variants annotated in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
@@ -430,7 +430,7 @@ def annotate_variants_afs(guides: List[Guide], verbosity: int) -> List[Guide]:
             if guide.variants != "NA"
             else ["NA"]
         )
-        guide.set_allele_freqs(afs)
+        guide.afs_str = afs
         guides_lst.append(guide)
     print_verbosity(
         f"Variants allele frequencies annotated in {time() - start:.2f}s",
@@ -469,7 +469,7 @@ def _funcann(
         )
     # if no annotation, return NA value; annotation values on 4th BED column
     annotation = ",".join([e.split()[3] for e in annotation]) if annotation else "NA"
-    guide.set_func_ann(annotation)
+    guide.funcann = annotation
     return guide
 
 
@@ -528,7 +528,7 @@ def _geneann(
         if annotation
         else "NA"
     )
-    guide.set_gene_ann(annotation)
+    guide.geneann = annotation
     return guide
 
 
@@ -598,7 +598,7 @@ def gc_content(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     start = time()  # GC content calculation start time
     try:  # compute gc content (PAM excluded)
         for guide in guides:
-            guide.set_gc_content(gc_fraction(guide.guide))
+            guide.gc = gc_fraction(guide.guide)
     except Exception as e:
         exception_handler(
             CrisprHawkGcContentError,
@@ -646,7 +646,7 @@ def outofframe_score(
             e,
         )
     for i, score in enumerate(scores):  # set out-of-frame score for each guide
-        guides[i].set_ooframe_score(score)
+        guides[i].ooframe_score = score
     print_verbosity(
         f"Out-of-frame score computed in {time() - start:.2f}s",
         verbosity,

@@ -259,7 +259,7 @@ def select_reportcols(
             REPORTCOLS[:9]
             + REPORTCOLS[10:11]
             + insert_elevationon_reportcols(guidelen + len(pam), right)
-            + REPORTCOLS[12:]
+            + REPORTCOLS[12:20]
             + insert_annotation_reportcols(
                 annotations,
                 gene_annotations,
@@ -275,7 +275,7 @@ def select_reportcols(
             REPORTCOLS[:7]
             + REPORTCOLS[9:10]
             + insert_elevationon_reportcols(guidelen + len(pam), right)
-            + REPORTCOLS[12:]
+            + REPORTCOLS[12:20]
             + insert_annotation_reportcols(
                 annotations,
                 gene_annotations,
@@ -289,7 +289,7 @@ def select_reportcols(
     return (
         REPORTCOLS[:7]
         + insert_elevationon_reportcols(guidelen + len(pam), right)
-        + REPORTCOLS[12:]
+        + REPORTCOLS[12:20]
         + insert_annotation_reportcols(
             annotations, gene_annotations, annotation_colnames, gene_annotation_colnames
         )
@@ -523,8 +523,8 @@ def collapse_offtargets(offtargets: pd.Series) -> int:
     return list(set(offtargets))[0]
 
 
-def collapse_cfd(cfd: pd.Series) -> float:
-    return float(list(set(cfd))[0])
+def collapse_cfd(cfd: pd.Series) -> str:
+    return str(list(set(cfd))[0])
 
 
 def collapsed_fields(
@@ -546,12 +546,12 @@ def collapsed_fields(
     }
     # add optional report fields
     if annotations:  # guides functional annotation
-        idx = reportcols.index(REPORTCOLS[18]) + 1  # haplotype_id is last
+        idx = reportcols.index(REPORTCOLS[19]) + 1  # haplotype_id is last
         for colname in reportcols[idx : idx + len(annotations)]:
             fields[colname] = collapse_annotation
     if gene_annotations:
         idx = (
-            reportcols.index(REPORTCOLS[18]) + 1 + len(annotations)
+            reportcols.index(REPORTCOLS[19]) + 1 + len(annotations)
         )  # haplotype_id is last
         for colname in reportcols[idx : idx + len(gene_annotations)]:
             fields[colname] = collapse_annotation
