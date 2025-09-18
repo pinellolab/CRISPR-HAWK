@@ -1,9 +1,9 @@
-"""Provides classes and utilities for handling genomic regions and annotations from 
+"""Provides classes and utilities for handling genomic regions and annotations from
 BED files.
 
-This module defines the Bed class for reading and managing genomic intervals from 
+This module defines the Bed class for reading and managing genomic intervals from
 BED files, the BedIterator for iterating over these regions, and BedAnnotation for
-querying features from Tabix-indexed BED annotation files. It also includes helper 
+querying features from Tabix-indexed BED annotation files. It also includes helper
 functions for parsing BED lines and checking for Tabix index files.
 """
 
@@ -193,11 +193,11 @@ class Bed:
     def extract_regions(self, fastas: Dict[str, Fasta]) -> RegionList:
         """Extracts genomic regions and their sequences using provided FASTA files.
 
-        This method retrieves the sequence for each region in the BED file using 
+        This method retrieves the sequence for each region in the BED file using
         the corresponding FASTA file and returns a RegionList of these regions.
 
         Args:
-            fastas (Dict[str, Fasta]): A dictionary mapping contig names to Fasta 
+            fastas (Dict[str, Fasta]): A dictionary mapping contig names to Fasta
                 objects.
 
         Returns:

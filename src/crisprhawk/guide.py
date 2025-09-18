@@ -1,9 +1,9 @@
-"""Provides classes and utilities for representing and manipulating CRISPR guide 
+"""Provides classes and utilities for representing and manipulating CRISPR guide
 sequences.
 
-This module defines the Guide class for encapsulating CRISPR guide properties, 
-annotations, and scoring, as well as the GuideIterator for iterating over guide 
-sequences. It supports guide sequence management, annotation, and scoring for 
+This module defines the Guide class for encapsulating CRISPR guide properties,
+annotations, and scoring, as well as the GuideIterator for iterating over guide
+sequences. It supports guide sequence management, annotation, and scoring for
 CRISPR analysis workflows.
 """
 
