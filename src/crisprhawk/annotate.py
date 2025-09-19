@@ -636,6 +636,7 @@ def outofframe_score(
     start = time()  # out-of-frame score calculation start time
     try:  # compute out-of-frame score
         idx = GUIDESEQPAD if right else GUIDESEQPAD + guidelen
+        # scores = [0] * len(guides)
         scores = ooframe_score(guides, idx)
     except Exception as e:
         exception_handler(

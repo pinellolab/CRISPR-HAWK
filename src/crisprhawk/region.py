@@ -231,7 +231,7 @@ class RegionList:
         """
         return RegionListIterator(self)
 
-    def __getitem__(self, idx: Union[int, slice]) -> Region:
+    def __getitem__(self, idx: int) -> Region:
         """Return the region at the given index or slice.
 
         Returns the Region object(s) at the specified index or slice in the RegionList.

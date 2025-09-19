@@ -281,7 +281,6 @@ class Guide:
         Raises:
             CrisprHawkGuideError: If the value is not a non-empty string.
         """
-        print(f"value: {value}")
         if not isinstance(value, str) or not value.strip():
             exception_handler(
                 CrisprHawkGuideError,
