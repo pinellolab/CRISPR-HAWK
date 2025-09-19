@@ -1,4 +1,10 @@
-""" """
+"""Provides classes for representing and manipulating genomic regions and lists 
+of regions.
+
+This module defines the Region, RegionList, and RegionListIterator classes for 
+handling genomic sequences and their coordinates, supporting operations such as 
+containment, overlap, iteration, and list management.
+"""
 
 from .coordinate import Coordinate
 from .sequence import Sequence
@@ -56,6 +62,14 @@ class Region:
         )
 
     def __hash__(self) -> int:
+        """Return a hash value for the region.
+
+        Computes a hash value based on the sequence and coordinates of the region,
+        allowing Region objects to be used in sets and as dictionary keys.
+
+        Returns:
+            The hash value of the region.
+        """
         return hash(
             (
                 self._sequence.sequence,

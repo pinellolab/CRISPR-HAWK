@@ -263,6 +263,7 @@ class VariantRecord:
         Returns:
             A new VariantRecord object representing the specified alternative allele.
         """
+        # sourcery skip: class-extract-method
         # copy current variant record instance
         vrecord = VariantRecord(self._debug)  # create new instance
         # adjust ref/alt alleles and positions for multiallelic sites

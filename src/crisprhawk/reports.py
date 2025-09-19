@@ -51,17 +51,47 @@ REPORTCOLS = [
 
 
 def compute_pam_class(pam: PAM) -> str:
+    """Returns a string representing the PAM class for the given PAM object.
+
+    The output string uses IUPAC notation, converting ambiguous bases to bracketed sets.
+
+    Args:
+        pam (PAM): A PAM object representing the protospacer adjacent motif.
+
+    Returns:
+        str: A string representation of the PAM class, e.g. 'NGG' -> '[ACGT]GG'.
+    """
     # retrieve a string representing the input pam class
     # e.g. NGG -> [ACGT]GG
     return "".join([nt if nt in IUPAC[:4] else f"[{IUPACTABLE[nt]}]" for nt in pam.pam])
 
 
 def compute_guide_origin(samples: str) -> str:
+    """Determines the origin of the guide based on the provided sample string.
+
+    Returns 'ref' if the guide is from the reference genome, otherwise returns 'alt'.
+
+    Args:
+        samples (str): A string indicating the sample source.
+
+    Returns:
+        str: 'ref' if the sample is from the reference genome, 'alt' otherwise.
+    """
     # compute whether the guide came from reference or alternative genomes
     return "ref" if samples == "REF" else "alt"
 
 
 def compute_strand_orientation(strand: int) -> str:
+    """Determines the strand orientation based on the provided strand value.
+
+    Returns '+' for the forward strand and '-' for the reverse strand.
+
+    Args:
+        strand (int): An integer representing the strand orientation.
+
+    Returns:
+        str: '+' if the strand is forward, '-' if the strand is reverse.
+    """
     # retrieve strand orientation
     return "+" if strand == STRAND[0] else "-"  # retrieve strand orientation
 
@@ -74,6 +104,21 @@ def _update_report_fields_spcas9(
     pamlen: int,
     compute_elevation: bool,
 ) -> Dict[str, List[str]]:
+    """Updates the report dictionary with fields specific to the SpCas9 system.
+
+    Adds guide, PAM, scoring, and annotation information for SpCas9 to the report.
+
+    Args:
+        report (Dict[str, List[Any]]): The report dictionary to update.
+        region_coordinates (str): String representation of the target region coordinates.
+        guide (Guide): The guide object containing sequence and annotation data.
+        pamclass (str): The PAM class string for the guide.
+        pamlen (int): The length of the PAM sequence.
+        compute_elevation (bool): Whether to compute and include elevation scores.
+
+    Returns:
+        Dict[str, List[str]]: The updated report dictionary with SpCas9-specific fields.
+    """
     # update report fields for spcas9 system pam
     report[REPORTCOLS[1]].append(guide.start)  # start and stop position
     report[REPORTCOLS[2]].append(guide.stop)
@@ -108,6 +153,21 @@ def _update_report_fields_cpf1(
     pamlen: int,
     compute_elevation: bool,
 ) -> Dict[str, List[str]]:
+    """Updates the report dictionary with fields specific to the Cpf1 system.
+
+    Adds guide, PAM, scoring, and annotation information for Cpf1 to the report.
+
+    Args:
+        report (Dict[str, List[Any]]): The report dictionary to update.
+        region_coordinates (str): String representation of the target region coordinates.
+        guide (Guide): The guide object containing sequence and annotation data.
+        pamclass (str): The PAM class string for the guide.
+        pamlen (int): The length of the PAM sequence.
+        compute_elevation (bool): Whether to compute and include elevation scores.
+
+    Returns:
+        Dict[str, List[str]]: The updated report dictionary with Cpf1-specific fields.
+    """
     # update report fields for cpf1 system pam
     report[REPORTCOLS[1]].append(guide.start)  # start and stop position
     report[REPORTCOLS[2]].append(guide.stop)
@@ -140,6 +200,23 @@ def _update_report_fields_other(
     pamlen: int,
     compute_elevation: bool,
 ) -> Dict[str, List[str]]:
+    """Updates the report dictionary with fields specific to the remaining Cas 
+    systems.
+
+    Adds guide, PAM, scoring, and annotation information for remaining Cas systems
+    to the report.
+
+    Args:
+        report (Dict[str, List[Any]]): The report dictionary to update.
+        region_coordinates (str): String representation of the target region coordinates.
+        guide (Guide): The guide object containing sequence and annotation data.
+        pamclass (str): The PAM class string for the guide.
+        pamlen (int): The length of the PAM sequence.
+        compute_elevation (bool): Whether to compute and include elevation scores.
+
+    Returns:
+        Dict[str, List[str]]: The updated report dictionary with fields.
+    """
     # update report fields for other pam
     report[REPORTCOLS[1]].append(guide.start)  # start and stop position
     report[REPORTCOLS[2]].append(guide.stop)
@@ -171,6 +248,23 @@ def update_report_fields(
     pamclass: str,
     compute_elevation: bool,
 ) -> Dict[str, List[str]]:
+    """Updates the report dictionary with guide-specific fields based on the Cas 
+    system.
+
+    Selects the appropriate update function for SpCas9, Cpf1, or other Cas systems 
+    and updates the report.
+
+    Args:
+        report (Dict[str, List[Any]]): The report dictionary to update.
+        region_coordinates (str): String representation of the target region coordinates.
+        guide (Guide): The guide object containing sequence and annotation data.
+        pam (PAM): The PAM object representing the Cas system.
+        pamclass (str): The PAM class string for the guide.
+        compute_elevation (bool): Whether to compute and include elevation scores.
+
+    Returns:
+        Dict[str, List[str]]: The updated report dictionary with guide-specific fields.
+    """
     if pam.cas_system in [SPCAS9, XCAS9]:  # spcas9 system pam
         return _update_report_fields_spcas9(
             report, region_coordinates, guide, pamclass, len(pam), compute_elevation
@@ -192,6 +286,23 @@ def update_optional_report_fields(
     gene_annotations: List[str],
     estimate_offtargets: bool,
 ) -> Dict[str, List[str]]:
+    """Updates the report dictionary with optional fields such as annotations 
+    and off-target scores.
+
+    Adds functional and gene annotations, as well as off-target information, to 
+    the report if specified.
+
+    Args:
+        report (Dict[str, List[Any]]): The report dictionary to update.
+        guide (Guide): The guide object containing annotation and off-target data.
+        pam (PAM): The PAM object representing the Cas system.
+        annotations (List[str]): List of functional annotation strings.
+        gene_annotations (List[str]): List of gene annotation strings.
+        estimate_offtargets (bool): Whether to include off-target information.
+
+    Returns:
+        Dict[str, List[str]]: The updated report dictionary with optional fields.
+    """
     reportcols = list(report.keys())
     if annotations:
         idx = reportcols.index(REPORTCOLS[19]) + 1  # haplotype_id is last
@@ -211,9 +322,20 @@ def update_optional_report_fields(
 
 
 def insert_elevationon_reportcols(guidepam_len: int, right: bool) -> List[str]:
-    if guidepam_len == 23 and not right:
-        return REPORTCOLS[11:12]
-    return []
+    """Determines whether to include the elevationon score column in the report.
+
+    Returns the elevationon score column if the guide and PAM length is 23 and 
+    the guide is not on the right strand.
+
+    Args:
+        guidepam_len (int): The combined length of the guide and PAM.
+        right (bool): Indicates if the guide is on the right strand.
+
+    Returns:
+        List[str]: A list containing the elevationon score column if applicable, 
+            otherwise an empty list.
+    """
+    return REPORTCOLS[11:12] if guidepam_len == 23 and not right else []
 
 
 def insert_annotation_reportcols(
@@ -222,6 +344,21 @@ def insert_annotation_reportcols(
     anncolnames: List[str],
     gene_anncolnames: List[str],
 ) -> List[str]:
+    """Generates annotation column names for the report based on provided annotations 
+    and gene annotations.
+
+    Returns a list of annotation and gene annotation column names, using provided 
+    names or defaulting to generic names.
+
+    Args:
+        annotations (List[str]): List of functional annotation strings.
+        gene_annotations (List[str]): List of gene annotation strings.
+        anncolnames (List[str]): List of column names for annotations.
+        gene_anncolnames (List[str]): List of column names for gene annotations.
+
+    Returns:
+        List[str]: A list of annotation and gene annotation column names for the report.
+    """
     reportcols = [
         anncolnames[i] if anncolnames else f"annotation_{i + 1}"
         for i, _ in enumerate(annotations)
@@ -236,6 +373,20 @@ def insert_annotation_reportcols(
 def insert_offtargets_reportcols(
     estimate_offtargets: bool, cas_system: int, guidepam_len: int, right: bool
 ) -> List[str]:
+    """Determines which off-target related columns to include in the report.
+
+    Returns a list of off-target and CFD score columns based on the Cas system 
+    and estimation flag.
+
+    Args:
+        estimate_offtargets (bool): Whether to include off-target columns.
+        cas_system (int): The Cas system identifier.
+        guidepam_len (int): The combined length of the guide and PAM.
+        right (bool): Indicates if the guide is on the right strand.
+
+    Returns:
+        List[str]: A list of off-target and CFD score column names for the report.
+    """
     reportcols = []
     if estimate_offtargets:
         reportcols = REPORTCOLS[20:21]
