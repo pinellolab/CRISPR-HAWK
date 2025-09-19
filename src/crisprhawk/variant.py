@@ -348,6 +348,15 @@ class VariantRecord:
             for i, altallele in enumerate(self._alt)
             if self._vtype[i] == vtype
         ]
+    
+    def pytest_initialize(self, position: int, ref: str, alt: str, vtype: str, vid: str, afs: List[float]) -> None:
+        self._chrom = "chrx"
+        self._position = position
+        self._ref = ref
+        self._alt = [alt]
+        self._vtype = [vtype]
+        self._vid = [vid]
+        self._afs = afs
 
     @property
     def filter(self) -> str:

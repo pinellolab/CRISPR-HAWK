@@ -297,14 +297,14 @@ class Fasta:
         if self._faidx:  # launch warning
             warning("FASTA index already present, forcing update", self._verbosity)
         # compute fasta index if not provided during object creation or found
-        try:  # create index in the same folder of base fasta
+        try:
             print_verbosity(
                 f"Generating FASTA index for {self._fname}",
                 self._verbosity,
                 VERBOSITYLVL[3],
             )
             pysam.faidx(self._fname)  # index fasta using samtools
-        except (SamtoolsError, OSError, Exception) as e:
+        except (SamtoolsError, Exception) as e:
             exception_handler(
                 RuntimeError,
                 f"An error occurred while indexing {self._fname}",
