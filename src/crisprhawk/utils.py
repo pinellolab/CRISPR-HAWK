@@ -1,8 +1,8 @@
 """
 Utility functions and constants for the CRISPR-HAWK tool.
 
-This module provides helper functions for file and directory management, sequence 
-manipulation, IUPAC matching, and model extraction. It also defines shared constants 
+This module provides helper functions for file and directory management, sequence
+manipulation, IUPAC matching, and model extraction. It also defines shared constants
 and static variables used across the CRISPR-HAWK software.
 """
 
@@ -99,7 +99,7 @@ GUIDESREPORTPREFIX = "crisprhawk_guides"
 def reverse_complement(sequence: str, debug: bool) -> str:
     """Return the reverse complement of a nucleotide sequence.
 
-    Computes the reverse complement of the input sequence using the defined nucleotide 
+    Computes the reverse complement of the input sequence using the defined nucleotide
     mapping. Raises an error if an invalid character is encountered.
 
     Args:
@@ -141,13 +141,13 @@ def warning(message: str, verbosity: int) -> None:
 def print_verbosity(message: str, verbosity: int, verbosity_threshold: int) -> None:
     """Print a message if the verbosity level meets the threshold.
 
-    Writes the message to standard output if the current verbosity is greater 
+    Writes the message to standard output if the current verbosity is greater
     than or equal to the specified threshold.
 
     Args:
         message (str): The message to print.
         verbosity (int): The current verbosity level.
-        verbosity_threshold (int): The minimum verbosity level required to print 
+        verbosity_threshold (int): The minimum verbosity level required to print
             the message.
 
     Returns:
@@ -161,7 +161,7 @@ def print_verbosity(message: str, verbosity: int, verbosity_threshold: int) -> N
 def adjust_guide_position(pos: int, guidelen: int, pamlen: int, right: bool) -> int:
     """Adjust the guide position based on orientation.
 
-    Returns the adjusted position for a guide depending on whether it is on the 
+    Returns the adjusted position for a guide depending on whether it is on the
     right or left strand.
 
     Args:
@@ -207,7 +207,7 @@ def flatten_list(lst: List[List[Any]]) -> List[Any]:
 def match_iupac(seq: str, pattern: str) -> bool:
     """Check if a sequence matches a pattern using IUPAC nucleotide codes.
 
-    Compares two sequences and returns True if the sequence matches the pattern 
+    Compares two sequences and returns True if the sequence matches the pattern
     according to IUPAC codes.
 
     Args:
@@ -285,7 +285,7 @@ def create_folder(dirname: str) -> str:
 def remove_folder(dirname: str) -> None:
     """Remove a directory and its contents.
 
-    Attempts to delete the specified directory and all its contents. Raises an 
+    Attempts to delete the specified directory and all its contents. Raises an
     error if the operation fails.
 
     Args:
@@ -320,8 +320,8 @@ def remove_file(filename: str) -> None:
 def _uncompress_azimuth_models(azimuthdir: str) -> None:
     """Uncompress the Azimuth model ZIP archive in the specified directory.
 
-    Extracts the Azimuth saved models ZIP file into the given directory and 
-    removes the archive after extraction. Raises an error if the file is missing 
+    Extracts the Azimuth saved models ZIP file into the given directory and
+    removes the archive after extraction. Raises an error if the file is missing
     or extraction fails.
 
     Args:
@@ -347,8 +347,8 @@ def _uncompress_azimuth_models(azimuthdir: str) -> None:
 def _uncompress_cfd_models(cfdscoredir: str) -> None:
     """Uncompress the CFD model ZIP archive in the specified directory.
 
-    Extracts the CFD models ZIP file into the given directory and removes the 
-    archive after extraction. Raises an error if the file is missing or extraction 
+    Extracts the CFD models ZIP file into the given directory and removes the
+    archive after extraction. Raises an error if the file is missing or extraction
     fails.
 
     Args:
@@ -374,8 +374,8 @@ def _uncompress_cfd_models(cfdscoredir: str) -> None:
 def _uncompress_deepcpf1_models(deepcpf1dir: str) -> None:
     """Uncompress the DeepCpf1 model ZIP archive in the specified directory.
 
-    Extracts the DeepCpf1 weights ZIP file into the given directory and removes 
-    the archive after extraction. Raises an error if the file is missing or 
+    Extracts the DeepCpf1 weights ZIP file into the given directory and removes
+    the archive after extraction. Raises an error if the file is missing or
     extraction fails.
 
     Args:
@@ -399,11 +399,11 @@ def _uncompress_deepcpf1_models(deepcpf1dir: str) -> None:
 
 
 def _uncompress_elevation_models(elevationdir: str) -> None:
-    """Uncompress the Elevation model and data ZIP archives in the specified 
+    """Uncompress the Elevation model and data ZIP archives in the specified
     directory.
 
-    Extracts the Elevation models and data ZIP files into the given directory and 
-    removes the archives after extraction. Raises an error if any file is missing 
+    Extracts the Elevation models and data ZIP files into the given directory and
+    removes the archives after extraction. Raises an error if any file is missing
     or extraction fails.
 
     Args:
@@ -427,11 +427,13 @@ def _uncompress_elevation_models(elevationdir: str) -> None:
     )
 
 
-def _uncompress_elevation_model(elevationdir, file_zipped: str, errmsg1: str, errmsg2: str) -> None:
+def _uncompress_elevation_model(
+    elevationdir, file_zipped: str, errmsg1: str, errmsg2: str
+) -> None:
     """Uncompress a specific Elevation ZIP archive in the given directory.
 
-    Extracts the specified ZIP file into the provided directory and removes the 
-    archive after extraction. Raises an error if the file is missing or extraction 
+    Extracts the specified ZIP file into the provided directory and removes the
+    archive after extraction. Raises an error if the file is missing or extraction
     fails.
 
     Args:
@@ -459,7 +461,7 @@ def prepare_package() -> None:
     """Prepare the package by extracting required model and data ZIP files.
 
     Checks for the presence of required model and data directories. If any are
-    missing, extracts the corresponding ZIP archives to ensure all scoring algorithms 
+    missing, extracts the corresponding ZIP archives to ensure all scoring algorithms
     have access to necessary resources.
     """
     # at first run uncompress ZIP files containing models and data used by
@@ -496,7 +498,7 @@ def prepare_package() -> None:
 def command_exists(command: str) -> bool:
     """Check if a command exists in the system's PATH.
 
-    Returns True if the specified command is found in the system's executable 
+    Returns True if the specified command is found in the system's executable
     search path, otherwise False.
 
     Args:
@@ -511,7 +513,7 @@ def command_exists(command: str) -> bool:
 def is_lowercase(sequence: str) -> bool:
     """Check if a sequence contains any lowercase characters.
 
-    Returns True if at least one character in the sequence is lowercase, otherwise 
+    Returns True if at least one character in the sequence is lowercase, otherwise
     False.
 
     Args:

@@ -1,9 +1,9 @@
 """
-This module provides classes and utility functions for representing and manipulating 
+This module provides classes and utility functions for representing and manipulating
 haplotypes.
 
-It includes the Haplotype and HaplotypeIndel classes for managing genomic regions 
-with sequence variants, as well as helper functions for variant sorting, chain 
+It includes the Haplotype and HaplotypeIndel classes for managing genomic regions
+with sequence variants, as well as helper functions for variant sorting, chain
 computation, and IUPAC encoding.
 """
 
@@ -21,10 +21,10 @@ import os
 
 
 class Haplotype(Region):
-    """Represents a haplotype, which is a specific combination of alleles or sequence 
+    """Represents a haplotype, which is a specific combination of alleles or sequence
     variants in a genomic region.
 
-    Provides methods to add, modify, and manage variants, phasing, and sample 
+    Provides methods to add, modify, and manage variants, phasing, and sample
     information for a haplotype.
 
     Attributes:
@@ -51,10 +51,10 @@ class Haplotype(Region):
         chromcopy: int,
         debug: bool,
     ) -> None:
-        """Initializes a Haplotype object with sequence, coordinates, phasing, 
+        """Initializes a Haplotype object with sequence, coordinates, phasing,
         chromosome copy, and debug flag.
 
-        Sets up the haplotype's sequence, region, and internal state for variant 
+        Sets up the haplotype's sequence, region, and internal state for variant
         and sample management.
 
         Args:
@@ -76,10 +76,10 @@ class Haplotype(Region):
         self._initialize_posmap([], self._coordinates.start)  # initialize position map
 
     def __str__(self) -> str:
-        """Returns a string representation of the haplotype showing sample and 
+        """Returns a string representation of the haplotype showing sample and
         sequence.
 
-        Provides a concise summary of the haplotype's sample information and its 
+        Provides a concise summary of the haplotype's sample information and its
         nucleotide sequence.
 
         Returns:
@@ -88,10 +88,10 @@ class Haplotype(Region):
         return f"{self._samples}: {self._sequence.sequence}"
 
     def _initialize_posmap(self, chains: List[int], start: int) -> None:
-        """Initializes the position mapping for the haplotype based on indel chains 
+        """Initializes the position mapping for the haplotype based on indel chains
         and start position.
 
-        Updates the internal position maps to reflect the current structure of the 
+        Updates the internal position maps to reflect the current structure of the
         haplotype sequence.
 
         Args:
@@ -104,7 +104,7 @@ class Haplotype(Region):
         self._posmap_reverse = {pos: posrel for posrel, pos in self._posmap.items()}
 
     def _update_sequence(self, start: int, stop: int, alt: str) -> None:
-        """Updates the haplotype sequence by replacing a region with an alternate 
+        """Updates the haplotype sequence by replacing a region with an alternate
         allele.
 
         Modifies the internal sequence to reflect the specified variant.
@@ -121,7 +121,7 @@ class Haplotype(Region):
         )
 
     def substring(self, start: int, stop: int) -> str:
-        """Returns a substring of the haplotype sequence between the specified 
+        """Returns a substring of the haplotype sequence between the specified
         start and stop positions.
 
         Extracts and concatenates the nucleotide sequence from the given range.
@@ -138,12 +138,12 @@ class Haplotype(Region):
     def _update_posmap(self, posrel: int, chain: int) -> None:
         """Updates the position mapping after a variant is inserted or deleted.
 
-        Adjusts the internal position maps to reflect changes in the haplotype 
+        Adjusts the internal position maps to reflect changes in the haplotype
         sequence structure.
 
         Args:
             posrel (int): The relative position in the haplotype sequence.
-            chain (int): The length change caused by the variant (positive for 
+            chain (int): The length change caused by the variant (positive for
                 insertions, negative for deletions).
         """
         if chain < 0:
@@ -161,12 +161,12 @@ class Haplotype(Region):
     def _update_variant_alleles(self, pos: int, offset: int) -> None:
         """Updates the variant alleles mapping after an indel event.
 
-        Adjusts the positions of variant alleles to account for insertions or 
+        Adjusts the positions of variant alleles to account for insertions or
         deletions in the haplotype sequence.
 
         Args:
             pos (int): The position in the haplotype sequence where the indel occurs.
-            offset (int): The change in length caused by the indel (positive for 
+            offset (int): The change in length caused by the indel (positive for
                 insertions, negative for deletions).
         """
         self._variant_alleles = {
@@ -179,14 +179,14 @@ class Haplotype(Region):
     ) -> None:
         """Inserts a variant into the haplotype sequence for phased data.
 
-        Updates the haplotype by applying the given variant and adjusting the 
+        Updates the haplotype by applying the given variant and adjusting the
         sequence and position mapping.
 
         Args:
             position (int): Genomic position of the variant.
             ref (str): Reference allele sequence.
             alt (str): Alternate allele sequence.
-            chain (int): Length change caused by the variant (positive for insertions, 
+            chain (int): Length change caused by the variant (positive for insertions,
                 negative for deletions).
             offset (int): Cumulative offset from previous variants.
         """
@@ -204,14 +204,14 @@ class Haplotype(Region):
         self._update_posmap(posrel, chain)
 
     def add_variants_phased(self, variants: List[VariantRecord], sample: str) -> None:
-        """Adds a list of phased variants to the haplotype and updates its sequence 
+        """Adds a list of phased variants to the haplotype and updates its sequence
         and sample information.
 
-        Applies each variant to the haplotype, reconstructs the sequence, and updates 
+        Applies each variant to the haplotype, reconstructs the sequence, and updates
         sample, variant, and allele frequency data.
 
         Args:
-            variants (List[VariantRecord]): List of VariantRecord objects to add 
+            variants (List[VariantRecord]): List of VariantRecord objects to add
                 to the haplotype.
             sample (str): Sample identifier to associate with the haplotype.
         """
@@ -248,7 +248,7 @@ class Haplotype(Region):
     ) -> None:
         """Inserts a variant into the haplotype sequence for unphased data.
 
-        Applies the given variant to the haplotype, updating the sequence, variant 
+        Applies the given variant to the haplotype, updating the sequence, variant
         alleles, and position mapping.
 
         Args:
@@ -256,12 +256,12 @@ class Haplotype(Region):
             ref (str): Reference allele sequence.
             alt (str): Alternate allele sequence.
             vtype (str): Variant type (e.g., SNV or indel).
-            chain (int): Length change caused by the variant (positive for insertions, 
+            chain (int): Length change caused by the variant (positive for insertions,
                 negative for deletions).
             offset (int): Cumulative offset from previous variants.
 
         Raises:
-            ValueError: If the reference allele does not match the haplotype sequence 
+            ValueError: If the reference allele does not match the haplotype sequence
                 at the specified position.
         """
         try:
@@ -286,14 +286,14 @@ class Haplotype(Region):
         self._update_posmap(posrel, chain)
 
     def add_variants_unphased(self, variants: List[VariantRecord], sample: str) -> None:
-        """Adds a list of unphased variants to the haplotype and updates its 
+        """Adds a list of unphased variants to the haplotype and updates its
         sequence and sample information.
 
-        Applies each unphased variant to the haplotype, reconstructs the sequence, 
+        Applies each unphased variant to the haplotype, reconstructs the sequence,
         and updates sample, variant, and allele frequency data.
 
         Args:
-            variants (List[VariantRecord]): List of VariantRecord objects to add 
+            variants (List[VariantRecord]): List of VariantRecord objects to add
                 to the haplotype.
             sample (str): Sample identifier to associate with the haplotype.
         """
@@ -319,7 +319,7 @@ class Haplotype(Region):
     def homozygous_samples(self) -> None:
         """Sets the haplotype samples to homozygous by updating their phasing value.
 
-        Changes the phasing value for all samples to indicate homozygosity, 
+        Changes the phasing value for all samples to indicate homozygosity,
         supporting diploid cases.
 
         Raises:
@@ -327,7 +327,12 @@ class Haplotype(Region):
         """
         # if samples are homozygous, change their phasing value (support diploid)
         if self._samples == "REF":
-            exception_handler(CrisprHawkHaplotypeError, "REF haplotype cannot be homozygous", os.EX_DATAERR, self._debug)
+            exception_handler(
+                CrisprHawkHaplotypeError,
+                "REF haplotype cannot be homozygous",
+                os.EX_DATAERR,
+                self._debug,
+            )
         self._samples = ",".join(
             [
                 f"{s[0]}:1|1"
@@ -342,21 +347,21 @@ class Haplotype(Region):
         Assigns the provided dictionary of allele frequencies to the haplotype.
 
         Args:
-            afs (Dict[str, float]): Dictionary mapping variant IDs to their 
+            afs (Dict[str, float]): Dictionary mapping variant IDs to their
                 allele frequencies.
         """
         self._afs = afs  # set allele frequencies to haplotype
-    
+
     def set_posmap(self, posmap: Dict[int, int], posmap_rev: Dict[int, int]) -> None:
         """Sets the position mapping dictionaries for the haplotype.
 
-        Assigns the provided position map and its reverse to the haplotype for 
+        Assigns the provided position map and its reverse to the haplotype for
         coordinate translation.
 
         Args:
-            posmap (Dict[int, int]): Dictionary mapping relative positions to 
+            posmap (Dict[int, int]): Dictionary mapping relative positions to
                 genomic positions.
-            posmap_rev (Dict[int, int]): Dictionary mapping genomic positions to 
+            posmap_rev (Dict[int, int]): Dictionary mapping genomic positions to
                 relative positions.
         """
         self._posmap = posmap  # set position map to haplotype
@@ -368,7 +373,7 @@ class Haplotype(Region):
         Assigns the provided dictionary of variant alleles to the haplotype.
 
         Args:
-            variant_alleles (Dict[int, Tuple[str, str]]): Dictionary mapping 
+            variant_alleles (Dict[int, Tuple[str, str]]): Dictionary mapping
                 positions to (ref, alt) allele tuples.
         """
         self._variant_alleles = variant_alleles  # set variant alleles
@@ -376,12 +381,12 @@ class Haplotype(Region):
     @property
     def samples(self) -> str:
         return self._samples
-    
+
     @samples.setter
     def samples(self, value: str) -> None:
         """Sets the samples attribute for the haplotype.
 
-        Validates that the provided value is a string and assigns it to the 
+        Validates that the provided value is a string and assigns it to the
         haplotype's samples.
 
         Args:
@@ -402,12 +407,12 @@ class Haplotype(Region):
     @property
     def variants(self) -> str:
         return self._variants
-    
+
     @variants.setter
     def variants(self, value: str) -> None:
         """Sets the variants attribute for the haplotype.
 
-        Validates that the provided value is a string and assigns it to the 
+        Validates that the provided value is a string and assigns it to the
         haplotype's variants.
 
         Args:
@@ -423,7 +428,7 @@ class Haplotype(Region):
                 os.EX_DATAERR,
                 True,
             )
-        self._variants = value  # set variants to haplotype 
+        self._variants = value  # set variants to haplotype
 
     @property
     def afs(self) -> Dict[str, float]:
@@ -449,7 +454,7 @@ class Haplotype(Region):
     def id(self, value: str) -> None:
         """Sets the haplotype ID attribute.
 
-        Validates that the provided value is a string and assigns it as the 
+        Validates that the provided value is a string and assigns it as the
         haplotype's ID.
 
         Args:
@@ -466,7 +471,7 @@ class Haplotype(Region):
                 True,
             )
         self._id = value  # set haplotype ID
-    
+
     @property
     def variant_alleles(self) -> Dict[int, Tuple[str, str]]:
         return self._variant_alleles
@@ -494,17 +499,17 @@ def _sort_variants(variants: List[VariantRecord]) -> List[VariantRecord]:
 
 
 def _compute_chains(variants: List[VariantRecord]) -> List[int]:
-    """Computes the length difference between alternate and reference alleles for 
+    """Computes the length difference between alternate and reference alleles for
     each variant.
 
-    Returns a list of length changes (insertions or deletions) for the provided 
+    Returns a list of length changes (insertions or deletions) for the provided
     variants.
 
     Args:
         variants (List[VariantRecord]): List of VariantRecord objects to process.
 
     Returns:
-        List[int]: List of length differences for each variant (alt length - ref 
+        List[int]: List of length differences for each variant (alt length - ref
             length).
     """
     return [len(v.alt[0]) - len(v.ref) for v in variants]
@@ -513,7 +518,7 @@ def _compute_chains(variants: List[VariantRecord]) -> List[int]:
 def _encode_iupac(ref: str, alt: str, position: int, debug: bool) -> str:
     """Encodes a reference and alternate allele pair as an IUPAC character.
 
-    Returns the IUPAC code for the given alleles or raises an error if the 
+    Returns the IUPAC code for the given alleles or raises an error if the
     combination is invalid.
 
     Args:
@@ -526,20 +531,26 @@ def _encode_iupac(ref: str, alt: str, position: int, debug: bool) -> str:
         str: IUPAC character representing the allele combination.
 
     Raises:
-        CrisprHawkIupacTableError: If the allele combination cannot be encoded 
+        CrisprHawkIupacTableError: If the allele combination cannot be encoded
             as IUPAC.
     """
     try:
         return IUPAC_ENCODER["".join({ref, alt})]
     except KeyError as e:
-        exception_handler(CrisprHawkIupacTableError, f"An error occurred while encoding {ref}>{alt} at position {position} as IUPAC character", os.EX_DATAERR, debug, e)
+        exception_handler(
+            CrisprHawkIupacTableError,
+            f"An error occurred while encoding {ref}>{alt} at position {position} as IUPAC character",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
 
 
 class HaplotypeIndel(Haplotype):
-    """Represents a haplotype with additional support for indel offset and position 
+    """Represents a haplotype with additional support for indel offset and position
     tracking.
 
-    Extends the Haplotype class to manage indel-specific attributes such as offset 
+    Extends the Haplotype class to manage indel-specific attributes such as offset
     and indel position.
 
     Attributes:
@@ -562,7 +573,7 @@ class HaplotypeIndel(Haplotype):
     @property
     def offset(self) -> int:
         return self._offset
-    
+
     @offset.setter
     def offset(self, value: int) -> None:
         """Sets the offset value for the haplotype indel.
@@ -583,16 +594,16 @@ class HaplotypeIndel(Haplotype):
                 True,
             )
         self._offset = value
-    
+
     @property
     def indel_position(self) -> int:
         return self._indel_position
-    
+
     @indel_position.setter
     def indel_position(self, value: int) -> None:
         """Sets the indel position for the haplotype.
 
-        Validates that the provided value is an integer and assigns it as the 
+        Validates that the provided value is an integer and assigns it as the
         indel position.
 
         Args:

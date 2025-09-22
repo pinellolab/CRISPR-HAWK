@@ -1,8 +1,8 @@
-"""Provides classes for representing and manipulating genomic regions and lists 
+"""Provides classes for representing and manipulating genomic regions and lists
 of regions.
 
-This module defines the Region, RegionList, and RegionListIterator classes for 
-handling genomic sequences and their coordinates, supporting operations such as 
+This module defines the Region, RegionList, and RegionListIterator classes for
+handling genomic sequences and their coordinates, supporting operations such as
 containment, overlap, iteration, and list management.
 """
 

@@ -1,7 +1,7 @@
-"""Provides functions for estimating and reporting CRISPR guide off-targets using 
+"""Provides functions for estimating and reporting CRISPR guide off-targets using
 CRISPRitz.
 
-This module handles the creation of input files, execution of off-target searches, 
+This module handles the creation of input files, execution of off-target searches,
 scoring, and annotation of guides with off-target information.
 """
 
@@ -290,7 +290,9 @@ def _read_offtargets(
     try:
         with open(crispritz_targets_file, mode="r") as infile:
             infile.readline()  # skip header
-            offtargets = [Offtarget(line, pam.pam, right, debug) for line in infile]  # read CRISPRitz off-targets report
+            offtargets = [
+                Offtarget(line, pam.pam, right, debug) for line in infile
+            ]  # read CRISPRitz off-targets report
     except (IOError, Exception) as e:
         exception_handler(
             CrisprHawkOffTargetsError,
@@ -344,7 +346,7 @@ def _compute_elevation_score(
     offtargets: List[Offtarget], verbosity: int, debug: bool
 ) -> List[Offtarget]:
     """Computes the Elevation score for a list of off-targets.
-    Updates each Offtarget object with its calculated Elevation score, skipping 
+    Updates each Offtarget object with its calculated Elevation score, skipping
     those with bulges.
 
     Args:
@@ -401,7 +403,7 @@ def report_offtargets(
     debug: bool,
 ) -> List[Offtarget]:
     """Generates an off-targets report for a genomic region using CRISPRitz results.
-    Computes CFD and Elevation scores as needed, writes a tab-separated report, 
+    Computes CFD and Elevation scores as needed, writes a tab-separated report,
     and returns the list of Offtarget objects.
 
     Args:
@@ -459,7 +461,7 @@ def _calculate_offtargets_map(
     offtargets: List[Offtarget], guides: List[Guide]
 ) -> Dict[str, List[Offtarget]]:
     """Creates a mapping from guide sequences to their associated off-targets.
-    Returns a dictionary where each guide maps to a list of its corresponding 
+    Returns a dictionary where each guide maps to a list of its corresponding
     Offtarget objects.
 
     Args:
@@ -467,7 +469,7 @@ def _calculate_offtargets_map(
         guides (List[Guide]): List of Guide objects.
 
     Returns:
-        Dict[str, List[Offtarget]]: Mapping from guide sequence to list of 
+        Dict[str, List[Offtarget]]: Mapping from guide sequence to list of
             Offtarget objects.
     """
     otmap = {g.guide.upper(): [] for g in guides}  # offtargets map
@@ -540,7 +542,7 @@ def search_offtargets(
     debug: bool,
 ) -> List[Guide]:
     """Estimates off-targets for a list of guides using CRISPRitz.
-    Runs the full off-target search workflow and returns guides annotated with 
+    Runs the full off-target search workflow and returns guides annotated with
     off-target information.
 
     Args:

@@ -1,10 +1,11 @@
 """
-This module provides classes and functions for representing and scoring CRISPR 
+This module provides classes and functions for representing and scoring CRISPR
 off-target sites.
 
-It includes utilities for parsing off-target report lines, computing CFD and elevation 
+It includes utilities for parsing off-target report lines, computing CFD and elevation
 scores, and formatting output for downstream analysis.
 """
+
 from .exception_handlers import exception_handler
 from .scores.cfdscore.cfdscore import compute_cfd
 from .bedfile import BedAnnotation
@@ -20,8 +21,8 @@ import os
 
 class Offtarget:
     """
-    Represents an off-target site for CRISPR guide RNAs, including sequence, 
-    position, and scoring information. Provides methods to parse off-target report 
+    Represents an off-target site for CRISPR guide RNAs, including sequence,
+    position, and scoring information. Provides methods to parse off-target report
     lines, compute CFD and elevation scores, and generate report output.
 
     Attributes:
@@ -43,8 +44,8 @@ class Offtarget:
 
     def __init__(self, reportline: str, pam: str, right: bool, debug: bool) -> None:
         """
-        Initializes an Offtarget object by parsing a report line and setting relevant 
-        attributes. Sets sequence, position, strand, PAM, mismatch, bulge, and scoring 
+        Initializes an Offtarget object by parsing a report line and setting relevant
+        attributes. Sets sequence, position, strand, PAM, mismatch, bulge, and scoring
         information for the off-target site.
 
         Args:
@@ -61,8 +62,8 @@ class Offtarget:
 
     def __repr__(self) -> str:
         """
-        Returns a string representation of the Offtarget object, including its 
-        position, spacer, and strand. This helps with debugging and logging by 
+        Returns a string representation of the Offtarget object, including its
+        position, spacer, and strand. This helps with debugging and logging by
         providing a concise summary of the object's key attributes.
 
         Returns:
@@ -75,9 +76,9 @@ class Offtarget:
 
     def _parse_reportline(self, line: str, pam: str, right: bool) -> None:
         """
-        Parses a report line to extract and set off-target attributes such as 
+        Parses a report line to extract and set off-target attributes such as
         chromosome, position, strand, sequences, mismatches, and bulge information.
-        Updates the Offtarget object's internal state with the parsed values for 
+        Updates the Offtarget object's internal state with the parsed values for
         downstream scoring and reporting.
 
         Args:
@@ -103,8 +104,8 @@ class Offtarget:
         self, mmscores: Dict[str, float], pamscores: Dict[str, float]
     ) -> None:
         """
-        Computes the CFD (Cutting Frequency Determination) score for the off-target 
-        site using provided mismatch and PAM scores. Updates the object's CFD score 
+        Computes the CFD (Cutting Frequency Determination) score for the off-target
+        site using provided mismatch and PAM scores. Updates the object's CFD score
         attribute with the computed value for downstream reporting and analysis.
 
         Args:
@@ -127,13 +128,11 @@ class Offtarget:
             )
         )
 
-    
-
     def report_line(self) -> str:
         """
-        Generates a tab-separated string containing all key attributes of the 
-        Offtarget object for reporting purposes. Returns a line with chromosome, 
-        position, strand, gRNA, spacer, PAM, mismatch count, bulge size, bulge type, 
+        Generates a tab-separated string containing all key attributes of the
+        Offtarget object for reporting purposes. Returns a line with chromosome,
+        position, strand, gRNA, spacer, PAM, mismatch count, bulge size, bulge type,
         CFD score, and elevation score.
 
         Returns:
@@ -179,13 +178,13 @@ class Offtarget:
     @property
     def elevation(self) -> str:
         return self._elevation_score
-    
+
     @elevation.setter
     def elevation(self, value: float) -> None:
         """
         Sets the elevation score for the off-target site, rounding the value or
         setting to "NA" if not a number.
-        
+
         Raises a TypeError if the provided value is not a float.
 
         Args:
@@ -202,11 +201,12 @@ class Offtarget:
                 self._debug,
             )
         self._elevation_score = "NA" if np.isnan(value) else str(round_score(value))
-    
+
+
 def _retrieve_pam(sequence: str, length: int, right: bool) -> str:
     """
-    Retrieves the PAM sequence from a given DNA sequence based on the specified 
-    length and orientation. Returns the PAM sequence from the start or end of the 
+    Retrieves the PAM sequence from a given DNA sequence based on the specified
+    length and orientation. Returns the PAM sequence from the start or end of the
     input sequence depending on the 'right' flag.
 
     Args:
@@ -222,8 +222,8 @@ def _retrieve_pam(sequence: str, length: int, right: bool) -> str:
 
 def _format_sequence(sequence: str, pam: str, right: bool) -> Tuple[str, str]:
     """
-    Formats a DNA sequence by extracting the spacer and combining it with the PAM 
-    sequence according to orientation. Returns a tuple containing the spacer sequence 
+    Formats a DNA sequence by extracting the spacer and combining it with the PAM
+    sequence according to orientation. Returns a tuple containing the spacer sequence
     and the full formatted sequence with PAM.
 
     Args:

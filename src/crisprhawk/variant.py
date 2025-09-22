@@ -349,11 +349,13 @@ class VariantRecord:
             for i, altallele in enumerate(self._alt)
             if self._vtype[i] == vtype
         ]
-    
-    def pytest_initialize(self, position: int, ref: str, alt: str, vtype: str, vid: str, afs: List[float]) -> None:
+
+    def pytest_initialize(
+        self, position: int, ref: str, alt: str, vtype: str, vid: str, afs: List[float]
+    ) -> None:
         """Initialize the VariantRecord for pytest with provided values.
 
-        Sets the chromosome, position, reference allele, alternative allele, 
+        Sets the chromosome, position, reference allele, alternative allele,
         variant type, variant ID, and allele frequencies for testing purposes.
 
         Args:

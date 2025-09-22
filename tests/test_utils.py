@@ -11,9 +11,11 @@ def test_reverse_complement_basic():
     assert utils.reverse_complement("atgc", False) == "gcat"
     assert utils.reverse_complement("N", False) == "N"
 
+
 def test_reverse_complement_invalid():
     with pytest.raises(SystemExit):
         utils.reverse_complement("ATXG", False)
+
 
 def test_warning_and_print_verbosity(capsys):
     utils.warning("test warning", 1)
@@ -24,17 +26,21 @@ def test_warning_and_print_verbosity(capsys):
     captured = capsys.readouterr()
     assert "test message" in captured.out
 
+
 def test_adjust_guide_position():
     assert utils.adjust_guide_position(10, 5, 3, True) == 10
     assert utils.adjust_guide_position(10, 5, 3, False) == 5
+
 
 def test_round_score():
     assert utils.round_score(1.234567) == 1.2346
     assert utils.round_score(1.0) == 1.0
 
+
 def test_flatten_list():
     assert utils.flatten_list([[1, 2], [3], [], [4, 5]]) == [1, 2, 3, 4, 5]
     assert utils.flatten_list([]) == []
+
 
 def test_match_iupac():
     assert utils.match_iupac("A", "A")
@@ -44,10 +50,12 @@ def test_match_iupac():
     assert not utils.match_iupac("AG", "YY")
     assert not utils.match_iupac("AA", "AG")
 
+
 def test_dna2rna():
     assert utils.dna2rna("ATGC") == "AUGC"
     assert utils.dna2rna("atgc") == "augc"
     assert utils.dna2rna("TTTT") == "UUUU"
+
 
 def test_create_and_remove_folder():
     temp_dir = tempfile.mkdtemp()
@@ -57,6 +65,7 @@ def test_create_and_remove_folder():
     utils.remove_folder(new_dir)
     assert not os.path.exists(new_dir)
     shutil.rmtree(temp_dir, ignore_errors=True)
+
 
 def test_remove_file():
     temp_dir = tempfile.mkdtemp()
@@ -68,9 +77,11 @@ def test_remove_file():
     assert not os.path.exists(file_path)
     shutil.rmtree(temp_dir, ignore_errors=True)
 
+
 def test_command_exists():
     assert utils.command_exists("python")
     assert not utils.command_exists("some_nonexistent_command_12345")
+
 
 def test_is_lowercase():
     assert utils.is_lowercase("abc")

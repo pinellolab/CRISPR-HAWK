@@ -13,6 +13,7 @@ class DummySequence:
     def __init__(self, sequence, debug, allow_lower_case=False):
         self.sequence = sequence
 
+
 class DummyCoordinate:
     def __init__(self, contig, start, stop, strand):
         self.contig = contig
@@ -20,6 +21,7 @@ class DummyCoordinate:
         self.stop = stop
         self.startp = start
         self.stopp = stop
+
 
 class DummyRegion:
     def __init__(self, contig, start, stop, seq):
@@ -29,6 +31,7 @@ class DummyRegion:
         self.coordinates = DummyCoordinate(contig, start, stop, 0)
         self.sequence = DummySequence(seq, False)
 
+
 class DummyVariantRecord:
     def __init__(self, vtype, samples, position=0, ref="A", alt=None, id=None):
         self.vtype = (vtype,)
@@ -37,6 +40,7 @@ class DummyVariantRecord:
         self.ref = ref
         self.alt = alt or []
         self.id = id or ["1-1-A/T"]
+
 
 class DummyHaplotype:
     def __init__(self, sequence, coordinates, phased, copy, debug):
@@ -72,19 +76,23 @@ class DummyHaplotype:
     def set_variant_alleles(self, alleles):
         self.variant_alleles = alleles
 
+
 @pytest.fixture
 def dummy_region():
-    return DummyRegion("chr1", 0, 100, "A"*101)
+    return DummyRegion("chr1", 0, 100, "A" * 101)
+
 
 def test_initialize_haplotypes(dummy_region, monkeypatch):
     # Patch Haplotype to DummyHaplotype for isolated testing
     import crisprhawk.haplotypes as haplomod
+
     monkeypatch.setattr(haplomod, "Haplotype", DummyHaplotype)
     monkeypatch.setattr(haplomod, "Sequence", DummySequence)
     regions = [dummy_region]
     result = initialize_haplotypes(regions, debug=False)
     assert len(result) == 1
     assert isinstance(list(result.values())[0][0], DummyHaplotype)
+
 
 def test_ishomozygous():
     h1 = DummyHaplotype(DummySequence("AAAA", False), None, False, 0, False)
@@ -93,8 +101,10 @@ def test_ishomozygous():
     h3 = DummyHaplotype(DummySequence("AAAT", False), None, False, 1, False)
     assert ishomozygous([h1, h3]) is False
 
+
 def test_collapse_haplotypes(monkeypatch):
     import crisprhawk.haplotypes as haplomod
+
     monkeypatch.setattr(haplomod, "Haplotype", DummyHaplotype)
     monkeypatch.setattr(haplomod, "Sequence", DummySequence)
     h1 = DummyHaplotype(DummySequence("AAAA", False), None, False, 0, False)
@@ -105,6 +115,7 @@ def test_collapse_haplotypes(monkeypatch):
     assert any(h.sequence.sequence == "AAAT" for h in collapsed)
     assert len(collapsed) == 2
 
+
 def test_classify_variants():
     v1 = DummyVariantRecord("snp", [[["sample1"]]])
     v2 = DummyVariantRecord("indel", [[["sample2"]]])
@@ -112,10 +123,11 @@ def test_classify_variants():
     assert v1 in snvs
     assert v2 in indels
 
+
 def test_generate_haplotype_ids():
     h1 = DummyHaplotype(DummySequence("AAAA", False), None, False, 0, False)
     h2 = DummyHaplotype(DummySequence("AAAT", False), None, False, 1, False)
-    region = DummyRegion("chr1", 0, 100, "A"*101)
+    region = DummyRegion("chr1", 0, 100, "A" * 101)
     haplotypes = {region: [h1, h2]}
     result = generate_haplotype_ids(haplotypes)
     ids = [h.id for h in result[region]]

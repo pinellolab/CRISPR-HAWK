@@ -1,9 +1,9 @@
-"""This module provides functions for constructing, formatting, and storing 
+"""This module provides functions for constructing, formatting, and storing
 CRISPR guide reports.
 
-It includes utilities for processing guide data, handling annotations, collapsing 
-duplicate entries, and writing output files for genomic regions. The module is 
-designed to support flexible reporting for different Cas systems and annotation 
+It includes utilities for processing guide data, handling annotations, collapsing
+duplicate entries, and writing output files for genomic regions. The module is
+designed to support flexible reporting for different Cas systems and annotation
 options, ensuring that guide reports are comprehensive and well-structured.
 """
 
@@ -207,7 +207,7 @@ def _update_report_fields_other(
     pamlen: int,
     compute_elevation: bool,
 ) -> Dict[str, List[str]]:
-    """Updates the report dictionary with fields specific to the remaining Cas 
+    """Updates the report dictionary with fields specific to the remaining Cas
     systems.
 
     Adds guide, PAM, scoring, and annotation information for remaining Cas systems
@@ -255,10 +255,10 @@ def update_report_fields(
     pamclass: str,
     compute_elevation: bool,
 ) -> Dict[str, List[str]]:
-    """Updates the report dictionary with guide-specific fields based on the Cas 
+    """Updates the report dictionary with guide-specific fields based on the Cas
     system.
 
-    Selects the appropriate update function for SpCas9, Cpf1, or other Cas systems 
+    Selects the appropriate update function for SpCas9, Cpf1, or other Cas systems
     and updates the report.
 
     Args:
@@ -293,10 +293,10 @@ def update_optional_report_fields(
     gene_annotations: List[str],
     estimate_offtargets: bool,
 ) -> Dict[str, List[str]]:
-    """Updates the report dictionary with optional fields such as annotations 
+    """Updates the report dictionary with optional fields such as annotations
     and off-target scores.
 
-    Adds functional and gene annotations, as well as off-target information, to 
+    Adds functional and gene annotations, as well as off-target information, to
     the report if specified.
 
     Args:
@@ -331,7 +331,7 @@ def update_optional_report_fields(
 def insert_elevationon_reportcols(guidepam_len: int, right: bool) -> List[str]:
     """Determines whether to include the elevationon score column in the report.
 
-    Returns the elevationon score column if the guide and PAM length is 23 and 
+    Returns the elevationon score column if the guide and PAM length is 23 and
     the guide is not on the right strand.
 
     Args:
@@ -339,7 +339,7 @@ def insert_elevationon_reportcols(guidepam_len: int, right: bool) -> List[str]:
         right (bool): Indicates if the guide is on the right strand.
 
     Returns:
-        List[str]: A list containing the elevationon score column if applicable, 
+        List[str]: A list containing the elevationon score column if applicable,
             otherwise an empty list.
     """
     return REPORTCOLS[11:12] if guidepam_len == 23 and not right else []
@@ -351,10 +351,10 @@ def insert_annotation_reportcols(
     anncolnames: List[str],
     gene_anncolnames: List[str],
 ) -> List[str]:
-    """Generates annotation column names for the report based on provided annotations 
+    """Generates annotation column names for the report based on provided annotations
     and gene annotations.
 
-    Returns a list of annotation and gene annotation column names, using provided 
+    Returns a list of annotation and gene annotation column names, using provided
     names or defaulting to generic names.
 
     Args:
@@ -382,7 +382,7 @@ def insert_offtargets_reportcols(
 ) -> List[str]:
     """Determines which off-target related columns to include in the report.
 
-    Returns a list of off-target and CFD score columns based on the Cas system 
+    Returns a list of off-target and CFD score columns based on the Cas system
     and estimation flag.
 
     Args:
@@ -412,11 +412,11 @@ def select_reportcols(
     gene_annotation_colnames: List[str],
     estimate_offtargets: bool,
 ) -> List[str]:
-    """Selects and returns the appropriate report column names for the given Cas 
+    """Selects and returns the appropriate report column names for the given Cas
     system and options.
 
-    Determines the columns to include in the report based on the Cas system, 
-    guide length, strand orientation, annotations, gene annotations, and 
+    Determines the columns to include in the report based on the Cas system,
+    guide length, strand orientation, annotations, gene annotations, and
     off-target estimation settings.
 
     Args:
@@ -490,7 +490,7 @@ def process_data(
 ) -> pd.DataFrame:
     """Processes guide data for a genomic region and constructs a report DataFrame.
 
-    Aggregates guide, annotation, and scoring information for a region into a 
+    Aggregates guide, annotation, and scoring information for a region into a
     structured DataFrame suitable for reporting.
 
     Args:
@@ -545,14 +545,14 @@ def construct_report(
     estimate_offtargets: bool,
     compute_elevation: bool,
 ) -> Dict[Region, pd.DataFrame]:
-    """Constructs a report DataFrame for each genomic region based on provided 
+    """Constructs a report DataFrame for each genomic region based on provided
     guides and options.
 
-    Processes all guides for each region and returns a dictionary mapping regions 
+    Processes all guides for each region and returns a dictionary mapping regions
     to their corresponding report DataFrames.
 
     Args:
-        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists 
+        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists
             of Guide objects.
         pam (PAM): The PAM object representing the Cas system.
         annotations (List[str]): List of functional annotation strings.
@@ -563,7 +563,7 @@ def construct_report(
         compute_elevation (bool): Whether to compute and include elevation scores.
 
     Returns:
-        Dict[Region, pd.DataFrame]: A dictionary mapping each region to its 
+        Dict[Region, pd.DataFrame]: A dictionary mapping each region to its
             processed report DataFrame.
     """
     return {
@@ -585,14 +585,14 @@ def construct_report(
 def _format_elevationon(reportcols: List[str]) -> List[str]:
     """Returns the elevationon score column if present in the report columns.
 
-    Checks if the elevationon score column should be included based on the current 
+    Checks if the elevationon score column should be included based on the current
     report columns.
 
     Args:
         reportcols (List[str]): The list of current report column names.
 
     Returns:
-        List[str]: A list containing the elevationon score column if present, 
+        List[str]: A list containing the elevationon score column if present,
             otherwise an empty list.
     """
     return REPORTCOLS[11:12] if REPORTCOLS[11] in reportcols else []
@@ -601,14 +601,14 @@ def _format_elevationon(reportcols: List[str]) -> List[str]:
 def _format_cfd(reportcols: List[str]) -> List[str]:
     """Returns the CFD score column if present in the report columns.
 
-    Checks if the CFD score column should be included based on the current report 
+    Checks if the CFD score column should be included based on the current report
     columns.
 
     Args:
         reportcols (List[str]): The list of current report column names.
 
     Returns:
-        List[str]: A list containing the CFD score column if present, otherwise 
+        List[str]: A list containing the CFD score column if present, otherwise
             an empty list.
     """
     return REPORTCOLS[21:22] if REPORTCOLS[21] in reportcols else []
@@ -622,11 +622,11 @@ def format_reportcols(
     estimate_offtargets: bool,
     reportcols: List[str],
 ) -> List[str]:
-    """Sorts and arranges report column names for output based on Cas system and 
+    """Sorts and arranges report column names for output based on Cas system and
     options.
 
-    Determines the order of columns in the final report according to the Cas system, 
-    strand orientation, annotations, gene annotations, and off-target estimation 
+    Determines the order of columns in the final report according to the Cas system,
+    strand orientation, annotations, gene annotations, and off-target estimation
     settings.
 
     Args:
@@ -675,7 +675,7 @@ def format_report(
 ) -> pd.DataFrame:
     """Formats the report DataFrame for output by sorting and arranging columns.
 
-    Ensures correct data types, sorts by genomic coordinates, and arranges columns 
+    Ensures correct data types, sorts by genomic coordinates, and arranges columns
     according to the Cas system and options.
 
     Args:
@@ -721,7 +721,7 @@ def store_report(
 ) -> str:
     """Stores the report DataFrame as a TSV file at the specified path.
 
-    Formats the report, writes it to disk, and handles file-related exceptions 
+    Formats the report, writes it to disk, and handles file-related exceptions
     during the write process.
 
     Args:
@@ -773,15 +773,15 @@ def store_report(
 def _polish_samples_phased(samples: str) -> str:
     """Polishes phased genotype sample strings by merging alleles for each sample.
 
-    For phased genotypes, combines alleles for each sample using the maximum value 
+    For phased genotypes, combines alleles for each sample using the maximum value
     for each allele position.
 
     Args:
-        samples (str): A comma-separated string of sample:genotype pairs, where 
+        samples (str): A comma-separated string of sample:genotype pairs, where
             genotypes are phased (e.g., "sample1:1|0,sample2:0|1").
 
     Returns:
-        str: A polished, comma-separated string of sample:genotype pairs with 
+        str: A polished, comma-separated string of sample:genotype pairs with
             merged alleles.
     """
     if "|" not in samples:  # unphased genotype, no need for polishing
@@ -797,10 +797,10 @@ def _polish_samples_phased(samples: str) -> str:
 
 
 def collapse_samples(samples: pd.Series) -> str:
-    """Collapses a pandas Series of sample genotype strings into a single 
+    """Collapses a pandas Series of sample genotype strings into a single
     polished string.
 
-    Merges all sample genotype entries, sorts and deduplicates them, and polishes 
+    Merges all sample genotype entries, sorts and deduplicates them, and polishes
     phased genotypes if present.
 
     Args:
@@ -819,7 +819,7 @@ def collapse_samples(samples: pd.Series) -> str:
 def parse_variant_ids(variant_ids: str) -> Set[str]:
     """Parses a comma-separated string of variant IDs into a set of unique IDs.
 
-    Converts the input string into a set of variant identifiers, or returns an 
+    Converts the input string into a set of variant identifiers, or returns an
     empty set if the input is empty.
 
     Args:
@@ -834,7 +834,7 @@ def parse_variant_ids(variant_ids: str) -> Set[str]:
 def check_variant_ids(variant_ids_list: List[str]) -> str:
     """Checks and merges variant ID sets from a list of variant ID strings.
 
-    Converts each string to a set of variant IDs, ensures uniqueness, and returns 
+    Converts each string to a set of variant IDs, ensures uniqueness, and returns
     a sorted, comma-separated string of IDs.
 
     Args:
@@ -852,7 +852,7 @@ def collapse_haplotype_ids(hapids: pd.Series) -> str:
     """Collapses a pandas Series of haplotype ID strings into a single, sorted,
     deduplicated string.
 
-    Merges all haplotype ID entries, sorts and deduplicates them, and returns a 
+    Merges all haplotype ID entries, sorts and deduplicates them, and returns a
     comma-separated string.
 
     Args:
@@ -865,10 +865,10 @@ def collapse_haplotype_ids(hapids: pd.Series) -> str:
 
 
 def collapse_annotation(anns: pd.Series) -> str:
-    """Collapses a pandas Series of annotation strings into a single, deduplicated 
+    """Collapses a pandas Series of annotation strings into a single, deduplicated
     string.
 
-    Merges all annotation entries, removes duplicates, and returns a comma-separated 
+    Merges all annotation entries, removes duplicates, and returns a comma-separated
     string.
 
     Args:
@@ -883,7 +883,7 @@ def collapse_annotation(anns: pd.Series) -> str:
 def collapse_offtargets(offtargets: pd.Series) -> int:
     """Collapses a pandas Series of off-target counts into a single integer value.
 
-    Returns the unique off-target count from the series, assuming all entries are 
+    Returns the unique off-target count from the series, assuming all entries are
     identical.
 
     Args:
@@ -898,7 +898,7 @@ def collapse_offtargets(offtargets: pd.Series) -> int:
 def collapse_cfd(cfd: pd.Series) -> str:
     """Collapses a pandas Series of CFD score values into a single string value.
 
-    Returns the unique CFD score from the series as a string, assuming all entries 
+    Returns the unique CFD score from the series as a string, assuming all entries
     are identical.
 
     Args:
@@ -919,7 +919,7 @@ def collapsed_fields(
 ) -> Dict[str, str]:
     """Defines aggregation functions for collapsing report DataFrame fields.
 
-    Specifies how each report column should be aggregated when collapsing duplicate 
+    Specifies how each report column should be aggregated when collapsing duplicate
     entries, based on the Cas system and provided options.
 
     Args:
@@ -968,10 +968,10 @@ def collapse_report_entries(
     gene_annotations: List[str],
     estimate_offtargets: bool,
 ) -> pd.DataFrame:
-    """Collapses duplicate entries in the report DataFrame by grouping and 
+    """Collapses duplicate entries in the report DataFrame by grouping and
     aggregating fields.
 
-    Groups the report by relevant columns and applies aggregation functions to 
+    Groups the report by relevant columns and applies aggregation functions to
     merge duplicate entries based on the Cas system and provided options.
 
     Args:
@@ -1031,11 +1031,11 @@ def report_guides(
 ) -> Dict[Region, str]:
     """Generates and stores guide report files for each genomic region.
 
-    Constructs, formats, and writes guide reports for all regions, returning a 
+    Constructs, formats, and writes guide reports for all regions, returning a
     dictionary mapping each region to its report file path.
 
     Args:
-        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists 
+        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists
             of Guide objects.
         guidelen (int): The length of the guide sequence.
         pam (PAM): The PAM object representing the Cas system.

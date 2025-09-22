@@ -5,14 +5,18 @@ import numpy as np
 
 import pytest
 
+
 class DummyException(Exception):
     pass
+
 
 def test_guide_initialization():
     guide = Guide(
         position_start=100,
         position_stop=123,
-        sequence="N" * 50 + "AGCTTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC" + "N" * 50,
+        sequence="N" * 50
+        + "AGCTTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC"
+        + "N" * 50,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -21,7 +25,7 @@ def test_guide_initialization():
         afs={"var1": 0.5},
         debug=False,
         right=True,
-        hapid="hap1"
+        hapid="hap1",
     )
     assert guide.start == 100
     assert guide.stop == 123
@@ -42,6 +46,7 @@ def test_guide_initialization():
     assert guide.geneann == []
     assert guide.offtargets == "NA"
 
+
 def test_guide_repr_and_len():
     guide = Guide(
         position_start=1,
@@ -55,12 +60,13 @@ def test_guide_repr_and_len():
         afs={},
         debug=False,
         right=True,
-        hapid="hap1"
+        hapid="hap1",
     )
     rep = repr(guide)
     assert "start=1" in rep
     assert "stop=24" in rep
     assert len(guide) == len(guide.sequence)
+
 
 def test_guide_getitem_and_iter():
     guide = Guide(
@@ -75,7 +81,7 @@ def test_guide_getitem_and_iter():
         afs={},
         debug=False,
         right=True,
-        hapid="hap1"
+        hapid="hap1",
     )
     # __getitem__
     assert guide[0] == "N"
@@ -83,6 +89,7 @@ def test_guide_getitem_and_iter():
     # __iter__ and GuideIterator
     seq = "".join([nt for nt in guide])
     assert seq == guide.sequence
+
 
 def test_guide_reverse_complement():
     guide = Guide(
@@ -97,12 +104,13 @@ def test_guide_reverse_complement():
         afs={},
         debug=False,
         right=True,
-        hapid="hap1"
+        hapid="hap1",
     )
     orig_seq = guide.sequence
     guide.reverse_complement()
     assert guide.sequence != orig_seq
     assert isinstance(guide.sequence, str)
+
 
 def test_guide_setters_and_properties():
     guide = Guide(
@@ -117,7 +125,7 @@ def test_guide_setters_and_properties():
         afs={},
         debug=False,
         right=True,
-        hapid="hap1"
+        hapid="hap1",
     )
     guide.variants = "var2"
     assert guide.variants == "var2"
@@ -144,6 +152,7 @@ def test_guide_setters_and_properties():
     guide.offtargets = 3
     assert guide.offtargets == "3"
 
+
 def test_guide_geneann_type_error():
     guide = Guide(
         position_start=1,
@@ -157,10 +166,11 @@ def test_guide_geneann_type_error():
         afs={},
         debug=False,
         right=True,
-        hapid="hap1"
+        hapid="hap1",
     )
     with pytest.raises(CrisprHawkGuideError):
         guide.geneann = 123  # not a string
+
 
 def test_guide_offtargets_type_error():
     guide = Guide(
@@ -175,10 +185,11 @@ def test_guide_offtargets_type_error():
         afs={},
         debug=False,
         right=True,
-        hapid="hap1"
+        hapid="hap1",
     )
     with pytest.raises(CrisprHawkGuideError):
         guide.offtargets = "not_an_int"
+
 
 def test_guide_cfd_type_error():
     guide = Guide(
@@ -193,10 +204,11 @@ def test_guide_cfd_type_error():
         afs={},
         debug=False,
         right=True,
-        hapid="hap1"
+        hapid="hap1",
     )
     with pytest.raises(CrisprHawkGuideError):
         guide.cfd = "not_a_float"
+
 
 def test_guideiterator_next_and_stopiteration():
     guide = Guide(
@@ -211,7 +223,7 @@ def test_guideiterator_next_and_stopiteration():
         afs={},
         debug=False,
         right=True,
-        hapid="hap1"
+        hapid="hap1",
     )
     iterator = GuideIterator(guide)
     collected = []

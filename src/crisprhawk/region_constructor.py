@@ -1,8 +1,8 @@
-"""Provides functions for reading FASTA and BED files and constructing genomic 
+"""Provides functions for reading FASTA and BED files and constructing genomic
 regions.
 
-This module enables the extraction and construction of genomic regions from input 
-FASTA and BED files. It handles file parsing, region extraction, and error management 
+This module enables the extraction and construction of genomic regions from input
+FASTA and BED files. It handles file parsing, region extraction, and error management
 for downstream genomic analyses.
 """
 
@@ -26,7 +26,7 @@ def read_fasta(
 ) -> Dict[str, Fasta]:
     """Read multiple FASTA files and return a dictionary of Fasta objects.
 
-    Loads the specified FASTA files and returns a dictionary mapping contig 
+    Loads the specified FASTA files and returns a dictionary mapping contig
     names to Fasta objects. Handles errors and prints progress messages.
 
     Args:
@@ -99,7 +99,7 @@ def extract_regions(
 ) -> RegionList:
     """Extract genomic regions from FASTA files using BED coordinates.
 
-    Retrieves sequences for each region specified in the BED file from the provided 
+    Retrieves sequences for each region specified in the BED file from the provided
     FASTA files. Handles errors and prints progress messages.
 
     Args:
@@ -143,8 +143,8 @@ def construct_regions(
 ) -> RegionList:
     """Construct genomic regions from input FASTA and BED files.
 
-    Reads the provided FASTA and BED files, extracts the specified regions, and 
-    returns a RegionList object containing the genomic regions. Handles errors and 
+    Reads the provided FASTA and BED files, extracts the specified regions, and
+    returns a RegionList object containing the genomic regions. Handles errors and
     prints progress messages.
 
     Args:

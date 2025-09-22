@@ -1,26 +1,32 @@
 import pytest
 from crisprhawk import variant
 
+
 def test_assign_vtype():
     assert variant._assign_vtype("A", "T") == "snp"
     assert variant._assign_vtype("A", "AT") == "indel"
     assert variant._assign_vtype("AT", "A") == "indel"
 
+
 def test_compute_id():
     assert variant._compute_id("chr1", 123, "A", "T") == "chr1-123-A/T"
     assert variant._compute_id("2", 456, "G", "C") == "2-456-G/C"
+
 
 def test_adjust_multiallelic_snp():
     ref, alt, pos = variant._adjust_multiallelic("A", "T", 100)
     assert (ref, alt, pos) == ("A", "T", 100)
 
+
 def test_adjust_multiallelic_deletion():
     ref, alt, pos = variant._adjust_multiallelic("AAT", "AA", 200)
     assert (ref, alt, pos) == ("AT", "A", 201)
 
+
 def test_adjust_multiallelic_insertion():
     ref, alt, pos = variant._adjust_multiallelic("AA", "AAT", 300)
     assert (ref, alt, pos) == ("A", "AT", 301)
+
 
 def test_variantrecord_repr_and_str():
     v = variant.VariantRecord(debug=False)
@@ -31,6 +37,7 @@ def test_variantrecord_repr_and_str():
     assert "chr1" in repr(v)
     assert "A" in str(v)
     assert "T" in str(v)
+
 
 def test_variantrecord_eq_and_hash():
     v1 = variant.VariantRecord(debug=False)
@@ -49,6 +56,7 @@ def test_variantrecord_eq_and_hash():
     v2.alt
     assert v1 == v2
     assert hash(v1) == hash(v2)
+
 
 def test_variantrecord_split_and_get_altalleles():
     v = variant.VariantRecord(debug=False)
@@ -71,6 +79,7 @@ def test_variantrecord_split_and_get_altalleles():
     assert v.get_altalleles("snp") == ["T"]
     assert v.get_altalleles("indel") == ["AT"]
 
+
 def test_variantrecord_pytest_initialize():
     v = variant.VariantRecord(debug=False)
     v.pytest_initialize(100, "A", "T", "snp", "id1", [0.5])
@@ -82,11 +91,13 @@ def test_variantrecord_pytest_initialize():
     assert v._vid == ["id1"]
     assert v._afs == [0.5]
 
+
 def test_retrieve_alt_alleles():
     v = variant.VariantRecord(debug=False)
     alleles = v._retrieve_alt_alleles("A,T,G")
     assert alleles == ["A", "T", "G"]
     assert v._retrieve_alt_alleles("") == []
+
 
 def test_find_tbi(tmp_path):
     vcf_path = tmp_path / "test.vcf"

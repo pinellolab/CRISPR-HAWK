@@ -1,8 +1,8 @@
 """
-This module provides functions for reconstructing haplotypes from VCF files and 
+This module provides functions for reconstructing haplotypes from VCF files and
 genomic regions.
 
-It supports both phased and unphased variant data, enabling the creation, manipulation, 
+It supports both phased and unphased variant data, enabling the creation, manipulation,
 and output of haplotype information for downstream analysis.
 """
 
@@ -63,7 +63,7 @@ def fetch_variants(
 ) -> Dict[Region, List[VariantRecord]]:
     """
     Retrieves variants mapped to each query region from the provided VCF files.
-    Returns a dictionary mapping each region to a list of variant records found 
+    Returns a dictionary mapping each region to a list of variant records found
     within that region.
 
     Args:
@@ -73,7 +73,7 @@ def fetch_variants(
         debug (bool): Flag to enable debug mode.
 
     Returns:
-        Dict[Region, List[VariantRecord]]: Dictionary mapping regions to lists of 
+        Dict[Region, List[VariantRecord]]: Dictionary mapping regions to lists of
             variant records.
 
     Raises:
@@ -106,7 +106,7 @@ def initialize_haplotypes(
 ) -> Dict[Region, List[Haplotype]]:
     """
     Initializes haplotype objects for each region using the reference sequence.
-    Returns a dictionary mapping each region to a list containing its reference 
+    Returns a dictionary mapping each region to a list containing its reference
     haplotype.
 
     Args:
@@ -114,7 +114,7 @@ def initialize_haplotypes(
         debug (bool): Flag to enable debug mode.
 
     Returns:
-        Dict[Region, List[Haplotype]]: Dictionary mapping regions to lists of 
+        Dict[Region, List[Haplotype]]: Dictionary mapping regions to lists of
             haplotypes.
     """
     # initialize haplotype object with REF haplotype
@@ -133,7 +133,7 @@ def compute_haplotypes_phased(
 ) -> Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]]:
     """
     Assigns variants to each sample for both chromosome copies in a phased manner.
-    Returns a dictionary mapping each sample to a tuple of variant lists for each 
+    Returns a dictionary mapping each sample to a tuple of variant lists for each
     chromosome copy.
 
     Args:
@@ -141,8 +141,8 @@ def compute_haplotypes_phased(
         samples (List[str]): List of sample names.
 
     Returns:
-        Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]]: Dictionary 
-            mapping sample names to tuples of variant lists for each chromosome 
+        Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]]: Dictionary
+            mapping sample names to tuples of variant lists for each chromosome
             copy.
     """
     # initialize sample-variant map for both copies
@@ -157,6 +157,7 @@ def compute_haplotypes_phased(
     sample_variants = {s: v for s, v in sample_variants.items() if v[0] or v[1]}
     return sample_variants
 
+
 def compute_haplotypes_unphased(
     variants: List[VariantRecord], samples: List[str]
 ) -> Dict[str, List[VariantRecord]]:
@@ -169,7 +170,7 @@ def compute_haplotypes_unphased(
         samples (List[str]): List of sample names.
 
     Returns:
-        Dict[str, List[VariantRecord]]: Dictionary mapping sample names to lists 
+        Dict[str, List[VariantRecord]]: Dictionary mapping sample names to lists
             of variant records.
     """
     variants = [v for v in variants if v.vtype[0] == VTYPES[0]]
@@ -186,7 +187,7 @@ def compute_haplotypes_unphased(
     return sample_variants
 
 
-def  compute_indel_haplotypes_unphased(
+def compute_indel_haplotypes_unphased(
     variants: List[VariantRecord], samples: List[str]
 ) -> Dict[str, List[VariantRecord]]:
     """
@@ -198,7 +199,7 @@ def  compute_indel_haplotypes_unphased(
         samples (List[str]): List of sample names.
 
     Returns:
-        Dict[str, List[VariantRecord]]: Dictionary mapping sample names to lists 
+        Dict[str, List[VariantRecord]]: Dictionary mapping sample names to lists
             of indel variant records.
     """
     # initialize sample-variant map
@@ -234,8 +235,8 @@ def _collapse_haplotypes(
     sequence: str, haplotypes: List[Haplotype], debug: bool
 ) -> Haplotype:
     """
-    Collapses a list of haplotypes with the same sequence into a single haplotype 
-    object. Returns a new haplotype representing the merged information from all 
+    Collapses a list of haplotypes with the same sequence into a single haplotype
+    object. Returns a new haplotype representing the merged information from all
     input haplotypes.
 
     Args:
@@ -271,8 +272,8 @@ def _collapse_haplotypes(
 
 def collapse_haplotypes(haplotypes: List[Haplotype], debug: bool) -> List[Haplotype]:
     """
-    Collapses haplotypes with identical sequences into single representative 
-    haplotype objects. Returns a list of unique haplotypes, each representing all 
+    Collapses haplotypes with identical sequences into single representative
+    haplotype objects. Returns a list of unique haplotypes, each representing all
     input haplotypes with the same sequence.
 
     Args:
@@ -308,7 +309,7 @@ def _solve_haplotypes_phased(
         sequence (str): The reference sequence for the haplotype.
         coordinates (Coordinate): Genomic coordinates for the haplotype.
         phased (bool): Indicates if the variants are phased.
-        variants (Tuple[List[VariantRecord], List[VariantRecord]]): Tuple of 
+        variants (Tuple[List[VariantRecord], List[VariantRecord]]): Tuple of
             variant lists for each chromosome copy.
         sample (str): Sample name.
         debug (bool): Flag to enable debug mode.
@@ -341,13 +342,13 @@ def solve_haplotypes_phased(
     debug: bool,
 ) -> List[Haplotype]:
     """
-    Solves haplotypes for each sample using phased variant information in diploid 
-    samples. Returns a list of unique haplotype objects after collapsing those with 
+    Solves haplotypes for each sample using phased variant information in diploid
+    samples. Returns a list of unique haplotype objects after collapsing those with
     identical sequences.
 
     Args:
-        sample_variants (Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]]): 
-            Dictionary mapping sample names to tuples of variant lists for each 
+        sample_variants (Dict[str, Tuple[List[VariantRecord], List[VariantRecord]]]):
+            Dictionary mapping sample names to tuples of variant lists for each
             chromosome copy.
         hapseqs (List[Haplotype]): List of initial haplotype objects.
         refseq (str): Reference sequence for the haplotypes.
@@ -368,8 +369,8 @@ def solve_haplotypes_phased(
 
 def _split_id(vid: str) -> str:
     """
-    Splits a variant ID string into its chromosome, position, and reference allele 
-    components. Returns a string combining the chromosome, position, and reference 
+    Splits a variant ID string into its chromosome, position, and reference allele
+    components. Returns a string combining the chromosome, position, and reference
     allele for use in identifying multiallelic sites.
 
     Args:
@@ -387,8 +388,8 @@ def generate_variants_combinations(
     variants: List[VariantRecord], sample: str
 ) -> List[List[VariantRecord]]:
     """
-    Generates all possible combinations of variants for a given sample, accounting 
-    for multiallelic sites. Returns a list of variant combinations, where each 
+    Generates all possible combinations of variants for a given sample, accounting
+    for multiallelic sites. Returns a list of variant combinations, where each
     combination represents a possible haplotype configuration.
 
     Args:
@@ -396,7 +397,7 @@ def generate_variants_combinations(
         sample (str): Sample name for which to generate variant combinations.
 
     Returns:
-        List[List[VariantRecord]]: List of variant combinations, each as a list 
+        List[List[VariantRecord]]: List of variant combinations, each as a list
             of variant records.
     """
     variant_groups = {}  # groups of alternative variants
@@ -426,7 +427,7 @@ def _solve_haplotypes_unphased(
 ) -> List[Haplotype]:
     """
     Solves haplotypes for a sample using unphased variant information.
-    Returns a list of haplotype objects representing all possible variant 
+    Returns a list of haplotype objects representing all possible variant
     combinations for the sample.
 
     Args:
@@ -438,7 +439,7 @@ def _solve_haplotypes_unphased(
         debug (bool): Flag to enable debug mode.
 
     Returns:
-        List[Haplotype]: List of haplotype objects representing possible variant 
+        List[Haplotype]: List of haplotype objects representing possible variant
             combinations.
     """
     variants_combinations = generate_variants_combinations(variants, sample)
@@ -463,11 +464,11 @@ def solve_haplotypes_unphased(
 ) -> List[Haplotype]:
     """
     Solves haplotypes for each sample using unphased variant information.
-    Returns a list of unique haplotype objects after collapsing those with 
+    Returns a list of unique haplotype objects after collapsing those with
     identical sequences.
 
     Args:
-        sample_variants (Dict[str, List[VariantRecord]]): Dictionary mapping 
+        sample_variants (Dict[str, List[VariantRecord]]): Dictionary mapping
             sample names to lists of variant records.
         hapseqs (List[Haplotype]): List of initial haplotype objects.
         refseq (str): Reference sequence for the haplotypes.
@@ -497,7 +498,7 @@ def classify_variants(
         variants (List[VariantRecord]): List of variant records to classify.
 
     Returns:
-        Tuple[List[VariantRecord], List[VariantRecord]]: Tuple containing a list 
+        Tuple[List[VariantRecord], List[VariantRecord]]: Tuple containing a list
             of SNVs and a list of indels.
     """
     # split variants according to their type (required for unphased variants processing)
@@ -517,8 +518,8 @@ def compute_snvs_haplotype_unphased(
     debug: bool,
 ) -> List[Haplotype]:
     """
-    Computes and solves haplotypes using only unphased SNV variants for the given 
-    samples. Returns a list of unique haplotype objects representing all possible 
+    Computes and solves haplotypes using only unphased SNV variants for the given
+    samples. Returns a list of unique haplotype objects representing all possible
     SNV configurations.
 
     Args:
@@ -548,8 +549,8 @@ def create_indel_window(
     indel: VariantRecord, region: Region
 ) -> Tuple[str, Coordinate, int, int, int]:
     """
-    Creates a window around an indel variant within a genomic region, including 
-    additional bases upstream and downstream. Returns the sequence of the window, 
+    Creates a window around an indel variant within a genomic region, including
+    additional bases upstream and downstream. Returns the sequence of the window,
     its coordinates, window start and stop positions, and the indel length.
 
     Args:
@@ -557,7 +558,7 @@ def create_indel_window(
         region (Region): The genomic region containing the indel.
 
     Returns:
-        Tuple[str, Coordinate, int, int, int]: A tuple containing the window sequence, 
+        Tuple[str, Coordinate, int, int, int]: A tuple containing the window sequence,
             its coordinates, window start, window stop, and indel length.
     """
     # compute indel window; additional 50 bp upstream and downstream
@@ -578,7 +579,7 @@ def find_overlapping_snvs(
 ) -> List[VariantRecord]:
     """
     Identifies SNV variants that overlap with a specified indel window.
-    Returns a list of SNV variant records whose positions fall within the indel 
+    Returns a list of SNV variant records whose positions fall within the indel
     window.
 
     Args:
@@ -611,8 +612,8 @@ def set_haplotypes_samples(
     indel_haplotypes: List[Haplotype], indel_samples: Set[str]
 ) -> List[Haplotype]:
     """
-    Updates the samples attribute of each haplotype to reflect only those samples 
-    that carry the indel. Returns the list of haplotypes with updated sample 
+    Updates the samples attribute of each haplotype to reflect only those samples
+    that carry the indel. Returns the list of haplotypes with updated sample
     information for indel carriers.
 
     Args:
@@ -641,8 +642,8 @@ def create_indels_haplotype_unphased(
     debug: bool,
 ) -> List[Haplotype]:
     """
-    Computes and solves haplotypes for samples carrying a given indel using unphased 
-    variant information. Returns a list of haplotype objects representing all possible 
+    Computes and solves haplotypes for samples carrying a given indel using unphased
+    variant information. Returns a list of haplotype objects representing all possible
     indel and overlapping SNV configurations for indel carriers.
 
     Args:
@@ -691,7 +692,7 @@ def add_variants_unphased(
 ) -> List[Haplotype]:
     """
     Adds unphased SNV and indel variants to the list of haplotypes for a given region.
-    Returns an updated list of haplotype objects representing all possible variant 
+    Returns an updated list of haplotype objects representing all possible variant
     configurations for the region.
 
     Args:
@@ -735,7 +736,7 @@ def add_variants_phased(
 ) -> List[Haplotype]:
     """
     Adds phased SNV and indel variants to the list of haplotypes for a given region.
-    Returns an updated list of haplotype objects representing all possible phased 
+    Returns an updated list of haplotype objects representing all possible phased
     variant configurations for the region.
 
     Args:
@@ -771,19 +772,19 @@ def add_variants(
 ) -> Tuple[Dict[Region, List[Haplotype]], bool]:
     """
     Adds SNV and indel variants from VCF files to haplotypes for each region.
-    Returns an updated dictionary of haplotypes for each region and a flag indicating 
+    Returns an updated dictionary of haplotypes for each region and a flag indicating
     whether the VCFs are phased.
 
     Args:
         vcflist (List[str]): List of VCF file paths.
         regions (RegionList): List of regions to process.
-        haplotypes (Dict[Region, List[Haplotype]]): Dictionary mapping regions to 
+        haplotypes (Dict[Region, List[Haplotype]]): Dictionary mapping regions to
             lists of haplotype objects.
         verbosity (int): Verbosity level for logging.
         debug (bool): Flag to enable debug mode.
 
     Returns:
-        Tuple[Dict[Region, List[Haplotype]], bool]: Updated haplotypes dictionary 
+        Tuple[Dict[Region, List[Haplotype]], bool]: Updated haplotypes dictionary
             and a boolean indicating if the VCFs are phased.
     """
     # read VCF files and extract variants located within the region
@@ -810,7 +811,7 @@ def generate_haplotype_ids(
     Returns the updated haplotypes dictionary with assigned IDs.
 
     Args:
-        haplotypes (Dict[Region, List[Haplotype]]): Dictionary mapping regions 
+        haplotypes (Dict[Region, List[Haplotype]]): Dictionary mapping regions
             to lists of haplotype objects.
 
     Returns:
@@ -831,8 +832,8 @@ def haplotypes_table(
     haplotypes: Dict[Region, List[Haplotype]], outdir: str, verbosity: int, debug: bool
 ) -> None:
     """
-    Writes a table of haplotypes for each region to a TSV file in the specified 
-    output directory. Each table includes haplotype ID, sequence, variants, and 
+    Writes a table of haplotypes for each region to a TSV file in the specified
+    output directory. Each table includes haplotype ID, sequence, variants, and
     samples for all haplotypes in the region.
 
     Args:
@@ -859,7 +860,13 @@ def haplotypes_table(
                         f"{hap.id}\t{hap.sequence}\t{hap.variants}\t{hap.samples}\n"
                     )
         except OSError as e:
-            exception_handler(CrisprHawkHaplotypeError, f"Failed writing haplotype table for region {region}", os.EX_IOERR, debug, e)
+            exception_handler(
+                CrisprHawkHaplotypeError,
+                f"Failed writing haplotype table for region {region}",
+                os.EX_IOERR,
+                debug,
+                e,
+            )
     print_verbosity(
         f"Haplotypes table written in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
     )
@@ -875,7 +882,7 @@ def reconstruct_haplotypes(
 ) -> Tuple[Dict[Region, List[Haplotype]], bool, bool]:
     """
     Reconstructs haplotypes for specified genomic regions using provided VCF files.
-    Returns a dictionary of haplotypes for each region, a flag indicating if variants 
+    Returns a dictionary of haplotypes for each region, a flag indicating if variants
     are present, and a flag indicating if the VCFs are phased.
 
     Args:
@@ -887,7 +894,7 @@ def reconstruct_haplotypes(
         debug (bool): Flag to enable debug mode.
 
     Returns:
-        Tuple[Dict[Region, List[Haplotype]], bool, bool]: 
+        Tuple[Dict[Region, List[Haplotype]], bool, bool]:
             - Dictionary mapping regions to lists of haplotype objects.
             - Boolean indicating if variants are present.
             - Boolean indicating if the VCFs are phased.

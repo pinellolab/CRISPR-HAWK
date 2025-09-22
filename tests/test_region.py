@@ -8,9 +8,11 @@ import pytest
 def make_region(contig="chr1", start=1, stop=10, seq="ACTGACTGAC"):
     return Region(Sequence(seq, False), Coordinate(contig, start, stop, 0))
 
+
 def test_region_len():
     region = make_region(seq="ACTG")
     assert len(region) == 4
+
 
 def test_region_eq_and_hash():
     r1 = make_region()
@@ -21,6 +23,7 @@ def test_region_eq_and_hash():
     assert hash(r1) == hash(r2)
     assert hash(r1) != hash(r3)
 
+
 def test_region_str_and_repr():
     region = make_region()
     assert str(region).startswith(">")
@@ -28,10 +31,12 @@ def test_region_str_and_repr():
     assert "ACTGACTGAC" in str(region)
     assert "<Region object;" in repr(region)
 
+
 def test_region_getitem():
     region = make_region(seq="ACTGACTGAC")
     assert region[0] == "A"
     assert region[1:4] == list("CTG")
+
 
 def test_region_contain_overlap():
     r1 = make_region(start=1, stop=10)
@@ -43,6 +48,7 @@ def test_region_contain_overlap():
     assert r1.overlap(r3)
     assert not r2.overlap(r3)
 
+
 def test_region_properties():
     region = make_region(contig="chr2", start=5, stop=15, seq="TTTTTTTTTT")
     assert region.contig == "chr2"
@@ -51,17 +57,20 @@ def test_region_properties():
     assert isinstance(region.sequence, Sequence)
     assert isinstance(region.coordinates, Coordinate)
 
+
 def test_regionlist_len_and_iter():
     regions = [make_region(seq="A"), make_region(seq="T")]
     region_list = RegionList(regions)
     assert len(region_list) == 2
     assert list(region_list) == regions
 
+
 def test_regionlist_repr_and_str():
     regions = [make_region(seq="A"), make_region(seq="T")]
     region_list = RegionList(regions)
     assert "<RegionList object;" in repr(region_list)
     assert "chr1" in str(region_list)
+
 
 def test_regionlist_getitem():
     regions = [make_region(seq="A"), make_region(seq="T")]
@@ -70,6 +79,7 @@ def test_regionlist_getitem():
     assert region_list[1] == regions[1]
     with pytest.raises(IndexError):
         _ = region_list[2]
+
 
 def test_regionlist_extend_and_append():
     r1 = make_region(seq="A")
@@ -85,6 +95,7 @@ def test_regionlist_extend_and_append():
         region_list1.append("not_a_region")
     with pytest.raises(TypeError):
         region_list1.extend(["not_a_regionlist"])
+
 
 def test_regionlistiterator_next():
     regions = [make_region(seq="A"), make_region(seq="T")]

@@ -1,10 +1,10 @@
-"""This module provides functions for searching and extracting CRISPR guide 
+"""This module provides functions for searching and extracting CRISPR guide
 sequences from genomic regions and haplotypes.
 
-It includes utilities for scanning for PAM occurrences, extracting and validating 
-guide sequences, handling IUPAC ambiguity codes, and removing redundant guides. 
-The module supports both reference and alternative haplotypes, phased and unphased 
-data, and is designed to facilitate flexible and robust guide discovery for genome 
+It includes utilities for scanning for PAM occurrences, extracting and validating
+guide sequences, handling IUPAC ambiguity codes, and removing redundant guides.
+The module supports both reference and alternative haplotypes, phased and unphased
+data, and is designed to facilitate flexible and robust guide discovery for genome
 editing applications.
 """
 
@@ -68,10 +68,10 @@ def match(
 def compute_scan_start_stop(
     hap: Haplotype, region_start: int, region_stop: int, pamlen: int
 ) -> Tuple[int, int]:
-    """Computes the scan start and stop positions for a haplotype within a genomic 
+    """Computes the scan start and stop positions for a haplotype within a genomic
     region.
 
-    Determines the sequence coordinates to scan for PAMs, accounting for region 
+    Determines the sequence coordinates to scan for PAMs, accounting for region
     padding and indels at region boundaries.
 
     Args:
@@ -81,7 +81,7 @@ def compute_scan_start_stop(
         pamlen (int): The length of the PAM sequence.
 
     Returns:
-        Tuple[int, int]: The start and stop positions for scanning in the haplotype 
+        Tuple[int, int]: The start and stop positions for scanning in the haplotype
             sequence.
     """
     stop_p = min(region_stop - PADDING, hap.stop)  # stop position with padding
@@ -215,7 +215,7 @@ def _valid_guide(
 ) -> bool:
     """Checks if a guide sequence is valid for a given PAM and direction.
 
-    Encodes the guide as a PAM and verifies if it matches the PAM bits for the 
+    Encodes the guide as a PAM and verifies if it matches the PAM bits for the
     specified strand direction.
 
     Args:
@@ -226,7 +226,7 @@ def _valid_guide(
         debug (bool): Whether to enable debug mode for error handling.
 
     Returns:
-        bool: True if the guide is valid for the given PAM and direction, False 
+        bool: True if the guide is valid for the given PAM and direction, False
             otherwise.
     """
     p = PAM(pamguide, right, debug)
@@ -237,10 +237,10 @@ def _valid_guide(
 
 
 def _decode_iupac(nt: str, pos: int, h: Haplotype, debug: bool) -> str:
-    """Decodes an IUPAC nucleotide character to its possible alleles for a given 
+    """Decodes an IUPAC nucleotide character to its possible alleles for a given
     position.
 
-    Returns the decoded nucleotide(s), using lowercase for non-reference alleles 
+    Returns the decoded nucleotide(s), using lowercase for non-reference alleles
     and handling errors for invalid IUPAC codes.
 
     Args:
@@ -250,7 +250,7 @@ def _decode_iupac(nt: str, pos: int, h: Haplotype, debug: bool) -> str:
         debug (bool): Whether to enable debug mode for error handling.
 
     Returns:
-        str: The decoded nucleotide(s) as a string, with non-reference alleles in 
+        str: The decoded nucleotide(s) as a string, with non-reference alleles in
             lowercase.
 
     Raises:
@@ -279,7 +279,7 @@ def resolve_guide(
 ) -> List[str]:
     """Resolves all possible guide sequence alleles for a given IUPAC-encoded guide.
 
-    Decodes IUPAC ambiguity codes in the guide sequence to generate all possible 
+    Decodes IUPAC ambiguity codes in the guide sequence to generate all possible
     allele combinations, filtering for valid PAM matches.
 
     Args:
@@ -316,7 +316,7 @@ def adjust_guide_position(
 ) -> Tuple[int, int]:
     """Adjusts and returns the genomic start and stop positions for a guide sequence.
 
-    Calculates the start and stop positions in the genome based on the relative 
+    Calculates the start and stop positions in the genome based on the relative
     position, guide length, PAM length, and strand orientation.
 
     Args:
@@ -339,7 +339,7 @@ def group_guides_position(
 ) -> DefaultDict[str, Dict[int, Union[Optional[Guide], List[Guide]]]]:
     """Groups guides by their genomic start position and strand.
 
-    Organizes guides into a dictionary keyed by position and strand, separating 
+    Organizes guides into a dictionary keyed by position and strand, separating
     reference and alternative guides for downstream analysis.
 
     Args:
@@ -347,8 +347,8 @@ def group_guides_position(
         debug (bool): Whether to enable debug mode for error handling.
 
     Returns:
-        DefaultDict[str, Dict[int, Union[Optional[Guide], List[Guide]]]]: 
-            A dictionary mapping position/strand keys to reference and 
+        DefaultDict[str, Dict[int, Union[Optional[Guide], List[Guide]]]]:
+            A dictionary mapping position/strand keys to reference and
             alternative guides.
     """
     # dictionary to map guides to positions (0 -> ref; 1 -> alt)
@@ -369,10 +369,10 @@ def group_guides_position(
 
 
 def remove_redundant_guides(guides: List[Guide], debug: bool) -> List[Guide]:
-    """Removes redundant guide sequences from a list of guides based on sequence 
+    """Removes redundant guide sequences from a list of guides based on sequence
     and sample origin.
 
-    Groups guides by position and strand, then filters out guides that are redundant 
+    Groups guides by position and strand, then filters out guides that are redundant
     with the reference guide at each position.
 
     Args:
@@ -405,7 +405,7 @@ def is_pamhit_valid(
 ) -> bool:
     """Checks if a PAM hit position is valid for guide extraction within a haplotype.
 
-    Determines whether the guide sequence can be safely extracted from the haplotype 
+    Determines whether the guide sequence can be safely extracted from the haplotype
     without exceeding sequence boundaries.
 
     Args:
@@ -428,7 +428,7 @@ def is_pamhit_in_range(
 ) -> bool:
     """Checks if a PAM hit position is within the valid range for guide extraction.
 
-    Computes the left and right boundaries for the guide sequence and ensures they 
+    Computes the left and right boundaries for the guide sequence and ensures they
     are within the haplotype length.
 
     Args:
@@ -465,7 +465,7 @@ def retrieve_guides(
 ) -> List[Guide]:
     """Retrieves guide sequences from a haplotype at specified PAM hit positions.
 
-    Extracts and returns a list of Guide objects for each valid PAM hit, handling 
+    Extracts and returns a list of Guide objects for each valid PAM hit, handling
     IUPAC ambiguity and filtering for reference and alternative guides as needed.
 
     Args:
@@ -548,7 +548,7 @@ def search(
 ) -> List[Guide]:
     """Searches for guide candidates in a genomic region across multiple haplotypes.
 
-    Identifies all valid guide sequences matching the PAM in the specified region 
+    Identifies all valid guide sequences matching the PAM in the specified region
     and haplotypes, returning a list of non-redundant Guide objects.
 
     Args:
