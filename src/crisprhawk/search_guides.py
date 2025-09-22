@@ -1,4 +1,12 @@
-""" """
+"""This module provides functions for searching and extracting CRISPR guide 
+sequences from genomic regions and haplotypes.
+
+It includes utilities for scanning for PAM occurrences, extracting and validating 
+guide sequences, handling IUPAC ambiguity codes, and removing redundant guides. 
+The module supports both reference and alternative haplotypes, phased and unphased 
+data, and is designed to facilitate flexible and robust guide discovery for genome 
+editing applications.
+"""
 
 from .exception_handlers import exception_handler
 from .crisprhawk_error import (
@@ -60,6 +68,22 @@ def match(
 def compute_scan_start_stop(
     hap: Haplotype, region_start: int, region_stop: int, pamlen: int
 ) -> Tuple[int, int]:
+    """Computes the scan start and stop positions for a haplotype within a genomic 
+    region.
+
+    Determines the sequence coordinates to scan for PAMs, accounting for region 
+    padding and indels at region boundaries.
+
+    Args:
+        hap (Haplotype): The haplotype object containing position mappings.
+        region_start (int): The start coordinate of the region.
+        region_stop (int): The stop coordinate of the region.
+        pamlen (int): The length of the PAM sequence.
+
+    Returns:
+        Tuple[int, int]: The start and stop positions for scanning in the haplotype 
+            sequence.
+    """
     stop_p = min(region_stop - PADDING, hap.stop)  # stop position with padding
     # handle indels overlapping the end of region
     if stop_p == region_stop - PADDING and stop_p not in hap.posmap_rev:
@@ -189,6 +213,22 @@ def extract_guide_sequence(
 def _valid_guide(
     pamguide: str, pam: PAM, direction: int, right: bool, debug: bool
 ) -> bool:
+    """Checks if a guide sequence is valid for a given PAM and direction.
+
+    Encodes the guide as a PAM and verifies if it matches the PAM bits for the 
+    specified strand direction.
+
+    Args:
+        pamguide (str): The guide sequence to validate.
+        pam (PAM): The PAM object to match against.
+        direction (int): The strand direction (0 for positive, 1 for negative).
+        right (bool): Whether the guide is on the right strand.
+        debug (bool): Whether to enable debug mode for error handling.
+
+    Returns:
+        bool: True if the guide is valid for the given PAM and direction, False 
+            otherwise.
+    """
     p = PAM(pamguide, right, debug)
     p.encode(0)
     if direction == 0:  # positive
@@ -197,6 +237,25 @@ def _valid_guide(
 
 
 def _decode_iupac(nt: str, pos: int, h: Haplotype, debug: bool) -> str:
+    """Decodes an IUPAC nucleotide character to its possible alleles for a given 
+    position.
+
+    Returns the decoded nucleotide(s), using lowercase for non-reference alleles 
+    and handling errors for invalid IUPAC codes.
+
+    Args:
+        nt (str): The IUPAC nucleotide character to decode.
+        pos (int): The position in the haplotype.
+        h (Haplotype): The Haplotype object containing variant allele information.
+        debug (bool): Whether to enable debug mode for error handling.
+
+    Returns:
+        str: The decoded nucleotide(s) as a string, with non-reference alleles in 
+            lowercase.
+
+    Raises:
+        CrisprHawkIupacTableError: If the IUPAC character is invalid.
+    """
     try:
         ntiupac = IUPACTABLE[nt.upper()]
     except KeyError as e:
@@ -218,6 +277,24 @@ def resolve_guide(
     h: Haplotype,
     debug: bool,
 ) -> List[str]:
+    """Resolves all possible guide sequence alleles for a given IUPAC-encoded guide.
+
+    Decodes IUPAC ambiguity codes in the guide sequence to generate all possible 
+    allele combinations, filtering for valid PAM matches.
+
+    Args:
+        guideseq (str): The IUPAC-encoded guide sequence.
+        pam (PAM): The PAM object to match against.
+        direction (int): The strand direction (0 for positive, 1 for negative).
+        right (bool): Whether the guide is on the right strand.
+        pos (int): The position in the haplotype.
+        guidelen (int): The length of the guide sequence.
+        h (Haplotype): The Haplotype object containing variant allele information.
+        debug (bool): Whether to enable debug mode for error handling.
+
+    Returns:
+        List[str]: A list of all valid guide sequence alleles matching the PAM.
+    """
     # retrieve guide sequence relative start position
     p = pos - GUIDESEQPAD if right else pos - guidelen - GUIDESEQPAD
     guide_alts = [
@@ -237,6 +314,21 @@ def resolve_guide(
 def adjust_guide_position(
     posmap: Dict[int, int], posrel: int, guidelen: int, pamlen: int, right: bool
 ) -> Tuple[int, int]:
+    """Adjusts and returns the genomic start and stop positions for a guide sequence.
+
+    Calculates the start and stop positions in the genome based on the relative 
+    position, guide length, PAM length, and strand orientation.
+
+    Args:
+        posmap (Dict[int, int]): Mapping from sequence-relative to genomic positions.
+        posrel (int): The relative position in the sequence.
+        guidelen (int): The length of the guide sequence.
+        pamlen (int): The length of the PAM sequence.
+        right (bool): Whether the guide is on the right (forward) strand.
+
+    Returns:
+        Tuple[int, int]: The genomic start and stop positions for the guide.
+    """
     start = posmap[posrel] if right else posmap[posrel - guidelen]
     stop = posmap[posrel + guidelen + pamlen] if right else posmap[posrel + pamlen]
     return start, stop
@@ -245,6 +337,20 @@ def adjust_guide_position(
 def group_guides_position(
     guides: List[Guide], debug: bool
 ) -> DefaultDict[str, Dict[int, Union[Optional[Guide], List[Guide]]]]:
+    """Groups guides by their genomic start position and strand.
+
+    Organizes guides into a dictionary keyed by position and strand, separating 
+    reference and alternative guides for downstream analysis.
+
+    Args:
+        guides (List[Guide]): A list of Guide objects to group.
+        debug (bool): Whether to enable debug mode for error handling.
+
+    Returns:
+        DefaultDict[str, Dict[int, Union[Optional[Guide], List[Guide]]]]: 
+            A dictionary mapping position/strand keys to reference and 
+            alternative guides.
+    """
     # dictionary to map guides to positions (0 -> ref; 1 -> alt)
     pos_guide = defaultdict(lambda: {0: None, 1: []})
     for guide in guides:
@@ -263,6 +369,19 @@ def group_guides_position(
 
 
 def remove_redundant_guides(guides: List[Guide], debug: bool) -> List[Guide]:
+    """Removes redundant guide sequences from a list of guides based on sequence 
+    and sample origin.
+
+    Groups guides by position and strand, then filters out guides that are redundant 
+    with the reference guide at each position.
+
+    Args:
+        guides (List[Guide]): A list of Guide objects to filter.
+        debug (bool): Whether to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: A list of non-redundant Guide objects.
+    """
     filtered_guides = []  # list containing non-redundant guides
     grouped_guides = group_guides_position(guides, debug)  # group guides by position
     for pos, guide_group in grouped_guides.items():
@@ -284,6 +403,21 @@ def remove_redundant_guides(guides: List[Guide], debug: bool) -> List[Guide]:
 def is_pamhit_valid(
     pamhit_pos: int, haplen: int, guidelen: int, pamlen: int, right: bool
 ) -> bool:
+    """Checks if a PAM hit position is valid for guide extraction within a haplotype.
+
+    Determines whether the guide sequence can be safely extracted from the haplotype 
+    without exceeding sequence boundaries.
+
+    Args:
+        pamhit_pos (int): The position of the PAM hit in the haplotype.
+        haplen (int): The length of the haplotype sequence.
+        guidelen (int): The length of the guide sequence.
+        pamlen (int): The length of the PAM sequence.
+        right (bool): Whether the guide is on the right (forward) strand.
+
+    Returns:
+        bool: True if the PAM hit position is valid for guide extraction, False otherwise.
+    """
     if right:
         return pamhit_pos + guidelen + pamlen + GUIDESEQPAD < haplen
     return pamhit_pos - guidelen - GUIDESEQPAD >= 0
@@ -292,6 +426,21 @@ def is_pamhit_valid(
 def is_pamhit_in_range(
     poshit: int, guidelen: int, pamlen: int, haplen: int, right: bool
 ) -> bool:
+    """Checks if a PAM hit position is within the valid range for guide extraction.
+
+    Computes the left and right boundaries for the guide sequence and ensures they 
+    are within the haplotype length.
+
+    Args:
+        poshit (int): The position of the PAM hit in the haplotype.
+        guidelen (int): The length of the guide sequence.
+        pamlen (int): The length of the PAM sequence.
+        haplen (int): The length of the haplotype sequence.
+        right (bool): Whether the guide is on the right (forward) strand.
+
+    Returns:
+        bool: True if the guide sequence is within the valid range, False otherwise.
+    """
     # compute left and right boundaries for current guide
     lbound = poshit - GUIDESEQPAD if right else poshit - guidelen - GUIDESEQPAD
     rbound = (
@@ -314,6 +463,26 @@ def retrieve_guides(
     verbosity: int,
     debug: bool,
 ) -> List[Guide]:
+    """Retrieves guide sequences from a haplotype at specified PAM hit positions.
+
+    Extracts and returns a list of Guide objects for each valid PAM hit, handling 
+    IUPAC ambiguity and filtering for reference and alternative guides as needed.
+
+    Args:
+        pam_hits (List[int]): List of PAM hit positions in the haplotype.
+        haplotype (Haplotype): The Haplotype object to extract guides from.
+        guidelen (int): The length of the guide sequence.
+        pam (PAM): The PAM object to match against.
+        direction (int): The strand direction (0 for positive, 1 for negative).
+        right (bool): Whether the guide is on the right (forward) strand.
+        variants_present (bool): Whether variants are present in the haplotype.
+        phased (bool): Whether the haplotype is phased.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Whether to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: A list of Guide objects extracted from the haplotype.
+    """
     guides = []  # list of haplotype-specific guides
     s = "-" if direction == 1 else "+"
     print_verbosity(
@@ -377,6 +546,26 @@ def search(
     verbosity: int,
     debug: bool,
 ) -> List[Guide]:
+    """Searches for guide candidates in a genomic region across multiple haplotypes.
+
+    Identifies all valid guide sequences matching the PAM in the specified region 
+    and haplotypes, returning a list of non-redundant Guide objects.
+
+    Args:
+        pam (PAM): The PAM object to search for.
+        region (Region): The genomic region to search within.
+        haplotypes (List[Haplotype]): List of Haplotype objects to scan.
+        haplotypes_bits (List[List[Bitset]]): Bit-encoded haplotype sequences.
+        guidelen (int): The length of the guide sequence.
+        right (bool): Whether to search on the right (forward) strand.
+        variants_present (bool): Whether variants are present in the haplotypes.
+        phased (bool): Whether the haplotypes are phased.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Whether to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: A list of non-redundant Guide objects found in the region.
+    """
     print_verbosity(
         f"Searching guide candidates in {region.coordinates}",
         verbosity,

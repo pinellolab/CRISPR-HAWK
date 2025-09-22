@@ -9,7 +9,7 @@ from .exception_handlers import exception_handler
 from .coordinate import Coordinate
 from .utils import IUPAC, VERBOSITYLVL, warning, print_verbosity
 
-from typing import Optional, Union
+from typing import Union
 from pysam.utils import SamtoolsError
 
 import pysam
@@ -31,7 +31,7 @@ class Sequence:
     """
 
     def __init__(
-        self, sequence: str, debug: bool, allow_lower_case: Optional[bool] = False
+        self, sequence: str, debug: bool, allow_lower_case: bool = False
     ) -> None:
         """Initialize a Sequence object with a DNA string.
 
@@ -194,7 +194,7 @@ class Fasta:
     """
 
     def __init__(
-        self, fname: str, verbosity: int, debug: bool, faidx: Optional[str] = ""
+        self, fname: str, verbosity: int, debug: bool, faidx: str = ""
     ) -> None:
         """Initialize a Fasta object for handling FASTA file operations.
 
@@ -248,7 +248,7 @@ class Fasta:
     def __len__(self) -> int:
         return self._length
 
-    def _search_index(self, faidx: Optional[str] = "") -> str:
+    def _search_index(self, faidx: str = "") -> str:
         """Search for or validate a FASTA index.
 
         Searches for a FASTA index (.fai) for the associated FASTA file if one is not

@@ -1,4 +1,10 @@
-""" """
+"""
+Utility functions and constants for the CRISPR-HAWK tool.
+
+This module provides helper functions for file and directory management, sequence 
+manipulation, IUPAC matching, and model extraction. It also defines shared constants 
+and static variables used across the CRISPR-HAWK software.
+"""
 
 from .exception_handlers import exception_handler
 
@@ -7,7 +13,6 @@ from itertools import permutations
 from colorama import Fore
 
 import subprocess
-import tempfile
 import contextlib
 import zipfile
 import shutil
@@ -94,18 +99,15 @@ GUIDESREPORTPREFIX = "crisprhawk_guides"
 def reverse_complement(sequence: str, debug: bool) -> str:
     """Return the reverse complement of a nucleotide sequence.
 
-    Computes the reverse complement of the input DNA or RNA sequence using the
-    RC dictionary. Handles invalid nucleotides by raising an exception.
+    Computes the reverse complement of the input sequence using the defined nucleotide 
+    mapping. Raises an error if an invalid character is encountered.
 
     Args:
-        sequence: The nucleotide sequence to reverse complement.
-        debug: Flag to enable debug mode.
+        sequence (str): The nucleotide sequence to reverse complement.
+        debug (bool): Boolean indicating whether to provide debug information on error.
 
     Returns:
-        The reverse complement of the input sequence as a string.
-
-    Raises:
-        ValueError: If the sequence contains invalid nucleotides.
+        str: The reverse complement of the input sequence as a string.
     """
     try:
         return "".join([RC[nt] for nt in sequence[::-1]])
@@ -122,12 +124,14 @@ def reverse_complement(sequence: str, debug: bool) -> str:
 def warning(message: str, verbosity: int) -> None:
     """Display a warning message if the verbosity level is sufficient.
 
-    Prints a formatted warning message to standard error if the verbosity
-    threshold is met.
+    Writes a warning message to standard error if the verbosity is at least level 1.
 
     Args:
-        message: The warning message to display.
-        verbosity: The current verbosity level.
+        message (str): The warning message to display.
+        verbosity (int): The current verbosity level.
+
+    Returns:
+        None
     """
     if verbosity >= VERBOSITYLVL[1]:
         sys.stderr.write(f"{Fore.YELLOW}WARNING: {message}.{Fore.RESET}\n")
@@ -137,14 +141,17 @@ def warning(message: str, verbosity: int) -> None:
 def print_verbosity(message: str, verbosity: int, verbosity_threshold: int) -> None:
     """Print a message if the verbosity level meets the threshold.
 
-    Outputs the provided message to standard output if the current verbosity is
-    greater than or equal to the specified threshold.
+    Writes the message to standard output if the current verbosity is greater 
+    than or equal to the specified threshold.
 
     Args:
-        message: The message to print.
-        verbosity: The current verbosity level.
-        verbosity_threshold: The minimum verbosity level required to print the
-            message.
+        message (str): The message to print.
+        verbosity (int): The current verbosity level.
+        verbosity_threshold (int): The minimum verbosity level required to print 
+            the message.
+
+    Returns:
+        None
     """
     if verbosity >= verbosity_threshold:
         sys.stdout.write(f"{message}\n")
@@ -154,17 +161,17 @@ def print_verbosity(message: str, verbosity: int, verbosity_threshold: int) -> N
 def adjust_guide_position(pos: int, guidelen: int, pamlen: int, right: bool) -> int:
     """Adjust the guide position based on orientation.
 
-    Returns the original position if right is True, otherwise subtracts the
-    guide length.
+    Returns the adjusted position for a guide depending on whether it is on the 
+    right or left strand.
 
     Args:
-        pos: The original position.
-        guidelen: The length of the guide.
-        pamlen: The length of the PAM sequence (unused).
-        right: Boolean indicating orientation.
+        pos (int): The original position.
+        guidelen (int): The length of the guide.
+        pamlen (int): The length of the PAM sequence.
+        right (bool): Indicates if the guide is on the right strand.
 
     Returns:
-        The adjusted guide position as an integer.
+        int: The adjusted guide position.
     """
     return pos if right else pos - guidelen
 
@@ -172,42 +179,43 @@ def adjust_guide_position(pos: int, guidelen: int, pamlen: int, right: bool) -> 
 def round_score(score: float) -> float:
     """Round a score to four decimal places.
 
-    Returns the input score rounded to four decimal places for consistent
-    reporting.
+    Returns the input score rounded to four decimal places as a float.
 
     Args:
-        score: The score to round.
+        score (float): The score to round.
 
     Returns:
-        The rounded score as a float.
+        float: The rounded score.
     """
-    # round score to 4 decimal places
-    return round(score, 4)
+    return round(score, 4)  # round score to 4 decimal places
 
 
 def flatten_list(lst: List[List[Any]]) -> List[Any]:
-    """Flattens a list of lists into a single list.
+    """Flatten a list of lists into a single list.
+
+    Combines all elements from nested lists into a single flat list.
 
     Args:
-        lst: The list of lists to flatten.
+        lst (List[List[Any]]): The list of lists to flatten.
+
     Returns:
-        A new list containing all the elements of the sublists in a single flattened list.
+        List[Any]: The flattened list.
     """
     return [e for sublist in lst for e in sublist]
 
 
 def match_iupac(seq: str, pattern: str) -> bool:
-    """Check if a nucleotide sequence matches a given IUPAC pattern.
+    """Check if a sequence matches a pattern using IUPAC nucleotide codes.
 
-    Compares each nucleotide in the sequence to the corresponding IUPAC code in
-    the pattern returning True if all nucleotides are compatible with the pattern.
+    Compares two sequences and returns True if the sequence matches the pattern 
+    according to IUPAC codes.
 
     Args:
-        seq: The nucleotide sequence to check.
-        pattern: The IUPAC pattern to match against.
+        seq (str): The nucleotide sequence to check.
+        pattern (str): The IUPAC pattern to match against.
 
     Returns:
-        True if the sequence matches the IUPAC pattern, False otherwise.
+        bool: True if the sequence matches the pattern, False otherwise.
     """
     if len(seq) != len(pattern):
         return False
@@ -219,14 +227,13 @@ def match_iupac(seq: str, pattern: str) -> bool:
 def dna2rna(sequence: str) -> str:
     """Convert a DNA sequence to its RNA equivalent.
 
-    Replaces all occurrences of thymine ('T' or 't') with uracil ('U' or 'u') in
-    the input sequence.
+    Replaces all occurrences of 'T' with 'U' and 't' with 'u' in the input sequence.
 
     Args:
-        sequence: The DNA sequence to convert.
+        sequence (str): The DNA sequence to convert.
 
     Returns:
-        The RNA sequence as a string.
+        str: The RNA sequence.
     """
     return sequence.replace("T", "U").replace("t", "u")
 
@@ -236,9 +243,6 @@ def suppress_stdout():
     """Context manager to suppress standard output.
 
     Temporarily redirects sys.stdout to an in-memory buffer.
-
-    Returns:
-        None
     """
     stdout_channel = sys.stdout
     sys.stdout = io.StringIO()
@@ -253,9 +257,6 @@ def suppress_stderr():
     """Context manager to suppress standard error output.
 
     Temporarily redirects sys.stderr to an in-memory buffer.
-
-    Returns:
-        None
     """
     stderr_channel = sys.stderr
     sys.stderr = io.StringIO()
@@ -265,35 +266,71 @@ def suppress_stderr():
         sys.stderr = stderr_channel
 
 
-def create_temp_folder(dirname: str) -> str:
-    return tempfile.mkdtemp(prefix=f"crisprhawk_{dirname}_")
-
-
 def create_folder(dirname: str) -> str:
+    """Create a new directory with the specified name.
+
+    Ensures the directory exists by creating it if necessary and returns its path.
+
+    Args:
+        dirname (str): The name of the directory to create.
+
+    Returns:
+        str: The path to the created directory.
+    """
     os.makedirs(dirname)
     assert os.path.isdir(dirname)
     return dirname
 
 
 def remove_folder(dirname: str) -> None:
+    """Remove a directory and its contents.
+
+    Attempts to delete the specified directory and all its contents. Raises an 
+    error if the operation fails.
+
+    Args:
+        dirname (str): The path to the directory to remove.
+
+    Raises:
+        OSError: If the directory cannot be removed.
+    """
     try:
         subprocess.run(["rm", "-rf", dirname], check=True, capture_output=True)
     except subprocess.CalledProcessError as e:  # always trace this error
         raise OSError(f"Failed to clean up folder {dirname}") from e
-    except Exception as e:
-        raise Exception(f"Unexpected error while cleaning up folder {dirname}") from e
 
 
 def remove_file(filename: str) -> None:
+    """Remove a file from the filesystem.
+
+    Attempts to delete the specified file. Raises an error if the operation fails.
+
+    Args:
+        filename (str): The path to the file to remove.
+
+    Raises:
+        OSError: If the file cannot be removed.
+    """
     try:
         subprocess.run(["rm", "-rf", filename], check=True, capture_output=True)
     except subprocess.CalledProcessError as e:  # always trace this error
         raise OSError(f"Failed to remove file {filename}") from e
-    except Exception as e:
-        raise Exception(f"Unexpected error while removing file {filename}") from e
 
 
 def _uncompress_azimuth_models(azimuthdir: str) -> None:
+    """Uncompress the Azimuth model ZIP archive in the specified directory.
+
+    Extracts the Azimuth saved models ZIP file into the given directory and 
+    removes the archive after extraction. Raises an error if the file is missing 
+    or extraction fails.
+
+    Args:
+        azimuthdir (str): The directory containing the Azimuth models ZIP archive.
+
+    Raises:
+        FileNotFoundError: If the Azimuth models ZIP file does not exist.
+        zipfile.BadZipFile: If the ZIP file is invalid or extraction fails.
+    """
     models_zip = os.path.join(azimuthdir, "saved_models.zip")  # azimuth models
     if not os.path.isfile(models_zip):  # always trace these errors
         raise FileNotFoundError(f"Cannot find Azimuth models: {models_zip}")
@@ -308,6 +345,19 @@ def _uncompress_azimuth_models(azimuthdir: str) -> None:
 
 
 def _uncompress_cfd_models(cfdscoredir: str) -> None:
+    """Uncompress the CFD model ZIP archive in the specified directory.
+
+    Extracts the CFD models ZIP file into the given directory and removes the 
+    archive after extraction. Raises an error if the file is missing or extraction 
+    fails.
+
+    Args:
+        cfdscoredir (str): The directory containing the CFD models ZIP archive.
+
+    Raises:
+        FileNotFoundError: If the CFD models ZIP file does not exist.
+        zipfile.BadZipFile: If the ZIP file is invalid or extraction fails.
+    """
     cfdmodels_zip = os.path.join(cfdscoredir, "models.zip")  # cfd models
     if not os.path.isfile(cfdmodels_zip):  # always trace these errors
         raise FileNotFoundError(f"Cannot find CFD models: {cfdmodels_zip}")
@@ -322,6 +372,19 @@ def _uncompress_cfd_models(cfdscoredir: str) -> None:
 
 
 def _uncompress_deepcpf1_models(deepcpf1dir: str) -> None:
+    """Uncompress the DeepCpf1 model ZIP archive in the specified directory.
+
+    Extracts the DeepCpf1 weights ZIP file into the given directory and removes 
+    the archive after extraction. Raises an error if the file is missing or 
+    extraction fails.
+
+    Args:
+        deepcpf1dir (str): The directory containing the DeepCpf1 weights ZIP archive.
+
+    Raises:
+        FileNotFoundError: If the DeepCpf1 weights ZIP file does not exist.
+        zipfile.BadZipFile: If the ZIP file is invalid or extraction fails.
+    """
     deepcpf1_weights_zip = os.path.join(deepcpf1dir, "weights.zip")  # deepCpf1 models
     if not os.path.isfile(deepcpf1_weights_zip):  # always trace these errors
         raise FileNotFoundError(f"Cannot find DeepCpf1 models: {deepcpf1_weights_zip}")
@@ -336,31 +399,69 @@ def _uncompress_deepcpf1_models(deepcpf1dir: str) -> None:
 
 
 def _uncompress_elevation_models(elevationdir: str) -> None:
-    elevation_models_zip = os.path.join(elevationdir, "models.zip")  # elvation models
+    """Uncompress the Elevation model and data ZIP archives in the specified 
+    directory.
+
+    Extracts the Elevation models and data ZIP files into the given directory and 
+    removes the archives after extraction. Raises an error if any file is missing 
+    or extraction fails.
+
+    Args:
+        elevationdir (str): The directory containing the Elevation ZIP archives.
+
+    Raises:
+        FileNotFoundError: If any Elevation ZIP file does not exist.
+        zipfile.BadZipFile: If any ZIP file is invalid or extraction fails.
+    """
+    _uncompress_elevation_model(
+        elevationdir,
+        "models.zip",
+        "Cannot find Elevation models:",
+        "An error occurred while unzipping Elevation models:",
+    )
+    _uncompress_elevation_model(
+        elevationdir,
+        "CRISPR.zip",
+        "Cannot find Elevation data:",
+        "An error occurred while unzipping Elevation data:",
+    )
+
+
+def _uncompress_elevation_model(elevationdir, file_zipped: str, errmsg1: str, errmsg2: str) -> None:
+    """Uncompress a specific Elevation ZIP archive in the given directory.
+
+    Extracts the specified ZIP file into the provided directory and removes the 
+    archive after extraction. Raises an error if the file is missing or extraction 
+    fails.
+
+    Args:
+        elevationdir (str): The directory containing the ZIP archive.
+        file_zipped (str): The name of the ZIP file to extract.
+        errmsg1 (str): Error message for missing file.
+        errmsg2 (str): Error message for extraction failure.
+
+    Raises:
+        FileNotFoundError: If the ZIP file does not exist.
+        zipfile.BadZipFile: If the ZIP file is invalid or extraction fails.
+    """
+    elevation_models_zip = os.path.join(elevationdir, file_zipped)
     if not os.path.isfile(elevation_models_zip):  # always trace these errors
-        raise FileNotFoundError(f"Cannot find Elevation models: {elevation_models_zip}")
+        raise FileNotFoundError(f"{errmsg1} {elevation_models_zip}")
     try:
         with zipfile.ZipFile(elevation_models_zip, mode="r") as zipref:
             zipref.extractall(path=elevationdir)  # extract in cfd directory
     except (zipfile.BadZipFile, RuntimeError) as e:
-        raise zipfile.BadZipFile(
-            f"An error occurred while unzipping Elevation models: {elevation_models_zip}"
-        ) from e
+        raise zipfile.BadZipFile(f"{errmsg2}{elevation_models_zip}") from e
     remove_file(elevation_models_zip)
-    elevation_data_zip = os.path.join(elevationdir, "CRISPR.zip")  # elvation data
-    if not os.path.isfile(elevation_data_zip):  # always trace these errors
-        raise FileNotFoundError(f"Cannot find Elevation data: {elevation_data_zip}")
-    try:
-        with zipfile.ZipFile(elevation_data_zip, mode="r") as zipref:
-            zipref.extractall(path=elevationdir)  # extract in cfd directory
-    except (zipfile.BadZipFile, RuntimeError) as e:
-        raise zipfile.BadZipFile(
-            f"An error occurred while unzipping Elevation data: {elevation_data_zip}"
-        ) from e
-    remove_file(elevation_data_zip)
 
 
 def prepare_package() -> None:
+    """Prepare the package by extracting required model and data ZIP files.
+
+    Checks for the presence of required model and data directories. If any are
+    missing, extracts the corresponding ZIP archives to ensure all scoring algorithms 
+    have access to necessary resources.
+    """
     # at first run uncompress ZIP files containing models and data used by
     # the scoring algorithms used by crisprhawk
     scoresdir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scores")
@@ -393,8 +494,30 @@ def prepare_package() -> None:
 
 
 def command_exists(command: str) -> bool:
+    """Check if a command exists in the system's PATH.
+
+    Returns True if the specified command is found in the system's executable 
+    search path, otherwise False.
+
+    Args:
+        command (str): The command to check for existence.
+
+    Returns:
+        bool: True if the command exists, False otherwise.
+    """
     return bool(shutil.which(command))
 
 
 def is_lowercase(sequence: str) -> bool:
+    """Check if a sequence contains any lowercase characters.
+
+    Returns True if at least one character in the sequence is lowercase, otherwise 
+    False.
+
+    Args:
+        sequence (str): The sequence to check.
+
+    Returns:
+        bool: True if the sequence contains lowercase characters, False otherwise.
+    """
     return any(c.islower() for c in sequence)

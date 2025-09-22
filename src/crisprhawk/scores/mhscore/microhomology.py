@@ -1,11 +1,38 @@
 """ """
 
-from typing import Optional, Union, List, Tuple
+from itertools import product
+from typing import Union, List, Tuple
 
 import math
 
 
 class MicrohomologyPattern:
+    """
+    Represents a microhomology pattern within a nucleotide sequence.
+
+    This class stores the sequence and positional information for a microhomology 
+    pattern, including the left and right start/stop positions and the pattern 
+    length. It provides equality, hashing, and string representation methods for 
+    use in microhomology scoring.
+
+    Args:
+        sequence (str): The microhomology sequence.
+        left_start (int): Start index of the pattern on the left side.
+        left_stop (int): Stop index of the pattern on the left side.
+        right_start (int): Start index of the pattern on the right side.
+        right_stop (int): Stop index of the pattern on the right side.
+        length (int): Length of the microhomology pattern.
+
+    Attributes:
+        _sequence (str): The microhomology sequence.
+        _left_start (int): Start index of the pattern on the left side.
+        _left_stop (int): Stop index of the pattern on the left side.
+        _right_start (int): Start index of the pattern on the right side.
+        _right_stop (int): Stop index of the pattern on the right side.
+        _length (int): Length of the microhomology pattern.
+        _hash (int): Precomputed hash value for the pattern.
+    """
+
     def __init__(
         self,
         sequence: str,
@@ -49,6 +76,15 @@ class MicrohomologyPattern:
         return self._hash
 
     def _calculate_hash(self) -> int:
+        """
+        Compute a hash value for the microhomology pattern.
+
+        Returns a hash based on the sequence and positional attributes of the 
+        pattern, enabling use in sets and as dictionary keys.
+
+        Returns:
+            int: The hash value for the microhomology pattern.
+        """
         return hash(
             (
                 self._sequence,
@@ -86,6 +122,26 @@ class MicrohomologyPattern:
 
 
 class MicrohomologyResult:
+    """
+    Stores the results of microhomology scoring for a guide sequence.
+
+    This class holds the total microhomology score, the out-of-frame score, and 
+    the list of deletion patterns with their associated scores. It provides 
+    property accessors for each result component.
+
+    Args:
+        mh_score (int): The total microhomology score.
+        ooframe_score (int): The out-of-frame score as a percentage of the total 
+            score.
+        deletion_patterns (List[Tuple[float, str]]): List of tuples containing 
+            the score and the corresponding deletion sequence.
+
+    Attributes:
+        _mh_score (int): The total microhomology score.
+        _ooframe_score (int): The out-of-frame score.
+        _deletion_patterns (List[Tuple[float, str]]): The deletion patterns and 
+            their scores.
+    """
     def __init__(
         self,
         mh_score: int,
@@ -112,21 +168,35 @@ class MicrohomologyResult:
 def _find_microhomology_patterns(
     sequence: str, start: int, stop: int
 ) -> List[MicrohomologyPattern]:
+    """
+    Identify all microhomology patterns in a nucleotide sequence.
+
+    Searches for and returns all microhomology patterns of length 2 up to start-1 
+    within the specified region of the sequence. Each pattern is represented as 
+    a MicrohomologyPattern object.
+
+    Args:
+        sequence (str): The nucleotide sequence to search.
+        start (int): The starting index for pattern search.
+        stop (int): The number of positions to search after the start index.
+
+    Returns:
+        List[MicrohomologyPattern]: A list of found microhomology patterns.
+    """
     patterns = []  # list of microhomology patterns founf for current guide
     for k in reversed(
         list(range(2, start))
     ):  # search for patterns of length k (from 2 to start - 1)
-        for j in range(start, start + stop - k + 1):  # check pos after breakpoints
-            for i in range(start - k + 1):  # check positions before breakpoints
-                leftseq = sequence[i : i + k]
-                rightseq = sequence[j : j + k]
-                if leftseq == rightseq:
-                    deletion_length = j - i
-                    patterns.append(
-                        MicrohomologyPattern(
-                            leftseq, i, i + k, j, j + k, deletion_length
-                        )
+        for j, i in product(range(start, start + stop - k + 1), range(start - k + 1)):
+            leftseq = sequence[i : i + k]
+            rightseq = sequence[j : j + k]
+            if leftseq == rightseq:
+                deletion_length = j - i
+                patterns.append(
+                    MicrohomologyPattern(
+                        leftseq, i, i + k, j, j + k, deletion_length
                     )
+                )
     return patterns
 
 
@@ -135,6 +205,23 @@ def _compute_pattern_scores(
     sequence: str,
     length_weight: Union[None, float],
 ) -> Tuple[List[Tuple[float, str]], float, float]:
+    """
+    Compute scores for microhomology patterns in a sequence.
+
+    Calculates the score for each microhomology pattern based on length, GC content, 
+    and position, and classifies them as in-frame or out-of-frame. Returns the 
+    deletion patterns with their scores, and the total in-frame and out-of-frame scores.
+
+    Args:
+        patterns (List[MicrohomologyPattern]): The list of microhomology patterns.
+        sequence (str): The nucleotide sequence containing the patterns.
+        length_weight (Union[None, float]): The length weighting factor for scoring.
+
+    Returns:
+        Tuple[List[Tuple[float, str]], float, float]: A tuple containing the list 
+            of (score, deletion sequence) pairs, the total in-frame score, and the 
+            total out-of-frame score.
+    """
     deletion_patterns = []  # initialize deletion patterns
     iframe_score, ooframe_score = 0.0, 0.0  # initialize scores
     for pattern in patterns:
@@ -163,29 +250,55 @@ def _compute_pattern_scores(
 def _remove_duplicate_patterns(
     patterns: List[MicrohomologyPattern],
 ) -> List[MicrohomologyPattern]:
+    """
+    Remove duplicate microhomology patterns from a list.
+
+    Filters out duplicate microhomology patterns based on their positional 
+    attributes, ensuring only unique patterns are retained in the result.
+
+    Args:
+        patterns (List[MicrohomologyPattern]): The list of microhomology patterns 
+            to filter.
+
+    Returns:
+        List[MicrohomologyPattern]: The list of unique microhomology patterns.
+    """
     patterns_unique = []
     for i, pattern in enumerate(patterns):
-        n = 0
-        for j in range(i):
-            if (
-                (pattern.left_start >= patterns[j].left_start)
-                and (pattern.left_stop <= patterns[j].left_stop)
-                and (pattern.right_start >= patterns[j].right_start)
-                and (pattern.right_stop <= patterns[j].right_stop)
-                and (pattern.left_start - patterns[j].left_start)
-                == (pattern.right_start - patterns[j].right_start)
-                and (pattern.left_stop - patterns[j].left_stop)
-                == (pattern.right_stop - patterns[j].right_stop)
-            ):
-                n += 1
+        n = sum(
+            pattern.left_start >= patterns[j].left_start
+            and pattern.left_stop <= patterns[j].left_stop
+            and pattern.right_start >= patterns[j].right_start
+            and pattern.right_stop <= patterns[j].right_stop
+            and (pattern.left_start - patterns[j].left_start)
+            == (pattern.right_start - patterns[j].right_start)
+            and (pattern.left_stop - patterns[j].left_stop)
+            == (pattern.right_stop - patterns[j].right_stop)
+            for j in range(i)
+        )
         if n == 0:
             patterns_unique.append(pattern)
     return patterns_unique
 
 
 def calculate_microhomology_score(
-    guideseq: str, start: int, lweight: Optional[float] = 20.0
+    guideseq: str, start: int, lweight: float = 20.0
 ) -> MicrohomologyResult:
+    """
+    Calculate the microhomology score for a guide sequence.
+
+    Identifies all unique microhomology patterns in the guide sequence, computes 
+    their scores, and returns a MicrohomologyResult containing the total score, 
+    out-of-frame score, and deletion patterns.
+
+    Args:
+        guideseq (str): The guide sequence (must be uppercase).
+        start (int): The starting index for microhomology pattern search.
+        lweight (Optional[float]): The length weighting factor for scoring (default: 20.0).
+
+    Returns:
+        MicrohomologyResult: The result object containing scores and deletion patterns.
+    """
     assert guideseq.isupper()  # must be upper case (handle alternative guides)
     # find all microhomology patterns for current guide
     patterns = _find_microhomology_patterns(guideseq, start, len(guideseq) - start)

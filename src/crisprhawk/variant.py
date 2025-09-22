@@ -351,6 +351,19 @@ class VariantRecord:
         ]
     
     def pytest_initialize(self, position: int, ref: str, alt: str, vtype: str, vid: str, afs: List[float]) -> None:
+        """Initialize the VariantRecord for pytest with provided values.
+
+        Sets the chromosome, position, reference allele, alternative allele, 
+        variant type, variant ID, and allele frequencies for testing purposes.
+
+        Args:
+            position (int): The variant position.
+            ref (str): The reference allele.
+            alt (str): The alternative allele.
+            vtype (str): The variant type.
+            vid (str): The variant ID.
+            afs (List[float]): The allele frequencies.
+        """
         self._chrom = "chrx"
         self._position = position
         self._ref = ref
