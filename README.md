@@ -1,3 +1,7 @@
+[![GitHub Release Version](https://img.shields.io/github/v/release/pinellolab/CRISPR-HAWK)](https://github.com/pinellolab/CRISPR-HAWK/releases)
+[![Build Status](https://github.com/pinellolab/CRISPR-HAWK/actions/workflows/python-package.yml/badge.svg)](https://github.com/pinellolab/CRISPR-HAWK/actions/workflows/python-package.yml)
+
+
 <p align="center">
     <img src="assets/readme/logo.jpeg", alt="log.jpeg", height=200, width=200>
 </p>
