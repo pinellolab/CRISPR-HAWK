@@ -21,6 +21,20 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Install system dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libhdf5-dev pkg-config
+        
+    - name: Install system dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install hdf5 pkg-config
+        # Set environment variables for HDF5
+        echo "HDF5_DIR=$(brew --prefix hdf5)" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=$(brew --prefix hdf5)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
       
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
@@ -35,7 +49,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
         
-    - name: Install dependencies
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest
@@ -88,7 +102,7 @@ jobs:
         pip install build wheel
         
         # Build the package
-        pip install .
+        pythin -m build
         
         # Test installation from wheel
         pip install dist/*.whl
