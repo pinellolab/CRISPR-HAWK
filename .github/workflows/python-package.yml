@@ -102,7 +102,7 @@ jobs:
         pip install build wheel
         
         # Build the package
-        pythin -m build
+        python -m build
         
         # Test installation from wheel
         pip install dist/*.whl
