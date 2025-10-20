@@ -659,7 +659,7 @@ def format_reportcols(
         idx = reportcols.index(REPORTCOLS[19]) + 1 + len(annotations)
         reportcols_sorted += reportcols[idx : idx + len(gene_annotations)]
     if estimate_offtargets:
-        reportcols_sorted += reportcols[20:21]
+        reportcols_sorted += REPORTCOLS[20:21]
         reportcols_sorted += _format_cfd(reportcols)
     reportcols_sorted += REPORTCOLS[18:20]
     return reportcols_sorted

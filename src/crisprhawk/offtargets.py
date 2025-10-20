@@ -27,7 +27,7 @@ from .region import Region
 from .guide import Guide
 from .pam import PAM, SPCAS9, XCAS9
 
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Set
 from time import time
 
 import pandas as pd
@@ -53,16 +53,32 @@ OTREPCNAMES = [
 ]
 
 
-def _write_guides_file(
-    guides: List[Guide], pam: PAM, crispritz_dir: str, verbosity: int, debug: bool
-) -> str:
-    """Creates a guides file for off-target estimation using CRISPRitz.
-    Each guide is formatted and written to a file for downstream analysis.
+def _filter_guides(guides: List[Guide]) -> Set[str]:
+    """Returns a set of unique guide sequences in uppercase.
+    
+    This function ensures that each guide is only searched once by removing duplicates.
 
     Args:
-        guides (List[Guide]): List of Guide objects to be written.
+        guides (List[Guide]): List of Guide objects.
+
+    Returns:
+        Set[str]: Set of unique guide sequences in uppercase.
+    """
+    # avoid searching multiple times the same guide
+    return {g.guide.upper() for g in guides}
+
+
+def _write_guides_file(
+    guides: Set[str], pam: PAM, crispritz_dir: str, right: bool, verbosity: int, debug: bool
+) -> str:
+    """Creates a guides file for off-target estimation using CRISPRitz.
+    Formats and writes each guide sequence to a file for downstream analysis.
+
+    Args:
+        guides (Set[str]): Set of unique guide sequences.
         pam (PAM): PAM object specifying the PAM sequence.
         crispritz_dir (str): Directory where the guides file will be created.
+        right (bool): Boolean indicating PAM orientation.
         verbosity (int): Verbosity level for logging.
         debug (bool): Flag to enable debug mode.
 
@@ -79,11 +95,7 @@ def _write_guides_file(
     try:
         with open(guides_fname, mode="w") as outfile:
             for guide in guides:  # format each guide for crispritz input
-                guide_f = (
-                    f"{pamseq}{guide.guide.upper()}"
-                    if guide.right
-                    else f"{guide.guide}{pamseq}"
-                )
+                guide_f = f"{pamseq}{guide}" if right else f"{guide}{pamseq}"
                 outfile.write(f"{guide_f}\n")  # write guide
     except (IOError, Exception) as e:
         exception_handler(
@@ -142,20 +154,22 @@ def _write_pam_file(
 
 def _prepare_input_data(
     crispritz_config: CrispritzConfig,
-    guides: List[Guide],
+    guides: Set[str],
     pam: PAM,
     outdir: str,
+    right: bool,
     verbosity: int,
     debug: bool,
 ) -> Tuple[str, str]:
     """Prepares input files for CRISPRitz off-target estimation.
-    Generates guides and PAM files in the specified directory for downstream analysis.
+    Creates the necessary guides and PAM files in the appropriate directory.
 
     Args:
         crispritz_config (CrispritzConfig): Configuration for CRISPRitz.
-        guides (List[Guide]): List of Guide objects to be written.
+        guides (Set[str]): Set of unique guide sequences.
         pam (PAM): PAM object specifying the PAM sequence.
         outdir (str): Output directory for generated files.
+        right (bool): Boolean indicating PAM orientation.
         verbosity (int): Verbosity level for logging.
         debug (bool): Flag to enable debug mode.
 
@@ -170,9 +184,9 @@ def _prepare_input_data(
     if not os.path.isdir(crispritz_dir):  # stores crispritz targets
         os.makedirs(crispritz_dir)
     # create guides and pam files
-    guides_fname = _write_guides_file(guides, pam, crispritz_dir, verbosity, debug)
+    guides_fname = _write_guides_file(guides, pam, crispritz_dir, right, verbosity, debug)
     pam_fname = _write_pam_file(
-        pam, guides[0].guidelen, guides[0].right, crispritz_dir, verbosity, debug
+        pam, len(list(guides)[0]), right, crispritz_dir, verbosity, debug
     )
     return guides_fname, pam_fname
 
@@ -375,8 +389,7 @@ def _compute_elevation_score(
             offtargets_filt.append(ot)
     try:
         for i, score in enumerate(elevation(wildtypes_list, offtargets_list)):
-            offtargets_scored[i].set_elevation(score)
-
+            offtargets_scored[i].elevation = score
     except Exception as e:
         exception_handler(
             CrisprHawkElevationScoreError,
@@ -479,25 +492,17 @@ def _calculate_offtargets_map(
     return otmap
 
 
-def _calculate_global_cfd(offtargets: List[Offtarget], verbosity: int) -> float:
+def _calculate_global_cfd(offtargets: List[Offtarget]) -> float:
     """Calculates the global CFD score for a set of off-targets.
     Returns a summary score representing the overall off-target potential for a guide.
 
     Args:
         offtargets (List[Offtarget]): List of Offtarget objects.
-        verbosity (int): Verbosity level for logging.
 
     Returns:
         float: The calculated global CFD score.
     """
-    print_verbosity("Computing guide global CFD", verbosity, VERBOSITYLVL[3])
-    start = time()
     cfds = [0 if ot.cfd == "NA" else float(ot.cfd) for ot in offtargets]
-    print_verbosity(
-        f"Global CFD computed in {time() - start:.2f}s",
-        verbosity,
-        VERBOSITYLVL[3],
-    )
     return 100 / (100 + sum(cfds))
 
 
@@ -516,11 +521,17 @@ def annotate_guides_offtargets(
         List[Guide]: The list of annotated Guide objects.
     """
     otmap = _calculate_offtargets_map(offtargets, guides)
+    start = time()
+    print_verbosity("Computing guides global CFD and annotating guides with estimated off-target numbers", verbosity, VERBOSITYLVL[3])
     for guide in guides:
-        guide.offtargets = len(otmap[guide.guide])  # set off-targets number
-        guide.cfd = _calculate_global_cfd(
-            otmap[guide.guide], verbosity
-        )  # set global CFD
+        # set off-targets number and set global CFD
+        guide.offtargets = len(otmap[guide.guide.upper()])
+        guide.cfd = _calculate_global_cfd(otmap[guide.guide.upper()])
+    print_verbosity(
+        f"Guides global CFDs and off-target numbers annotation computed in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
     return guides
 
 
@@ -541,9 +552,9 @@ def search_offtargets(
     verbosity: int,
     debug: bool,
 ) -> List[Guide]:
-    """Estimates off-targets for a list of guides using CRISPRitz.
-    Runs the full off-target search workflow and returns guides annotated with
-    off-target information.
+    """Estimates off-targets for a list of CRISPR guides using CRISPRitz.
+    Runs the off-target search, computes scores, annotates guides, and returns 
+    the updated list.
 
     Args:
         guides (List[Guide]): List of Guide objects to analyze.
@@ -563,15 +574,15 @@ def search_offtargets(
         debug (bool): Flag to enable debug mode.
 
     Returns:
-        List[Guide]: List of Guide objects annotated with off-target information.
+        List[Guide]: The list of Guide objects annotated with off-target information.
     """
-    print_verbosity(
-        f"Estimating off-targets for {len(guides)} guides", verbosity, VERBOSITYLVL[3]
-    )
-    start = time()
+    # remove duplicated guides to avoid multiple searches of the same guide
+    guides_seqs = _filter_guides(guides)
     guides_fname, pam_fname = _prepare_input_data(
-        crispritz_config, guides, pam, outdir, verbosity, debug
-    )
+        crispritz_config, guides_seqs, pam, outdir, right, verbosity, debug
+    )  # prepare input data for crispritz
+    print_verbosity("Estimating off-targets for found guides", verbosity, VERBOSITYLVL[3])
+    start = time()
     # search offtargets with crispritz
     targets_fname = search(
         crispritz_config,

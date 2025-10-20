@@ -629,13 +629,13 @@ def main():
     This function parses command-line arguments and dispatches execution to the
     appropriate CRISPR-HAWK command handler.
     """
-    prepare_package()  # check if models and data are available and uncompressed
     start = time()  # track elapsed time
     try:
         parser = create_parser_crisprhawk()  # parse input argument using custom parser
         if not sys.argv[1:]:  # no input args -> print help and exit
             parser.error_noargs()
         args = parser.parse_args(sys.argv[1:])  # parse input args
+        prepare_package()  # check if models and data are available and uncompressed
         if args.command == SEARCH:  # search command
             crisprhawk_search(CrisprHawkSearchInputArgs(args, parser))
         elif args.command == CONVERTGNOMADVCF:  # convert-gnoamd-vcf command

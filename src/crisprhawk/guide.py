@@ -612,7 +612,7 @@ class Guide:
         Raises:
             CrisprHawkGuideError: If the value is not an int or is not valid.
         """
-        if not isinstance(value, int) or not value:
+        if not isinstance(value, int) or value is None:
             exception_handler(
                 CrisprHawkGuideError,
                 f"Off-targets number must be an int, got {type(value).__name__} instead",
