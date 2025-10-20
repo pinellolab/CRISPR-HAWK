@@ -39,9 +39,10 @@ def test_write_guides_file_creates_file():
             "hap1",
         )
     ]
+    guides_seq = {g.guide.upper() for g in guides}
     pam = PAM("NGG", False, False)
     with tempfile.TemporaryDirectory() as tmpdir:
-        fname = _write_guides_file(guides, pam, tmpdir, verbosity=0, debug=False)
+        fname = _write_guides_file(guides_seq, pam, tmpdir, False, verbosity=0, debug=False)
         assert os.path.exists(fname)
         with open(fname) as f:
             lines = f.readlines()
@@ -88,7 +89,7 @@ def test_prepare_input_data_creates_files():
     config = DummyConfig()
     with tempfile.TemporaryDirectory() as tmpdir:
         guides_fname, pam_fname = _prepare_input_data(
-            config, guides, pam, tmpdir, verbosity=0, debug=False
+            config, {guides[0].guide.upper()}, pam, tmpdir, False, verbosity=0, debug=False
         )
         assert os.path.exists(guides_fname)
         assert os.path.exists(pam_fname)
@@ -127,7 +128,7 @@ def test_calculate_global_cfd_returns_float():
             self.cfd = cfd
 
     offtargets = [DummyOfftarget("0.5"), DummyOfftarget("NA")]
-    score = _calculate_global_cfd(offtargets, verbosity=0)
+    score = _calculate_global_cfd(offtargets)
     assert isinstance(score, float)
 
 
