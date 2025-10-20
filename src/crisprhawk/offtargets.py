@@ -9,6 +9,7 @@ from .crisprhawk_error import (
     CrisprHawkOffTargetsError,
     CrisprHawkCfdScoreError,
     CrisprHawkElevationScoreError,
+    CrisprHawkAnnotationError,
 )
 from .config_crispritz import CrispritzConfig, CRISPRITZ
 from .exception_handlers import exception_handler
@@ -403,36 +404,43 @@ def _compute_elevation_score(
     )
     return offtargets_filt + offtargets_scored
 
+def _annotate_offtarget(contig: str, start: int, stop: int, bedannotation: BedAnnotation, debug: bool) -> str:
+    try:  # fetch annotation features overlapping input offtarget
+        annotation = bedannotation.fetch_features(contig, start, stop)
+    except Exception as e:
+        exception_handler(
+            CrisprHawkAnnotationError,
+            f"Off-target annotation failed on {contig}:{start}-{stop}",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
+    # if no annotation, return NA value; annotation values on 4th BED column
+    return ",".join([e.split()[3] for e in annotation]) if annotation else "NA"
+
+def annotate_offtargets(offtargets: pd.DataFrame, annotations: List[str], anncolnames: List[str], verbosity: int, debug: bool) -> pd.DataFrame:
+    print_verbosity("Annotating off-targets", verbosity, VERBOSITYLVL[3])
+    start = time()
+    cnames = anncolnames or [f"annotation_{i + 1}" for i, _ in enumerate(annotations)]
+    for i, annotation in enumerate(annotations):
+        bedannotation = BedAnnotation(annotation, verbosity, debug)
+        offtargets[cnames[i]] = offtargets.apply(lambda x: _annotate_offtarget(x[0], x[1], x[1] + len(x[4]), bedannotation, debug), axis=1)
+    print_verbosity(f"Off-targets annotated in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
+    return offtargets
 
 def report_offtargets(
     crispritz_targets_file: str,
     region: Region,
     pam: PAM,
     guidelen: int,
+    annotations: List[str],
+    anncolnames: List[str],
     compute_elevation: bool,
     right: bool,
     outdir: str,
     verbosity: int,
     debug: bool,
 ) -> List[Offtarget]:
-    """Generates an off-targets report for a genomic region using CRISPRitz results.
-    Computes CFD and Elevation scores as needed, writes a tab-separated report,
-    and returns the list of Offtarget objects.
-
-    Args:
-        crispritz_targets_file (str): Path to the CRISPRitz targets file.
-        region (Region): Genomic region for off-target analysis.
-        pam (PAM): PAM object specifying the PAM sequence.
-        guidelen (int): Length of the guide sequence.
-        compute_elevation (bool): Whether to compute Elevation scores.
-        right (bool): Boolean indicating PAM orientation.
-        outdir (str): Output directory for the report.
-        verbosity (int): Verbosity level for logging.
-        debug (bool): Flag to enable debug mode.
-
-    Returns:
-        List[Offtarget]: List of Offtarget objects included in the report.
-    """
     # write haplotypes table to file
     start = time()  # track haplotypes table writing time
     offtargets = _read_offtargets(crispritz_targets_file, pam, right, debug)
@@ -453,6 +461,8 @@ def report_offtargets(
             outfile.write("\n".join([ot.report_line() for ot in offtargets]))
         ot_table = pd.read_csv(report_fname, sep="\t")
         ot_table = ot_table.sort_values(OTREPCNAMES[:2])
+        if annotations:  # annotates off-targets
+            ot_table = annotate_offtargets(ot_table, annotations, anncolnames, verbosity, debug)
         ot_table.to_csv(report_fname, sep="\t", index=False, na_rep="NA")
     except OSError as e:
         exception_handler(
@@ -544,6 +554,8 @@ def search_offtargets(
     mm: int,
     bdna: int,
     brna: int,
+    annotations: List[str],
+    anncolnames: List[str],
     guidelen: int,
     compute_elevation: bool,
     right: bool,
@@ -552,30 +564,6 @@ def search_offtargets(
     verbosity: int,
     debug: bool,
 ) -> List[Guide]:
-    """Estimates off-targets for a list of CRISPR guides using CRISPRitz.
-    Runs the off-target search, computes scores, annotates guides, and returns 
-    the updated list.
-
-    Args:
-        guides (List[Guide]): List of Guide objects to analyze.
-        pam (PAM): PAM object specifying the PAM sequence.
-        crispritz_index (str): Path to the CRISPRitz index.
-        region (Region): Genomic region for off-target search.
-        crispritz_config (CrispritzConfig): Configuration for CRISPRitz.
-        mm (int): Maximum number of mismatches.
-        bdna (int): Maximum DNA bulge size.
-        brna (int): Maximum RNA bulge size.
-        guidelen (int): Length of the guide sequence.
-        compute_elevation (bool): Whether to compute Elevation scores.
-        right (bool): Boolean indicating PAM orientation.
-        threads (int): Number of threads to use.
-        outdir (str): Output directory for results.
-        verbosity (int): Verbosity level for logging.
-        debug (bool): Flag to enable debug mode.
-
-    Returns:
-        List[Guide]: The list of Guide objects annotated with off-target information.
-    """
     # remove duplicated guides to avoid multiple searches of the same guide
     guides_seqs = _filter_guides(guides)
     guides_fname, pam_fname = _prepare_input_data(
@@ -605,6 +593,8 @@ def search_offtargets(
         region,
         pam,
         guidelen,
+        annotations,
+        anncolnames,
         compute_elevation,
         right,
         outdir,

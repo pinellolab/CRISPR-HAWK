@@ -19,7 +19,7 @@ from .haplotype import Haplotype
 from .region import Region
 from .utils import print_verbosity, VERBOSITYLVL
 from .search_guides import search
-from .annotate import annotate_guides
+from .annotation import annotate_guides
 from .encoder import encode
 from .reports import report_guides
 from .graphical_reports import compute_graphical_reports
@@ -199,6 +199,8 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.mm,
         args.bdna,
         args.brna,
+        args.offtargets_annotations,
+        args.offtargets_annotation_colnames,
         args.crispritz_index,
         args.guidelen,
         args.right,

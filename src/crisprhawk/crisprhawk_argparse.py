@@ -294,6 +294,19 @@ class CrisprHawkSearchInputArgs:
             self._parser.error(
                 f"Forbidden number of RNA bulges given: {self._args.brna}"
             )
+        # check offtargets annotation
+        if not self._args.estimate_offtargets and (self._args.offtargets_annotation_colnames or self._args.offtargets_annotations):
+            self._parser.error("Off-targets annotation requested, but missing off-targets estimation argument")
+        if self._args.estimate_offtargets and (self._args.offtargets_annotation_colnames and not self._args.offtargets_annotations):
+            self._parser.error(
+                "Off-targets annotation column names provided, but no input annotation file"
+            )
+        if self._args.offtargets_annotation_colnames and (
+            len(self._args.offtargets_annotation_colnames) != len(self._args.offtargets_annotations)
+        ):
+            self._parser.error(
+                "Mismatching number of off-target annotation files and annotation column names"
+            )
         # threads number
         if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
             self._parser.error(
@@ -394,6 +407,14 @@ class CrisprHawkSearchInputArgs:
     @property
     def brna(self) -> int:
         return self._args.brna
+    
+    @property
+    def offtargets_annotations(self) -> List[str]:
+        return self._args.offtargets_annotations
+    
+    @property
+    def offtargets_annotation_colnames(self) -> List[str]:
+        return self._args.offtargets_annotation_colnames
 
     @property
     def graphical_reports(self) -> bool:

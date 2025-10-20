@@ -326,6 +326,31 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "estimation. Only used if --estimate-offtargets is enabled (default: 0)",
     )
     optional_group.add_argument(
+        "--offtargets-annotation",
+        type=str,
+        metavar="ANNOTATION-BED",
+        dest="offtargets_annotations",
+        nargs="*",
+        default=[],
+        help="one or more BED files specifying genomic regions used to annotate "
+        "estimated offtargets. Each file should follow the standard BED format "
+        "(at least: chrom, start, end), and should include additional annotation "
+        "on the 4th column (default: no annotation)",
+    )
+    optional_group.add_argument(
+        "--offtargets-annotation-colnames",
+        type=str,
+        metavar="ANNOTATION-COLNAMES",
+        dest="offtargets_annotation_colnames",
+        nargs="*",
+        default=[],
+        help="list of custom column names to use in the offtargets report. Each "
+        "name corresponds to one of the input BED files provided with "
+        "'--offtargets-annotation'. Must match the number and order of files in "
+        "'--offtargets-annotation' (default: annotation columns are named "
+        "'annotation_<i>')",
+    )
+    optional_group.add_argument(
         "--graphical-reports",
         action="store_true",
         dest="graphical_reports",
