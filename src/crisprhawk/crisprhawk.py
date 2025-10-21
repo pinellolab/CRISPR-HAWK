@@ -20,6 +20,8 @@ from .region import Region
 from .utils import print_verbosity, VERBOSITYLVL
 from .search_guides import search
 from .annotation import annotate_guides
+from .scoring import scoring_guides
+from .search_offtargets import offtargets_search
 from .encoder import encode
 from .reports import report_guides
 from .graphical_reports import compute_graphical_reports
@@ -150,13 +152,14 @@ def guides_search(
 
 
 def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
-    """Executes the CRISPR-HAWK guide search workflow for the provided input arguments.
+    """Executes the main CRISPR-HAWK search workflow using the provided arguments.
 
-    This function orchestrates region extraction, haplotype reconstruction, guide
-    search, annotation, reporting, and optional graphical report generation.
+    This function orchestrates the guide search, annotation, scoring, off-target 
+    estimation, report generation, and graphical report creation for the CRISPR-HAWK 
+    pipeline.
 
     Args:
-        args (CrisprHawkSearchInputArgs): The parsed and validated input arguments
+        args (CrisprHawkSearchInputArgs): The parsed and validated input arguments 
             for the search workflow.
     """
     # extract genomic regions defined in input bed file
@@ -188,27 +191,12 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.debug,
     )
     # annotate guide candidates within each region
-    guides = annotate_guides(
-        guides,
-        args.annotations,
-        args.gene_annotations,
-        pam,
-        args.compute_elevation,
-        args.estimate_offtargets,
-        args.crispritz_config,
-        args.mm,
-        args.bdna,
-        args.brna,
-        args.offtargets_annotations,
-        args.offtargets_annotation_colnames,
-        args.crispritz_index,
-        args.guidelen,
-        args.right,
-        args.outdir,
-        args.threads,
-        args.verbosity,
-        args.debug,
-    )
+    guides = annotate_guides(guides, args.annotations, args.gene_annotations, args.verbosity, args.debug)
+    # score guide candidates wihtin each region
+    guides = scoring_guides(guides, pam, args.compute_elevation, args.guidelen, args.right, args.verbosity, args.debug)
+    if args.estimate_offtargets:  # search off-targets for each guide candidate
+        assert args.crispritz_config  # must not be none
+        guides = offtargets_search(guides, pam, args.crispritz_index, args.crispritz_config, args.mm, args.bdna, args.brna, args.offtargets_annotations, args.offtargets_annotation_colnames, args.guidelen, args.compute_elevation, args.right, args.threads, args.outdir, args.verbosity, args.debug)
     # construct reports
     reports = report_guides(
         guides,
