@@ -91,8 +91,9 @@ IUPAC_ENCODER = {
     for perm in {"".join(p) for p in permutations(v)}
 }
 STRAND = [0, 1]  # strands directions: 0 -> 5'-3'; 1 -> 3'-5'
-# report prefix name
+# reports prefix name
 GUIDESREPORTPREFIX = "crisprhawk_guides"
+CANDIDATEGUIDESREPORTPREFIX = "crisprhawk_candidate_guides"
 
 
 # define utils functions

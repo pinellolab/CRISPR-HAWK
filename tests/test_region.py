@@ -42,8 +42,8 @@ def test_region_contain_overlap():
     r1 = make_region(start=1, stop=10)
     r2 = make_region(start=2, stop=5)
     r3 = make_region(start=6, stop=15)
-    assert r1.contain(r2)
-    assert not r2.contain(r1)
+    assert r1.contains(r2)
+    assert not r2.contains(r1)
     assert r1.overlap(r2)
     assert r1.overlap(r3)
     assert not r2.overlap(r3)
@@ -92,9 +92,9 @@ def test_regionlist_extend_and_append():
     region_list1.append(r3)
     assert len(region_list1) == 3
     with pytest.raises(TypeError):
-        region_list1.append("not_a_region")
+        region_list1.append("not_a_region") # type: ignore
     with pytest.raises(TypeError):
-        region_list1.extend(["not_a_regionlist"])
+        region_list1.extend(["not_a_regionlist"]) # type: ignore
 
 
 def test_regionlistiterator_next():

@@ -93,6 +93,15 @@ class Coordinate:
         """
         # retrieve original start and stop
         return f"{self._contig}:{self._start}-{self._stop}"
+    
+    def contains(self, query: object) -> bool:
+        if not isinstance(query, Coordinate):
+            return NotImplemented
+        return (
+            self._contig == query.contig
+            and self._start <= query.start
+            and self._stop >= query.stop
+        )
 
     @property
     def contig(self) -> str:

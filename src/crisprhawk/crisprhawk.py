@@ -27,6 +27,7 @@ from .reports import report_guides
 from .graphical_reports import compute_graphical_reports
 from .converter import convert_gnomad_vcf
 from .crisprme_data import prepare_data_crisprme
+from .candidate_guides import candidate_guides_analysis
 from .bitset import Bitset
 from .guide import Guide
 from .pam import PAM
@@ -216,6 +217,9 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
     # draw graphical reports
     if args.graphical_reports:
         compute_graphical_reports(reports, args.outdir, args.verbosity, args.debug)
+    # perform candidate guides analyses
+    if args.candidate_guides:
+        candidate_guides_analysis(args.candidate_guides, reports, pam, args.guidelen, args.outdir, args.verbosity, args.debug)
 
 
 def crisprhawk_converter(args: CrisprHawkConverterInputArgs) -> None:

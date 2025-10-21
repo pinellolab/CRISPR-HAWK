@@ -115,7 +115,7 @@ class Region:
         """
         return self._sequence[idx]
 
-    def contain(self, region_query: "Region") -> bool:
+    def contains(self, region_query: "Region") -> bool:
         """Check if the current region fully contains another region.
 
         Checks if the provided region is entirely contained within the current region.
@@ -285,7 +285,7 @@ class RegionList:
             raise TypeError(
                 f"Cannot extend {self.__class__.__name__} with objects of type {type(regions).__name__}"
             )
-        self._regions.extend(regions)  # extend regions list
+        self._regions.extend(regions.regions)  # extend regions list
 
     def append(self, region: Region) -> None:
         """Append a region to the list.
@@ -303,6 +303,10 @@ class RegionList:
                 f"Cannot append to {self.__class__.__name__} objects of type {type(region).__name__}"
             )
         self._regions.append(region)
+
+    @property
+    def regions(self) -> List[Region]:
+        return self._regions
 
 
 class RegionListIterator:
