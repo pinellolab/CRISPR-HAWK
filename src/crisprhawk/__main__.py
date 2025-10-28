@@ -375,7 +375,7 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "side-by-side comparison. If enabled, graphical reports will also be "
         "produced to visualize the impact of genetic variants on on-target "
         "efficiency, using CFD and Elevation scores when applicable. (default: "
-        "no candidate guides)"
+        "no candidate guides)",
     )
     optional_group.add_argument(
         "-t",

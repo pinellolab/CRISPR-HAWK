@@ -160,7 +160,7 @@ class CrisprHawkSearchInputArgs:
     def _validate_fasta_files(self) -> None:
         """Validates the existence and content of the input FASTA directory.
 
-        This function checks that the specified FASTA directory exists and contains 
+        This function checks that the specified FASTA directory exists and contains
         at least one FASTA file.
 
         Returns:
@@ -183,7 +183,7 @@ class CrisprHawkSearchInputArgs:
             None
         """
         if not self._args.fasta_idx:
-            return 
+            return
         if self._args.fasta_idx and (
             not os.path.exists(self._args.fasta) or not os.path.isfile(self._args.fasta)
         ):
@@ -199,7 +199,9 @@ class CrisprHawkSearchInputArgs:
         Returns:
             None
         """
-        if not os.path.exists(self._args.bedfile) or not os.path.isfile(self._args.bedfile):
+        if not os.path.exists(self._args.bedfile) or not os.path.isfile(
+            self._args.bedfile
+        ):
             self._parser.error(f"Cannot find input BED {self._args.bedfile}")
         if os.stat(self._args.bedfile).st_size <= 0:
             self._parser.error(f"{self._args.bdefile} is empty")
@@ -207,7 +209,7 @@ class CrisprHawkSearchInputArgs:
     def _validate_vcf_folder(self) -> None:
         """Validates the existence and content of the input VCF folder.
 
-        This function checks that the specified VCF directory exists and contains 
+        This function checks that the specified VCF directory exists and contains
         at least one VCF file.
 
         Returns:
@@ -247,30 +249,36 @@ class CrisprHawkSearchInputArgs:
     def _validate_output_folder(self) -> None:
         """Validates the existence of the output folder and creates it if necessary.
 
-        This function checks that the specified output directory exists, creates 
+        This function checks that the specified output directory exists, creates
         it if missing, and sets its absolute path.
 
         Returns:
             None
         """
-        if not os.path.exists(self._args.outdir) or not os.path.isdir(self._args.outdir):
-            if not os.path.isdir(os.path.dirname(self._args.outdir)):  # parent doesn't exist
+        if not os.path.exists(self._args.outdir) or not os.path.isdir(
+            self._args.outdir
+        ):
+            if not os.path.isdir(
+                os.path.dirname(self._args.outdir)
+            ):  # parent doesn't exist
                 self._parser.error(f"Cannot find output folder {self._args.outdir}")
-            os.makedirs(self._args.outdir)  # create output folder            
+            os.makedirs(self._args.outdir)  # create output folder
         self._outdir = os.path.abspath(self._args.outdir)
         assert os.path.isdir(self._outdir)
 
-    def _validate_annotation_colnames(self, colnames: List[str], annotation_files: List[str], annotation_type: str) -> None:
+    def _validate_annotation_colnames(
+        self, colnames: List[str], annotation_files: List[str], annotation_type: str
+    ) -> None:
         """Validates the consistency between annotation column names and annotation files.
 
-        This function checks that annotation column names are provided only when 
-        annotation files exist, and that the number of column names matches the 
+        This function checks that annotation column names are provided only when
+        annotation files exist, and that the number of column names matches the
         number of annotation files.
 
         Args:
             colnames (List[str]): List of annotation column names.
             annotation_files (List[str]): List of annotation file paths.
-            annotation_type (str): Type of annotation (e.g., "Annotation", "Gene 
+            annotation_type (str): Type of annotation (e.g., "Annotation", "Gene
                 Annotation").
 
         Returns:
@@ -280,7 +288,7 @@ class CrisprHawkSearchInputArgs:
             self._parser.error(
                 f"{annotation_type} column names provided, but no input {annotation_type.lower()} file"
             )
-        
+
         if colnames and len(colnames) != len(annotation_files):
             self._parser.error(
                 f"Mismatching number of {annotation_type.lower()} files and {annotation_type.lower()} column names"
@@ -289,7 +297,7 @@ class CrisprHawkSearchInputArgs:
     def _validate_annotations(self) -> None:
         """Validates the existence and content of input annotation BED files.
 
-        This function checks that all specified annotation files exist, are not empty, 
+        This function checks that all specified annotation files exist, are not empty,
         and validates their column names.
 
         Returns:
@@ -299,18 +307,21 @@ class CrisprHawkSearchInputArgs:
             return  # no input annotation file
         if any(not os.path.isfile(f) for f in self._args.annotations):
             annfiles = ", ".join(self._args.annotations)
-            self._parser.error(f"Cannot find the specified annotation BED files {annfiles}")
+            self._parser.error(
+                f"Cannot find the specified annotation BED files {annfiles}"
+            )
         if any(os.stat(f).st_size <= 0 for f in self._args.annotations):
             annfiles = ", ".join(self._args.annotations)
             self._parser.error(f"{annfiles} look empty")
         # validate annotation colnames
-        self._validate_annotation_colnames(self._args.annotation_colnames, self._args.annotations, "Annotation")
-
+        self._validate_annotation_colnames(
+            self._args.annotation_colnames, self._args.annotations, "Annotation"
+        )
 
     def _validate_gene_annotations(self) -> None:
         """Validates the existence and content of input gene annotation BED files.
 
-        This function checks that all specified gene annotation files exist, are 
+        This function checks that all specified gene annotation files exist, are
         not empty, and validates their column names.
 
         Returns:
@@ -324,12 +335,16 @@ class CrisprHawkSearchInputArgs:
         if any(os.stat(f).st_size <= 0 for f in self._args.gene_annotations):
             annfiles = ", ".join(self._args.gene_annotations)
             self._parser.error(f"{annfiles} look empty")
-        self._validate_annotation_colnames(self._args.gene_annotation_colnames, self._args.gene_annotations, "Gene annotation")
-        
+        self._validate_annotation_colnames(
+            self._args.gene_annotation_colnames,
+            self._args.gene_annotations,
+            "Gene annotation",
+        )
+
     def _validate_elevation_score(self) -> None:
         """Validates the input arguments for Elevation score computation.
 
-        This function checks that the guide and PAM lengths sum to 23 and that 
+        This function checks that the guide and PAM lengths sum to 23 and that
         the guide is downstream of the PAM.
 
         Returns:
@@ -347,7 +362,7 @@ class CrisprHawkSearchInputArgs:
     def _validate_offtargets_parameters(self) -> None:
         """Validates the input parameters for off-targets estimation.
 
-        This function checks that the CRISPRitz genome index is provided and that 
+        This function checks that the CRISPRitz genome index is provided and that
         the mismatch, DNA bulge, and RNA bulge arguments are non-negative.
 
         Returns:
@@ -370,25 +385,32 @@ class CrisprHawkSearchInputArgs:
     def _validate_offtargets_annotations(self) -> None:
         """Validates the consistency of off-targets annotation arguments.
 
-        This function checks that off-targets annotation is only requested when 
-        off-targets estimation is enabled, and validates the annotation column 
+        This function checks that off-targets annotation is only requested when
+        off-targets estimation is enabled, and validates the annotation column
         names and files.
 
         Returns:
             None
         """
-        if not self._args.estimate_offtargets and (self._args.offtargets_annotation_colnames or self._args.offtargets_annotations):
-            self._parser.error("Off-targets annotation requested, but missing off-targets estimation argument")
+        if not self._args.estimate_offtargets and (
+            self._args.offtargets_annotation_colnames
+            or self._args.offtargets_annotations
+        ):
+            self._parser.error(
+                "Off-targets annotation requested, but missing off-targets estimation argument"
+            )
         if self._args.estimate_offtargets:
-            self._validate_annotation_colnames(self._args.offtargets_annotation_colnames, self._args.offtargets_annotations, "Off-targets annotation")
-        
-
+            self._validate_annotation_colnames(
+                self._args.offtargets_annotation_colnames,
+                self._args.offtargets_annotations,
+                "Off-targets annotation",
+            )
 
     def _validate_offtargets_estimation(self) -> None:
         """Validates the input arguments and environment for off-targets estimation.
 
-        This function checks that off-targets estimation is supported on the current 
-        system, initializes the CRISPRitz configuration, and validates annotation 
+        This function checks that off-targets estimation is supported on the current
+        system, initializes the CRISPRitz configuration, and validates annotation
         and parameter arguments.
 
         Returns:
@@ -420,14 +442,16 @@ class CrisprHawkSearchInputArgs:
 
     def _validate_candidate_guides(self) -> None:
         if any(len(g.split(":")) != 2 for g in self._args.candidate_guides):
-            self._parser.error("Candidate guides appear to not follow <chr>:<position> format")
+            self._parser.error(
+                "Candidate guides appear to not follow <chr>:<position> format"
+            )
         if any(int(g.split(":")[1]) < 1 for g in self._args.candidate_guides):
             self._parser.error("Do candidate guides have negative position?")
-        
+
     def _validate_threads(self) -> None:
         """Validates the thread count argument for allowed range.
 
-        This function checks that the number of threads is non-negative and does 
+        This function checks that the number of threads is non-negative and does
         not exceed the number of available CPU cores.
 
         Returns:
@@ -441,7 +465,6 @@ class CrisprHawkSearchInputArgs:
             )
         self._threads = max_threads if self._args.threads == 0 else self._args.threads
 
-    
     def _validate_verbosity(self) -> None:
         """Validates the verbosity level argument for allowed values.
 
@@ -455,12 +478,11 @@ class CrisprHawkSearchInputArgs:
                 f"Forbidden verbosity level selected ({self._args.verbosity})"
             )
 
-
-    def _check_consistency(self): 
+    def _check_consistency(self):
         """Checks the consistency and validity of all parsed input arguments.
 
-        This function runs all validation routines for input files, parameters, 
-        and options, ensuring that the command-line arguments are correct and 
+        This function runs all validation routines for input files, parameters,
+        and options, ensuring that the command-line arguments are correct and
         compatible for CRISPR-HAWK analysis.
 
         Returns:
@@ -476,11 +498,10 @@ class CrisprHawkSearchInputArgs:
         self._validate_annotations()  # check functional annotation bed
         self._validate_gene_annotations()  # check gene annotation bed
         self._validate_elevation_score()  # check elevation score
-        self._validate_offtargets_estimation() # check off-targets estimation
+        self._validate_offtargets_estimation()  # check off-targets estimation
         self._validate_candidate_guides()  # check candidate guides
         self._validate_threads()  # check threads number
         self._validate_verbosity()  # check verbosity
-        
 
     @property
     def fastas(self) -> List[str]:
@@ -569,11 +590,11 @@ class CrisprHawkSearchInputArgs:
     @property
     def brna(self) -> int:
         return self._args.brna
-    
+
     @property
     def offtargets_annotations(self) -> List[str]:
         return self._args.offtargets_annotations
-    
+
     @property
     def offtargets_annotation_colnames(self) -> List[str]:
         return self._args.offtargets_annotation_colnames
@@ -624,7 +645,7 @@ class CrisprHawkConverterInputArgs:
     def _validate_gnomad_vcf_folder(self) -> None:
         """Validates the existence and content of the input gnomAD VCF folder.
 
-        This function checks that the specified gnomAD VCF directory exists and 
+        This function checks that the specified gnomAD VCF directory exists and
         contains at least one VCF file.
 
         Returns:
@@ -643,23 +664,27 @@ class CrisprHawkConverterInputArgs:
     def _validate_output_folder(self) -> None:
         """Validates the existence of the output folder and creates it if necessary.
 
-        This function checks that the specified output directory exists, creates 
+        This function checks that the specified output directory exists, creates
         it if missing, and sets its absolute path.
 
         Returns:
             None
         """
-        if not os.path.exists(self._args.outdir) or not os.path.isdir(self._args.outdir):
-            if not os.path.isdir(os.path.dirname(self._args.outdir)):  # parent doesn't exist
+        if not os.path.exists(self._args.outdir) or not os.path.isdir(
+            self._args.outdir
+        ):
+            if not os.path.isdir(
+                os.path.dirname(self._args.outdir)
+            ):  # parent doesn't exist
                 self._parser.error(f"Cannot find output folder {self._args.outdir}")
-            os.makedirs(self._args.outdir)  # create output folder            
+            os.makedirs(self._args.outdir)  # create output folder
         self._outdir = os.path.abspath(self._args.outdir)
         assert os.path.isdir(self._outdir)
 
     def _validate_threads(self) -> None:
         """Validates the thread count argument for allowed range.
 
-        This function checks that the number of threads is non-negative and does 
+        This function checks that the number of threads is non-negative and does
         not exceed the number of available CPU cores.
 
         Returns:
@@ -687,11 +712,11 @@ class CrisprHawkConverterInputArgs:
             )
 
     def _check_consistency(self) -> None:
-        """Checks the consistency and validity of all parsed input arguments for 
+        """Checks the consistency and validity of all parsed input arguments for
         gnomAD VCF conversion.
 
-        This function runs all validation routines for gnomAD VCF folder, output 
-        folder, thread count, and verbosity, ensuring that the command-line arguments 
+        This function runs all validation routines for gnomAD VCF folder, output
+        folder, thread count, and verbosity, ensuring that the command-line arguments
         are correct and compatible for CRISPR-HAWK VCF conversion analysis.
 
         Returns:
@@ -764,7 +789,7 @@ class CrisprHawkPrepareDataInputArgs:
     def _validate_report(self) -> None:
         """Validates the existence of the CRISPR-HAWK report file.
 
-        This function checks that the specified report file exists before proceeding 
+        This function checks that the specified report file exists before proceeding
         with data preparation.
 
         Returns:
@@ -776,25 +801,29 @@ class CrisprHawkPrepareDataInputArgs:
     def _validate_output_folder(self) -> None:
         """Validates the existence of the output folder and creates it if necessary.
 
-        This function checks that the specified output directory exists, creates 
+        This function checks that the specified output directory exists, creates
         it if missing, and sets its absolute path.
 
         Returns:
             None
         """
-        if not os.path.exists(self._args.outdir) or not os.path.isdir(self._args.outdir):
-            if not os.path.isdir(os.path.dirname(self._args.outdir)):  # parent doesn't exist
+        if not os.path.exists(self._args.outdir) or not os.path.isdir(
+            self._args.outdir
+        ):
+            if not os.path.isdir(
+                os.path.dirname(self._args.outdir)
+            ):  # parent doesn't exist
                 self._parser.error(f"Cannot find output folder {self._args.outdir}")
-            os.makedirs(self._args.outdir)  # create output folder            
+            os.makedirs(self._args.outdir)  # create output folder
         self._outdir = os.path.abspath(self._args.outdir)
         assert os.path.isdir(self._outdir)
 
     def _check_consistency(self) -> None:
-        """Checks the consistency and validity of all parsed input arguments for 
+        """Checks the consistency and validity of all parsed input arguments for
         CRISPRme data preparation.
 
-        This function runs all validation routines for the CRISPR-HAWK report and 
-        output folder, ensuring that the command-line arguments are correct and 
+        This function runs all validation routines for the CRISPR-HAWK report and
+        output folder, ensuring that the command-line arguments are correct and
         compatible for CRISPRme data preparation.
 
         Returns:
@@ -849,7 +878,7 @@ class CrisprHawkCrispritzConfigInputArgs:
     def _validate_targets_dir(self) -> None:
         """Validates the existence of the CRISPRitz targets directory.
 
-        This function checks that the specified targets directory exists before 
+        This function checks that the specified targets directory exists before
         proceeding with configuration.
 
         Returns:
@@ -857,7 +886,9 @@ class CrisprHawkCrispritzConfigInputArgs:
         """
         if not self._args.targets_dir:
             return  # no targets folder specified, use default
-        if not os.path.exists(self._args.targets_dir) and not os.path.isdir(self._args.targets_dir):
+        if not os.path.exists(self._args.targets_dir) and not os.path.isdir(
+            self._args.targets_dir
+        ):
             self._parser.error(
                 f"Cannot find targets directory {self._args.targets_dir}"
             )
@@ -865,7 +896,7 @@ class CrisprHawkCrispritzConfigInputArgs:
     def _validate_show_option(self) -> None:
         """Validates the --show option for CRISPRitz configuration argument parsing.
 
-        This function checks that the --show option is not used in combination with 
+        This function checks that the --show option is not used in combination with
         other input arguments.
 
         Returns:
@@ -882,10 +913,10 @@ class CrisprHawkCrispritzConfigInputArgs:
             )
 
     def _validate_validate_option(self) -> None:
-        """Validates the --validate option for CRISPRitz configuration argument 
+        """Validates the --validate option for CRISPRitz configuration argument
         parsing.
 
-        This function checks that the --validate option is not used in combination 
+        This function checks that the --validate option is not used in combination
         with other input arguments.
 
         Returns:
@@ -904,7 +935,7 @@ class CrisprHawkCrispritzConfigInputArgs:
     def _validate_reset_option(self) -> None:
         """Validates the --reset option for CRISPRitz configuration argument parsing.
 
-        This function checks that the --reset option is not used in combination with 
+        This function checks that the --reset option is not used in combination with
         other input arguments.
 
         Returns:
@@ -921,11 +952,11 @@ class CrisprHawkCrispritzConfigInputArgs:
             )
 
     def _check_consistency(self) -> None:
-        """Checks the consistency and validity of all parsed input arguments for 
+        """Checks the consistency and validity of all parsed input arguments for
         CRISPRitz configuration.
 
-        This function runs all validation routines for the CRISPRitz targets directory 
-        and configuration options, ensuring that the command-line arguments are correct 
+        This function runs all validation routines for the CRISPRitz targets directory
+        and configuration options, ensuring that the command-line arguments are correct
         and compatible for CRISPRitz configuration management.
 
         Returns:
@@ -935,7 +966,6 @@ class CrisprHawkCrispritzConfigInputArgs:
         self._validate_show_option()  # check show option
         self._validate_reset_option()  # check reset option
         self._validate_validate_option()  # check validate option
-        
 
     @property
     def env_name(self) -> str:

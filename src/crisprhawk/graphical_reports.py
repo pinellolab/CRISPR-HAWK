@@ -39,7 +39,7 @@ SCORES = [
     "score_cfdon",
     "score_elevationon",
 ]
-FIGURE_SIZE = (25, 15)
+FIGURE_SIZE = (25, 20)
 DPI = 300
 BASE_CMAPS = [
     "Purples",

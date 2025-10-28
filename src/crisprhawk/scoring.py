@@ -1,15 +1,21 @@
 """
-This module provides functions for scoring CRISPR guide RNAs using various efficiency 
+This module provides functions for scoring CRISPR guide RNAs using various efficiency
 and specificity metrics.
 
-It includes methods to compute Azimuth, RS3, DeepCpf1, Elevation, CFDon, and out-of-frame 
-scores for guide RNAs. 
+It includes methods to compute Azimuth, RS3, DeepCpf1, Elevation, CFDon, and out-of-frame
+scores for guide RNAs.
 
-The module is designed to annotate and enrich guide RNA data with these scores for 
+The module is designed to annotate and enrich guide RNA data with these scores for
 downstream genome editing analysis.
 """
 
-from .crisprhawk_error import CrisprHawkAzimuthScoreError, CrisprHawkRs3ScoreError, CrisprHawkCfdScoreError, CrisprHawkDeepCpf1ScoreError, CrisprHawkOOFrameScoreError
+from .crisprhawk_error import (
+    CrisprHawkAzimuthScoreError,
+    CrisprHawkRs3ScoreError,
+    CrisprHawkCfdScoreError,
+    CrisprHawkDeepCpf1ScoreError,
+    CrisprHawkOOFrameScoreError,
+)
 from .exception_handlers import exception_handler
 from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, ooframe_score
 from .utils import flatten_list, print_verbosity, VERBOSITYLVL
@@ -24,6 +30,7 @@ from time import time
 import numpy as np
 
 import os
+
 
 def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Computes Azimuth scores for a list of guide RNAs.
@@ -69,6 +76,7 @@ def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guid
     )
     return guides
 
+
 def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Computes RS3 scores for a list of guide RNAs.
 
@@ -108,6 +116,7 @@ def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
         f"RS3 scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
     return guides
+
 
 def group_guides_position(
     guides: List[Guide], debug: bool
@@ -195,6 +204,7 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
     )
     return guides
 
+
 def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Computes DeepCpf1 scores for a list of guide RNAs.
 
@@ -235,6 +245,7 @@ def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Gui
     )
     return guides
 
+
 def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Computes Elevation-on scores for a list of guide RNAs.
 
@@ -259,6 +270,7 @@ def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[
         VERBOSITYLVL[3],
     )
     return guides
+
 
 def outofframe_score(
     guides: List[Guide], guidelen: int, right: bool, verbosity: int, debug: bool
@@ -303,16 +315,23 @@ def outofframe_score(
     return guides
 
 
-
-def scoring_guides(guides: Dict[Region, List[Guide]], pam: PAM, compute_elevation: bool, guidelen: int, right: bool, verbosity: int, debug: bool) -> Dict[Region, List[Guide]]:
+def scoring_guides(
+    guides: Dict[Region, List[Guide]],
+    pam: PAM,
+    compute_elevation: bool,
+    guidelen: int,
+    right: bool,
+    verbosity: int,
+    debug: bool,
+) -> Dict[Region, List[Guide]]:
     """Scores CRISPR guides using multiple efficiency and specificity metrics.
 
-    This function computes Azimuth, RS3, DeepCpf1, Elevation, and out-of-frame 
+    This function computes Azimuth, RS3, DeepCpf1, Elevation, and out-of-frame
     scores for each guide, updating the guide objects with the calculated values
     for downstream analysis.
 
     Args:
-        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists 
+        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists
             of Guide objects.
         pam (PAM): PAM object specifying the PAM sequence and Cas system.
         compute_elevation (bool): Whether to compute Elevation scores.
@@ -323,7 +342,7 @@ def scoring_guides(guides: Dict[Region, List[Guide]], pam: PAM, compute_elevatio
         debug (bool): Flag to enable debug mode for error handling.
 
     Returns:
-        Dict[Region, List[Guide]]: The dictionary of regions with scored Guide 
+        Dict[Region, List[Guide]]: The dictionary of regions with scored Guide
             objects.
     """
     # score guides using azimuth, rs3, deepcpf1, elevation, and out-of-frame scores
@@ -332,7 +351,7 @@ def scoring_guides(guides: Dict[Region, List[Guide]], pam: PAM, compute_elevatio
     for region, guides_list in guides.items():
         if pam.cas_system in [SPCAS9, XCAS9]:  # cas9 system pam
             # score each guide with azimuth
-            guides_list = azimuth_score(guides_list, verbosity, debug) 
+            guides_list = azimuth_score(guides_list, verbosity, debug)
             # score each guide with rs3
             guides_list = rs3_score(guides_list, verbosity, debug)
             # score each guide with CFDon
@@ -345,9 +364,7 @@ def scoring_guides(guides: Dict[Region, List[Guide]], pam: PAM, compute_elevatio
         # compute out-of-frame score
         guides_list = outofframe_score(guides_list, guidelen, right, verbosity, debug)
         guides[region] = guides_list  # store scored guides
-    print_verbosity(f"Scoring completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2])
+    print_verbosity(
+        f"Scoring completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
+    )
     return guides
-
-
-
-

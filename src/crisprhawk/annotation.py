@@ -1,9 +1,9 @@
-"""Provides functions for annotating CRISPR guides with variant, functional, gene, 
+"""Provides functions for annotating CRISPR guides with variant, functional, gene,
 and GC content information.
 
-This module includes utilities for processing guide sequences, validating and 
-annotating variants, assigning allele frequencies, adding functional and gene 
-annotations from BED files, and computing GC content. 
+This module includes utilities for processing guide sequences, validating and
+annotating variants, assigning allele frequencies, adding functional and gene
+annotations from BED files, and computing GC content.
 
 It supports comprehensive annotation of guides for downstream CRISPR analysis workflows.
 """
@@ -357,8 +357,6 @@ def gc_content(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     return guides
 
 
-
-
 def annotate_guides(
     guides: Dict[Region, List[Guide]],
     annotations: List[str],
@@ -366,25 +364,25 @@ def annotate_guides(
     verbosity: int,
     debug: bool,
 ) -> Dict[Region, List[Guide]]:
-    """Annotates CRISPR guides with variant, allele frequency, functional, gene, 
+    """Annotates CRISPR guides with variant, allele frequency, functional, gene,
     and GC content information.
 
-    This function processes each guide in the input dictionary, applying variant 
-    annotation, allele frequency assignment, reverse complement adjustment, GC 
+    This function processes each guide in the input dictionary, applying variant
+    annotation, allele frequency assignment, reverse complement adjustment, GC
     content calculation, and functional/gene annotations from BED files.
 
     Args:
-        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists 
+        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists
             of Guide objects.
-        annotations (List[str]): List of BED annotation file paths for functional 
+        annotations (List[str]): List of BED annotation file paths for functional
             annotation.
-        gene_annotations (List[str]): List of BED annotation file paths for gene 
+        gene_annotations (List[str]): List of BED annotation file paths for gene
             annotation.
         verbosity (int): Verbosity level for logging.
         debug (bool): Flag to enable debug mode for error handling.
 
     Returns:
-        Dict[Region, List[Guide]]: Dictionary of regions to lists of annotated 
+        Dict[Region, List[Guide]]: Dictionary of regions to lists of annotated
             Guide objects.
     """
     # annotate guides with variants, functional and gene data and adjust positions

@@ -93,8 +93,20 @@ class Coordinate:
         """
         # retrieve original start and stop
         return f"{self._contig}:{self._start}-{self._stop}"
-    
+
     def contains(self, query: object) -> bool:
+        """Check if the coordinate contains another coordinate.
+
+        Determines whether the provided coordinate is fully contained within the
+        current coordinate interval.
+
+        Args:
+            query: The coordinate to check for containment.
+
+        Returns:
+            True if the query coordinate is contained within this coordinate,
+                False otherwise.
+        """
         if not isinstance(query, Coordinate):
             return NotImplemented
         return (
