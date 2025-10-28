@@ -19,6 +19,7 @@ from time import time
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import seaborn as sns
 import pandas as pd
 import numpy as np
 
@@ -551,28 +552,224 @@ def _draw_dotplot(
 
 
 def candidate_guides_dotplot(
+    dotplot_data: Dict[str, Tuple[List[float], List[int]]], outdir: str
+) -> None:
+    _draw_dotplot(dotplot_data, outdir)  # draw variant effect dotplot
+
+
+def _prepare_scatter_data(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["n_samples"] = df.apply(lambda x: len(set(x[REPORTCOLS[15]].split(","))), axis=1)
+    return df
+
+
+def _extract_variant_labels(df: pd.DataFrame) -> List[str]:
+    return [
+        "REF" if str(cname) == "nan" else cname for cname in df[REPORTCOLS[16]].tolist()
+    ]
+
+
+def _create_diagonal_gradient() -> Tuple[np.ndarray, LinearSegmentedColormap]:
+    x = np.linspace(-0.1, 1.1, 256)
+    y = np.linspace(-0.1, 1.1, 256)
+    X, Y = np.meshgrid(x, y)
+    # diagonal distance represents combined penalty (on-target + off-target)
+    diagonal_distance = (X + Y) / 2.2
+    # create gradient colormap from dark red to white
+    colors = ["#B30000", "#FF4444", "#FFAAAA", "white"]
+    cmap = LinearSegmentedColormap.from_list("custom_gradient", colors, N=256)
+    return diagonal_distance, cmap
+
+
+def _draw_background_scatter(
+    diagonal_distance: np.ndarray, cmap: LinearSegmentedColormap
+) -> ScalarMappable:
+    return plt.imshow(
+        diagonal_distance,
+        extent=[-0.05, 1.05, -0.05, 1.05],
+        origin="lower",
+        cmap=cmap,
+        aspect="auto",
+        alpha=0.3,
+        zorder=0,
+    )
+
+
+def _create_variant_legend_handle(
+    df: pd.DataFrame, row: pd.Series, color: Tuple
+) -> Line2D:
+    # use diamond if this variant has any single-sample entries
+    has_single_sample = (
+        df[(df[REPORTCOLS[16]] == row[REPORTCOLS[16]]) & (df["n_samples"] == 1)].shape[
+            0
+        ]
+        > 0
+    )
+    variant_marker = "D" if has_single_sample else "o"
+    label = "Reference" if row["variant_id"] == "REF" else row["variant_id"]
+    return Line2D(
+        [0],
+        [0],
+        marker=variant_marker,
+        color="w",
+        markerfacecolor=color,
+        markeredgecolor="white",
+        markersize=8,
+        linewidth=0,
+        label=label,
+        alpha=0.8,
+    )
+
+
+def _plot_scatter_points(
+    df: pd.DataFrame, colorlab: Dict[str, Tuple]
+) -> Dict[str, Line2D]:
+    variant_handles = {}
+    for _, row in df.iterrows():
+        marker = (
+            "D" if row["n_samples"] == 1 else "o"
+        )  # diamond for single sample, circle otherwise
+        # grey for reference, variant-specific otherwise
+        color = (
+            "grey"
+            if str(row[REPORTCOLS[16]]) == "nan"
+            else colorlab[row[REPORTCOLS[16]]]
+        )
+        size = 150 * np.sqrt(
+            row["n_samples"]
+        )  # scale size by square root of sample count
+        plt.scatter(
+            row[REPORTCOLS[21]],  # off-target potential (x-axis)
+            row[REPORTCOLS[10]],  # variant effect on-target (y-axis)
+            color=color,
+            s=size,
+            alpha=0.6,
+            marker=marker,  # type: ignore
+            edgecolors="white",
+            linewidth=0.5,
+            zorder=2,
+        )
+        # Create legend handle for this variant (if not already created)
+        if row[REPORTCOLS[16]] not in variant_handles:
+            variant_handles[row[REPORTCOLS[16]]] = _create_variant_legend_handle(df, row, color)  # type: ignore
+    return variant_handles
+
+
+def _create_sample_size_legend(sample_counts: List[int]) -> List[Line2D]:
+    legend_labels = ["1 sample", "2-20 samples", ">20 samples"]
+    sample_counts = [1, 10, 35]
+    markers = ["D", "o", "o"]
+    # scale sizes consistently with actual plot points
+    scaled_sizes = [150 * np.sqrt(n) for n in sample_counts]
+    return [
+        Line2D(
+            [0],
+            [0],
+            marker=marker,
+            color="w",
+            label=label,
+            markerfacecolor="gray",
+            markersize=np.sqrt(size),
+            alpha=0.6,
+        )
+        for label, size, marker in zip(legend_labels, scaled_sizes, markers)
+    ]
+
+
+def _configure_scatter_axes(cg: CandidateGuide) -> None:
+    plt.title(
+        f"Variant Effect on On-Targets vs Off-Target Potential in {cg} and its Alternatives",
+        fontsize=13,
+        pad=20,
+    )
+    plt.xlabel("Off-Target Potential (CFD)", fontsize=10)
+    plt.ylabel("Variant Effect on On-Targets (CFD)", fontsize=10)
+    # set axis limits to exactly 1.05
+    plt.xlim(-0.05, 1.05)
+    plt.ylim(-0.05, 1.05)
+    # configure ticks and grid
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.grid(True, alpha=0.3, linestyle="--", zorder=1, color="black")
+    plt.gca().set_axisbelow(True)
+    plt.gca().set_aspect("equal", adjustable="box")
+    sns.despine()  # remove top and right spines
+
+
+def _add_scatter_colorbar(im: ScalarMappable, fig: Figure, ax: Axes) -> None:
+    cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.08, shrink=0.5)
+    cbar.set_label("Guide Penalty\n(Low → High)", rotation=270, labelpad=25, fontsize=8)
+    cbar.set_ticks([])
+
+
+def _add_scatter_legends(
+    variant_handles: Dict[str, Line2D], size_handles: List[Line2D]
+) -> None:
+    l1 = plt.legend(
+        handles=list(variant_handles.values()),
+        fontsize=8,
+        title_fontsize=9,
+        loc="lower right",
+        frameon=False,
+        bbox_to_anchor=(1.2, 0),
+    )  # add variant legend (right side)
+    plt.gca().add_artist(l1)
+    plt.legend(
+        handles=size_handles,
+        frameon=False,
+        labelspacing=1.2,
+        ncol=len(size_handles),
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.25),
+    )  # add sample size legend (bottom center)
+
+
+def _save_scatter_figure(cg: CandidateGuide, outdir: str) -> None:
+    cg_name = str(cg).replace(":", "_")
+    filename = f"candidate_guide_{cg_name}_on_off.png"
+    output_path = os.path.join(outdir, filename)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, format="png", bbox_inches="tight")
+    plt.close()
+
+
+def _draw_scatter(df: pd.DataFrame, cg: CandidateGuide, outdir: str) -> None:
+    df = _prepare_scatter_data(df)
+    labels = _extract_variant_labels(df)
+    colorlab = _color_labels_dotplot(labels)
+    f, ax = plt.subplots(1, 1, figsize=(8, 8))  # set up figure
+    # create and draw background gradient
+    diagonal_distance, cmap = _create_diagonal_gradient()
+    im = _draw_background_scatter(diagonal_distance, cmap)
+    variant_handles = _plot_scatter_points(
+        df, colorlab
+    )  # plot data points and get variant handles
+    # configure axes and visual elements
+    _configure_scatter_axes(cg)
+    _add_scatter_colorbar(im, f, ax)
+    # add legends
+    size_handles = _create_sample_size_legend(df["n_samples"].tolist())
+    _add_scatter_legends(variant_handles, size_handles)
+    # save figure
+    _save_scatter_figure(cg, outdir)
+
+
+def candidate_guides_scatter(
     cg_reports: Dict[CandidateGuide, str], outdir: str, debug: bool
 ) -> None:
-    """Generates and saves a dot plot visualizing variant effects on candidate
-    guides.
+    for cg, report in cg_reports.items():
+        _draw_scatter(pd.read_csv(report, sep="\t"), cg, outdir)
 
-    This function creates a graphical report showing the distribution of variant
-    effects for each candidate guide.
 
-    Args:
-        cg_reports: Dictionary mapping CandidateGuide objects to their subset
-            report filenames.
-        outdir: Output directory for saving the figure.
-        debug: Flag to enable debug mode.
-
-    Returns:
-        None
-    """
+def draw_candidate_guides_plots(
+    cg_reports: Dict[CandidateGuide, str], outdir: str, debug: bool
+) -> None:
+    dotplot_data = _prepare_data_dotplot(cg_reports, debug)  # prepare data for plotting
     outdir_gr = os.path.join(outdir, "figures")  # graphical report folder
     if not os.path.isdir(outdir_gr):  # create figures folder
         os.makedirs(outdir_gr)
-    dotplot_data = _prepare_data_dotplot(cg_reports, debug)  # prepare data fro dotplot
-    _draw_dotplot(dotplot_data, outdir_gr)  # draw variant effect dotplot
+    candidate_guides_dotplot(dotplot_data, outdir_gr)  # candidate guides dotplot
+    candidate_guides_scatter(cg_reports, outdir_gr, debug)  # candidate guide scatter
 
 
 def candidate_guides_analysis(
@@ -595,7 +792,7 @@ def candidate_guides_analysis(
         candidate_guides, region_reports, pam, guidelen, outdir, debug
     )
     if pam.cas_system in [SPCAS9, XCAS9]:
-        candidate_guides_dotplot(cg_reports, outdir, debug)
+        draw_candidate_guides_plots(cg_reports, outdir, debug)
     print_verbosity(
         f"Candidate guides analysis completed in {time() - start:.2f}s",
         verbosity,
