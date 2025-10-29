@@ -16,6 +16,7 @@ from .crisprhawk_error import (
     CrisprHawkDeepCpf1ScoreError,
     CrisprHawkOOFrameScoreError,
 )
+from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .exception_handlers import exception_handler
 from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, ooframe_score
 from .utils import flatten_list, print_verbosity, VERBOSITYLVL
@@ -316,55 +317,45 @@ def outofframe_score(
 
 
 def scoring_guides(
-    guides: Dict[Region, List[Guide]],
-    pam: PAM,
-    compute_elevation: bool,
-    guidelen: int,
-    right: bool,
-    verbosity: int,
-    debug: bool,
+    guides: Dict[Region, List[Guide]], pam: PAM, args: CrisprHawkSearchInputArgs
 ) -> Dict[Region, List[Guide]]:
-    """Scores CRISPR guides using multiple efficiency and specificity metrics.
+    """Scores CRISPR guides using efficiency and specificity metrics.
 
-    This function computes Azimuth, RS3, DeepCpf1, Elevation, and out-of-frame
-    scores for each guide, updating the guide objects with the calculated values
-    for downstream analysis.
+    This function computes Azimuth, RS3, DeepCpf1, Elevation, CFDon, and out-of-frame
+    scores for each guide, updating the guide objects with the computed values.
 
     Args:
-        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists
-            of Guide objects.
-        pam (PAM): PAM object specifying the PAM sequence and Cas system.
-        compute_elevation (bool): Whether to compute Elevation scores.
-        guidelen (int): Length of the guide sequence.
-        right (bool): Whether the guide is extracted downstream (right side) of
-            the PAM.
-        verbosity (int): Verbosity level for logging.
-        debug (bool): Flag to enable debug mode for error handling.
+        guides: Dictionary mapping Region objects to lists of Guide objects.
+        pam: PAM object specifying the protospacer adjacent motif and Cas system.
+        args: CrisprHawkSearchInputArgs object containing scoring parameters.
 
     Returns:
-        Dict[Region, List[Guide]]: The dictionary of regions with scored Guide
-            objects.
+        Dictionary mapping Region objects to lists of scored Guide objects.
     """
     # score guides using azimuth, rs3, deepcpf1, elevation, and out-of-frame scores
-    print_verbosity("Scoring guides", verbosity, VERBOSITYLVL[1])
+    print_verbosity("Scoring guides", args.verbosity, VERBOSITYLVL[1])
     start = time()  # scoring start time
     for region, guides_list in guides.items():
         if pam.cas_system in [SPCAS9, XCAS9]:  # cas9 system pam
             # score each guide with azimuth
-            guides_list = azimuth_score(guides_list, verbosity, debug)
+            guides_list = azimuth_score(guides_list, args.verbosity, args.debug)
             # score each guide with rs3
-            guides_list = rs3_score(guides_list, verbosity, debug)
+            guides_list = rs3_score(guides_list, args.verbosity, args.debug)
             # score each guide with CFDon
-            guides_list = cfdon_score(guides_list, verbosity, debug)
+            guides_list = cfdon_score(guides_list, args.verbosity, args.debug)
         if pam.cas_system == CPF1:  # cpf1 system pam
-            guides_list = deepcpf1_score(guides_list, verbosity, debug)
-        if compute_elevation and (guidelen + len(pam) == 23 and not right):
+            guides_list = deepcpf1_score(guides_list, args.verbosity, args.debug)
+        if args.compute_elevation and (
+            args.guidelen + len(pam) == 23 and not args.right
+        ):
             # elevation requires 23 bp long sequences, where last 3 bp are pam
-            guides_list = elevationon_score(guides_list, verbosity, debug)
+            guides_list = elevationon_score(guides_list, args.verbosity, args.debug)
         # compute out-of-frame score
-        guides_list = outofframe_score(guides_list, guidelen, right, verbosity, debug)
+        guides_list = outofframe_score(
+            guides_list, args.guidelen, args.right, args.verbosity, args.debug
+        )
         guides[region] = guides_list  # store scored guides
     print_verbosity(
-        f"Scoring completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
+        f"Scoring completed in {time() - start:.2f}s", args.verbosity, VERBOSITYLVL[2]
     )
     return guides

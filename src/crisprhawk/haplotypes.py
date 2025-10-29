@@ -6,6 +6,7 @@ It supports both phased and unphased variant data, enabling the creation, manipu
 and output of haplotype information for downstream analysis.
 """
 
+from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .crisprhawk_error import CrisprHawkHaplotypeError
 from .exception_handlers import exception_handler
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL
@@ -873,48 +874,44 @@ def haplotypes_table(
 
 
 def reconstruct_haplotypes(
-    vcflist: List[str],
-    regions: RegionList,
-    store_table: bool,
-    outdir: str,
-    verbosity: int,
-    debug: bool,
+    regions: RegionList, args: CrisprHawkSearchInputArgs
 ) -> Tuple[Dict[Region, List[Haplotype]], bool, bool]:
-    """
-    Reconstructs haplotypes for specified genomic regions using provided VCF files.
-    Returns a dictionary of haplotypes for each region, a flag indicating if variants
-    are present, and a flag indicating if the VCFs are phased.
+    """Reconstructs haplotypes for each genomic region using VCF data and input
+    arguments.
+
+    This function initializes reference haplotypes, adds variants from VCF files
+    if provided, generates unique haplotype IDs, and optionally writes haplotype
+    tables to disk.
 
     Args:
-        vcflist (List[str]): List of VCF file paths.
-        regions (RegionList): List of regions for which to reconstruct haplotypes.
-        store_table (bool): Whether to write haplotype tables to output files.
-        outdir (str): Output directory for haplotype tables.
-        verbosity (int): Verbosity level for logging.
-        debug (bool): Flag to enable debug mode.
+        regions: List of Region objects for which to reconstruct haplotypes.
+        args: CrisprHawkSearchInputArgs object containing haplotype reconstruction
+            parameters.
 
     Returns:
-        Tuple[Dict[Region, List[Haplotype]], bool, bool]:
-            - Dictionary mapping regions to lists of haplotype objects.
+        Tuple containing:
+            - Dictionary mapping Region objects to lists of Haplotype objects.
             - Boolean indicating if variants are present.
             - Boolean indicating if the VCFs are phased.
     """
     # read input vcf files and fetch variants in each region
-    print_verbosity("Reconstructing haplotypes", verbosity, VERBOSITYLVL[1])
+    print_verbosity("Reconstructing haplotypes", args.verbosity, VERBOSITYLVL[1])
     start = time()  # track haplotypes reconstruction time
     # initialize haplotypes list with reference sequence haplotype
-    haplotypes = initialize_haplotypes(regions, debug)
+    haplotypes = initialize_haplotypes(regions, args.debug)
     phased, variants_present = False, False  # default values
-    if vcflist:  # add variants to regions and solve haplotypes
+    if args.vcfs:  # add variants to regions and solve haplotypes
         variants_present = True  # variants added
         haplotypes, phased = add_variants(
-            vcflist, regions, haplotypes, verbosity, debug
+            args.vcfs, regions, haplotypes, args.verbosity, args.debug
         )
     # generate random haplotype IDs
     haplotypes = generate_haplotype_ids(haplotypes)
     print_verbosity(
-        f"Haplotypes reconstructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
+        f"Haplotypes reconstructed in {time() - start:.2f}s",
+        args.verbosity,
+        VERBOSITYLVL[2],
     )
-    if store_table:  # write haplotypes table
-        haplotypes_table(haplotypes, outdir, verbosity, debug)
+    if args.haplotype_table:  # write haplotypes table
+        haplotypes_table(haplotypes, args.outdir, args.verbosity, args.debug)
     return haplotypes, variants_present, phased

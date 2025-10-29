@@ -65,33 +65,33 @@ def encode_pam(pamseq: str, right: bool, verbosity: int, debug: bool) -> PAM:
 
 
 def encode_haplotypes(
-    haplotypes: Dict[Region, List[Haplotype]], verbosity: int, debug: bool
+    haplotypes: Dict[Region, List[Haplotype]], args: CrisprHawkSearchInputArgs
 ) -> Dict[Region, List[List[Bitset]]]:
-    """Encodes haplotype sequences into lists of Bitset objects for efficient
-    guide search.
+    """Encodes haplotype sequences as bitsets for efficient guide search.
 
-    This function processes each haplotype sequence for all regions and encodes
-    them into bit representations.
+    This function converts each haplotype sequence into a bit-encoded
+    representation for all regions, enabling efficient downstream guide search
+    operations.
 
     Args:
-        haplotypes: A dictionary mapping regions to lists of Haplotype objects.
-        verbosity: The verbosity level for logging.
-        debug: Whether to enable debug mode for error handling.
+        haplotypes: Dictionary mapping Region objects to lists of Haplotype objects.
+        args: CrisprHawkSearchInputArgs object containing encoding parameters.
 
     Returns:
-        Dict[Region, List[List[Bitset]]]: A dictionary mapping regions to lists
-            of encoded haplotype bitsets.
+        Dictionary mapping Region objects to lists of bit-encoded haplotypes.
     """
     # encode haplotypes in bit for efficient guide search
-    print_verbosity("Encoding haplotypes in bits", verbosity, VERBOSITYLVL[1])
+    print_verbosity("Encoding haplotypes in bits", args.verbosity, VERBOSITYLVL[1])
     start = time()  # encoding start time
     haplotypes_bits = {
-        region: [encode(hap.sequence.sequence, verbosity, debug) for hap in haps]
+        region: [
+            encode(hap.sequence.sequence, args.verbosity, args.debug) for hap in haps
+        ]
         for region, haps in haplotypes.items()
     }  # encode input haplotypes as sequences of bits
     print_verbosity(
         f"Haplotype encoding completed in {time() - start:.2f}s",
-        verbosity,
+        args.verbosity,
         VERBOSITYLVL[2],
     )
     return haplotypes_bits
@@ -101,35 +101,26 @@ def guides_search(
     pam: PAM,
     haplotypes: Dict[Region, List[Haplotype]],
     haplotypes_bits: Dict[Region, List[List[Bitset]]],
-    guidelen: int,
-    right: bool,
     variants_present: bool,
     phased: bool,
-    verbosity: int,
-    debug: bool,
+    args: CrisprHawkSearchInputArgs,
 ) -> Dict[Region, List[Guide]]:
-    """Searches for guide candidates on encoded haplotypes for each genomic region.
+    """Annotates CRISPR guides with variant, functional, gene, and GC content
+    information.
 
-    This function performs guide search using the provided PAM, haplotypes, and
-    bit-encoded haplotypes, returning a dictionary of guides per region.
+    This function processes each region's guides, adding variant, allele frequency,
+    reverse complement, GC content, and optional functional and gene annotations,
+    returning the updated guides.
 
     Args:
-        pam: The PAM object used for guide search.
-        haplotypes: A dictionary mapping regions to lists of Haplotype objects.
-        haplotypes_bits: A dictionary mapping regions to lists of bit-encoded haplotypes.
-        guidelen: The length of the guide sequence.
-        right: Whether the guide is located downstream of the PAM.
-        variants_present: Whether variants are present in the haplotypes.
-        phased: Whether the haplotypes are phased.
-        verbosity: The verbosity level for logging.
-        debug: Whether to enable debug mode for error handling.
+        guides: Dictionary mapping Region objects to lists of Guide objects.
+        args: CrisprHawkSearchInputArgs object containing annotation parameters.
 
     Returns:
-        Dict[Region, List[Guide]]: A dictionary mapping regions to lists of found
-            Guide objects.
+        Dictionary mapping Region objects to lists of annotated Guide objects.
     """
     # search guide candidates on encoded haplotypes
-    print_verbosity("Searching guides on haplotypes", verbosity, VERBOSITYLVL[1])
+    print_verbosity("Searching guides on haplotypes", args.verbosity, VERBOSITYLVL[1])
     start = time()  # search start time
     guides = {
         region: search(
@@ -137,17 +128,19 @@ def guides_search(
             region,
             haplotype,
             haplotypes_bits[region],
-            guidelen,
-            right,
+            args.guidelen,
+            args.right,
             variants_present,
             phased,
-            verbosity,
-            debug,
+            args.verbosity,
+            args.debug,
         )
         for region, haplotype in haplotypes.items()
     }
     print_verbosity(
-        f"Guides search completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
+        f"Guides search completed in {time() - start:.2f}s",
+        args.verbosity,
+        VERBOSITYLVL[2],
     )
     return guides
 
@@ -168,93 +161,22 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         args.fastas, args.bedfile, args.fasta_idx, args.verbosity, args.debug
     )
     # reconstruct haplotypes for each input region
-    haplotypes, variants_present, phased = reconstruct_haplotypes(
-        args.vcfs,
-        regions,
-        args.haplotype_table,
-        args.outdir,
-        args.verbosity,
-        args.debug,
-    )
+    haplotypes, variants_present, phased = reconstruct_haplotypes(regions, args)
     # encode pam and haplotype sequences in bit for efficient guides search
     pam = encode_pam(args.pam, args.right, args.verbosity, args.debug)
-    haplotypes_bits = encode_haplotypes(haplotypes, args.verbosity, args.debug)
-    # search guide candidates within input regions
+    haplotypes_bits = encode_haplotypes(haplotypes, args)
     guides = guides_search(
-        pam,
-        haplotypes,
-        haplotypes_bits,
-        args.guidelen,
-        args.right,
-        variants_present,
-        phased,
-        args.verbosity,
-        args.debug,
-    )
-    # annotate guide candidates within each region
-    guides = annotate_guides(
-        guides, args.annotations, args.gene_annotations, args.verbosity, args.debug
-    )
-    # score guide candidates wihtin each region
-    guides = scoring_guides(
-        guides,
-        pam,
-        args.compute_elevation,
-        args.guidelen,
-        args.right,
-        args.verbosity,
-        args.debug,
-    )
+        pam, haplotypes, haplotypes_bits, variants_present, phased, args
+    )  # search guide candidates within input regions
+    guides = annotate_guides(guides, args)  # annotate guide candidates
+    guides = scoring_guides(guides, pam, args)  # score guide candidates
     if args.estimate_offtargets:  # search off-targets for each guide candidate
-        assert args.crispritz_config  # must not be none
-        guides = offtargets_search(
-            guides,
-            pam,
-            args.crispritz_index,
-            args.crispritz_config,
-            args.mm,
-            args.bdna,
-            args.brna,
-            args.offtargets_annotations,
-            args.offtargets_annotation_colnames,
-            args.guidelen,
-            args.compute_elevation,
-            args.right,
-            args.threads,
-            args.outdir,
-            args.verbosity,
-            args.debug,
-        )
-    # construct reports
-    reports = report_guides(
-        guides,
-        args.guidelen,
-        pam,
-        args.right,
-        args.annotations,
-        args.annotation_colnames,
-        args.gene_annotations,
-        args.gene_annotation_colnames,
-        args.estimate_offtargets,
-        args.compute_elevation,
-        args.outdir,
-        args.verbosity,
-        args.debug,
-    )
-    # draw graphical reports
-    if args.graphical_reports:
-        compute_graphical_reports(reports, args.outdir, args.verbosity, args.debug)
-    # perform candidate guides analyses
-    if args.candidate_guides:
-        candidate_guides_analysis(
-            args.candidate_guides,
-            reports,
-            pam,
-            args.guidelen,
-            args.outdir,
-            args.verbosity,
-            args.debug,
-        )
+        guides = offtargets_search(guides, pam, args)
+    reports = report_guides(guides, pam, args)  # construct reports
+    if args.graphical_reports:  # draw graphical reports
+        compute_graphical_reports(reports, args)
+    if args.candidate_guides:  # perform candidate guides analyses
+        candidate_guides_analysis(reports, pam, args)
 
 
 def crisprhawk_converter(args: CrisprHawkConverterInputArgs) -> None:

@@ -6,6 +6,7 @@ It supports processing guide data, ranking guides, and saving publication-ready
 figures for downstream analysis.
 """
 
+from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .crisprhawk_error import CrisprHawkGraphicalReportsError
 from .region_constructor import PADDING
 from .exception_handlers import exception_handler
@@ -1082,35 +1083,35 @@ def compute_delta_dotplot(
 
 
 def compute_graphical_reports(
-    reports: Dict[Region, str], outdir: str, verbosity: int, debug: bool
+    reports: Dict[Region, str], args: CrisprHawkSearchInputArgs
 ) -> None:
-    """Generates and saves graphical reports for CRISPR guide analysis across
-    multiple regions.
+    """Generates and saves graphical reports for guide score variation and guide
+    types.
 
-    The function creates pie charts and delta dot plots for each region and score,
-    saving the results to the output directory.
+    This function processes region reports, generates pie charts and delta dot
+    plots for each region, and saves the resulting figures to the output directory.
 
     Args:
-        reports: Dictionary mapping Region objects to report file paths.
-        outdir: Output directory for saving graphical reports.
-        verbosity: Verbosity level for logging.
-        debug: Boolean flag for debug mode.
+        reports: Dictionary mapping Region objects to report filenames.
+        args: CrisprHawkSearchInputArgs object containing analysis parameters.
 
     Returns:
         None
     """
     # create figures folder in output directory
-    outdir_gr = os.path.join(outdir, "figures")
+    outdir_gr = os.path.join(args.outdir, "figures")
     if not os.path.isdir(outdir_gr):
-        outdir_gr = create_folder(os.path.join(outdir, "figures"))
+        outdir_gr = create_folder(os.path.join(args.outdir, "figures"))
     # start graphical reports computation
-    print_verbosity("Computing graphical reports", verbosity, VERBOSITYLVL[1])
+    print_verbosity("Computing graphical reports", args.verbosity, VERBOSITYLVL[1])
     start = time()
     for region, report in reports.items():
         prefix = _format_region(region)  # format region name as plots" name prefix
         report_df = pd.read_csv(report, sep="\t")
         # draw guide types piechart
-        piechart_guides_type(report_df, region, prefix, outdir_gr, verbosity, debug)
+        piechart_guides_type(
+            report_df, region, prefix, outdir_gr, args.verbosity, args.debug
+        )
         # draw scatter plot for guide score variation
         for score in SCORES:
             if score not in report_df.columns.tolist():
@@ -1120,10 +1121,10 @@ def compute_graphical_reports(
                 )
                 continue
             compute_delta_dotplot(
-                report_df, region, score, prefix, outdir_gr, verbosity, debug
+                report_df, region, score, prefix, outdir_gr, args.verbosity, args.debug
             )
     print_verbosity(
         f"Graphical reports computed in {time() - start:.2f}s",
-        verbosity,
+        args.verbosity,
         VERBOSITYLVL[2],
     )

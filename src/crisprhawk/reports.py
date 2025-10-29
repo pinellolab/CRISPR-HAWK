@@ -7,6 +7,7 @@ designed to support flexible reporting for different Cas systems and annotation
 options, ensuring that guide reports are comprehensive and well-structured.
 """
 
+from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .crisprhawk_error import CrisprHawkGuidesReportError
 from .exception_handlers import exception_handler
 from .pam import PAM, CASX, CPF1, SACAS9, SPCAS9, XCAS9
@@ -1015,55 +1016,33 @@ def collapse_report_entries(
 
 
 def report_guides(
-    guides: Dict[Region, List[Guide]],
-    guidelen: int,
-    pam: PAM,
-    right: bool,
-    annotations: List[str],
-    annotation_colnames: List[str],
-    gene_annotations: List[str],
-    gene_annotation_colnames: List[str],
-    estimate_offtargets: bool,
-    compute_elevation: bool,
-    outdir: str,
-    verbosity: int,
-    debug: bool,
+    guides: Dict[Region, List[Guide]], pam: PAM, args: CrisprHawkSearchInputArgs
 ) -> Dict[Region, str]:
-    """Generates and stores guide report files for each genomic region.
+    """Constructs and stores report files for each genomic region and guide set.
 
-    Constructs, formats, and writes guide reports for all regions, returning a
+    This function processes guides for each region, constructs report DataFrames,
+    collapses duplicate entries, and writes the reports to disk. It returns a
     dictionary mapping each region to its report file path.
 
     Args:
-        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists
-            of Guide objects.
-        guidelen (int): The length of the guide sequence.
-        pam (PAM): The PAM object representing the Cas system.
-        right (bool): Indicates if the guide is on the right strand.
-        annotations (List[str]): List of functional annotation strings.
-        annotation_colnames (List[str]): List of column names for annotations.
-        gene_annotations (List[str]): List of gene annotation strings.
-        gene_annotation_colnames (List[str]): List of column names for gene annotations.
-        estimate_offtargets (bool): Whether to include off-target columns.
-        compute_elevation (bool): Whether to compute and include elevation scores.
-        outdir (str): Output directory for report files.
-        verbosity (int): Verbosity level for logging.
-        debug (bool): Whether to enable debug mode for exception handling.
+        guides: Dictionary mapping Region objects to lists of Guide objects.
+        pam: PAM object representing the Cas system.
+        args: CrisprHawkSearchInputArgs object containing report and output parameters.
 
     Returns:
-        Dict[Region, str]: A dictionary mapping each region to its report file path.
+        Dictionary mapping Region objects to their corresponding report file paths.
     """
-    print_verbosity("Constructing reports", verbosity, VERBOSITYLVL[1])
+    print_verbosity("Constructing reports", args.verbosity, VERBOSITYLVL[1])
     start = time()  # report construction start time
     reports = construct_report(
         guides,
         pam,
-        annotations,
-        annotation_colnames,
-        gene_annotations,
-        gene_annotation_colnames,
-        estimate_offtargets,
-        compute_elevation,
+        args.annotations,
+        args.annotation_colnames,
+        args.gene_annotations,
+        args.gene_annotation_colnames,
+        args.estimate_offtargets,
+        args.compute_elevation,
     )  # construct reports
     reports_fnames = {}  # reports TSVs dictionary
     for region, report in reports.items():  # store reports in output folder
@@ -1071,23 +1050,28 @@ def report_guides(
             f"{region.contig}_{region.start + PADDING}_{region.stop - PADDING}"
         )
         guidesreport = os.path.join(
-            outdir, f"{GUIDESREPORTPREFIX}__{region_name}_{pam}_{guidelen}.tsv"
+            args.outdir,
+            f"{GUIDESREPORTPREFIX}__{region_name}_{pam}_{args.guidelen}.tsv",
         )
         if not report.empty:
             report = collapse_report_entries(
-                report, pam, annotations, gene_annotations, estimate_offtargets
+                report,
+                pam,
+                args.annotations,
+                args.gene_annotations,
+                args.estimate_offtargets,
             )
         reports_fnames[region] = store_report(
             report,
             pam,
             guidesreport,
-            right,
-            annotations,
-            gene_annotations,
-            estimate_offtargets,
-            debug,
+            args.right,
+            args.annotations,
+            args.gene_annotations,
+            args.estimate_offtargets,
+            args.debug,
         )  # write report
     print_verbosity(
-        f"Reports constructed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
+        f"Reports constructed in {time() - start:.2f}s", args.verbosity, VERBOSITYLVL[2]
     )
     return reports_fnames

@@ -1,5 +1,6 @@
 """ """
 
+from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .crisprhawk_error import CrisprHawkCandidateGuideError
 from .exception_handlers import exception_handler
 from .coordinate import Coordinate
@@ -229,21 +230,20 @@ def _retrieve_scores_samples(report: pd.DataFrame) -> Tuple[List[float], List[in
 
 
 def _prepare_data_dotplot(
-    cg_reports: Dict[CandidateGuide, str], debug: bool
+    cg_reports: Dict[CandidateGuide, str],
 ) -> Dict[str, Tuple[List[float], List[int]]]:
-    """Prepares data for dot plot visualization of candidate guide variant effects.
+    """Prepares dot plot data for candidate guides from their report files.
 
-    This function reads each candidate guide's report and extracts scores and sample
-    counts for plotting.
+    This function reads each candidate guide's report file and extracts the
+    scores and sample counts needed for dot plot visualization.
 
     Args:
-        cg_reports: Dictionary mapping CandidateGuide objects to their subset
-            report filenames.
-        debug: Flag to enable debug mode.
+        cg_reports: Dictionary mapping CandidateGuide objects to their report
+            file paths.
 
     Returns:
-        Dictionary mapping candidate guide string representations to tuples of
-            scores and sample counts.
+        Dictionary mapping string representations of candidate guides to tuples
+            of scores and sample counts.
     """
     dotplot_data = {}  # dotplot data dictionary
     for cg, report in cg_reports.items():
@@ -554,22 +554,66 @@ def _draw_dotplot(
 def candidate_guides_dotplot(
     dotplot_data: Dict[str, Tuple[List[float], List[int]]], outdir: str
 ) -> None:
+    """Generates and saves a dot plot for candidate guide variant effects.
+
+    This function visualizes the variant effect data for candidate guides and
+    saves the resulting plot to a file.
+
+    Args:
+        dotplot_data: Dictionary mapping string representations of candidate
+            guides to tuples of scores and sample counts.
+        outdir: Output directory for saving the figure.
+
+    Returns:
+        None
+    """
     _draw_dotplot(dotplot_data, outdir)  # draw variant effect dotplot
 
 
 def _prepare_scatter_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Prepares candidate guide report data for scatter plot visualization.
+
+    This function creates a copy of the input DataFrame and adds a column indicating
+    the number of unique samples for each entry.
+
+    Args:
+        df: DataFrame containing the candidate guide report data.
+
+    Returns:
+        DataFrame with an added 'n_samples' column representing sample counts.
+    """
     df = df.copy()
     df["n_samples"] = df.apply(lambda x: len(set(x[REPORTCOLS[15]].split(","))), axis=1)
     return df
 
 
 def _extract_variant_labels(df: pd.DataFrame) -> List[str]:
+    """Extracts variant labels from a candidate guide report DataFrame.
+
+    This function returns a list of variant labels, replacing missing values
+    with 'REF'.
+
+    Args:
+        df: DataFrame containing the candidate guide report data.
+
+    Returns:
+        List of variant labels as strings, with 'REF' for missing values.
+    """
     return [
         "REF" if str(cname) == "nan" else cname for cname in df[REPORTCOLS[16]].tolist()
     ]
 
 
 def _create_diagonal_gradient() -> Tuple[np.ndarray, LinearSegmentedColormap]:
+    """Creates a diagonal gradient array and colormap for scatter plot backgrounds.
+
+    This function generates a 2D array representing a diagonal gradient and a custom
+    linear segmented colormap for use as a background in scatter plots.
+
+    Returns:
+        Tuple containing the diagonal gradient numpy array and a LinearSegmentedColormap
+            object.
+    """
     x = np.linspace(-0.1, 1.1, 256)
     y = np.linspace(-0.1, 1.1, 256)
     X, Y = np.meshgrid(x, y)
@@ -584,6 +628,18 @@ def _create_diagonal_gradient() -> Tuple[np.ndarray, LinearSegmentedColormap]:
 def _draw_background_scatter(
     diagonal_distance: np.ndarray, cmap: LinearSegmentedColormap
 ) -> ScalarMappable:
+    """Draws a background gradient for the scatter plot visualization.
+
+    This function displays a diagonal gradient background on the scatter plot
+    using the provided colormap.
+
+    Args:
+        diagonal_distance: 2D numpy array representing the diagonal gradient.
+        cmap: LinearSegmentedColormap object for the gradient.
+
+    Returns:
+        ScalarMappable object representing the background image.
+    """
     return plt.imshow(
         diagonal_distance,
         extent=[-0.05, 1.05, -0.05, 1.05],
@@ -606,7 +662,7 @@ def _create_variant_legend_handle(
         > 0
     )
     variant_marker = "D" if has_single_sample else "o"
-    label = "Reference" if row["variant_id"] == "REF" else row["variant_id"]
+    label = "Reference" if str(row["variant_id"]) == "nan" else row["variant_id"]
     return Line2D(
         [0],
         [0],
@@ -624,6 +680,20 @@ def _create_variant_legend_handle(
 def _plot_scatter_points(
     df: pd.DataFrame, colorlab: Dict[str, Tuple]
 ) -> Dict[str, Line2D]:
+    """Plots scatter points for each variant in the candidate guide report and
+    returns legend handles.
+
+    This function iterates through the DataFrame, plotting each variant's data
+    point with appropriate marker style, color, and size, and creates legend
+    handles for each unique variant.
+
+    Args:
+        df: DataFrame containing the candidate guide report data.
+        colorlab: Dictionary mapping variant labels to color tuples.
+
+    Returns:
+        Dictionary mapping variant labels to their corresponding Line2D legend handles.
+    """
     variant_handles = {}
     for _, row in df.iterrows():
         marker = (
@@ -656,6 +726,17 @@ def _plot_scatter_points(
 
 
 def _create_sample_size_legend(sample_counts: List[int]) -> List[Line2D]:
+    """Creates legend handles for sample size categories in scatter plots.
+
+    This function generates Line2D legend handles representing different sample
+    size categories for use in candidate guide scatter plot legends.
+
+    Args:
+        sample_counts: List of sample counts (not used in legend creation).
+
+    Returns:
+        List of Line2D objects to be used as legend handles for sample sizes.
+    """
     legend_labels = ["1 sample", "2-20 samples", ">20 samples"]
     sample_counts = [1, 10, 35]
     markers = ["D", "o", "o"]
@@ -677,6 +758,17 @@ def _create_sample_size_legend(sample_counts: List[int]) -> List[Line2D]:
 
 
 def _configure_scatter_axes(cg: CandidateGuide) -> None:
+    """Configures the axes and style for the candidate guide scatter plot.
+
+    This function sets the title, axis labels, limits, ticks, grid, and aspect ratio
+    for the scatter plot visualizing variant effects and off-target potential.
+
+    Args:
+        cg: CandidateGuide object for which the scatter plot is being configured.
+
+    Returns:
+        None
+    """
     plt.title(
         f"Variant Effect on On-Targets vs Off-Target Potential in {cg} and its Alternatives",
         fontsize=13,
@@ -697,6 +789,19 @@ def _configure_scatter_axes(cg: CandidateGuide) -> None:
 
 
 def _add_scatter_colorbar(im: ScalarMappable, fig: Figure, ax: Axes) -> None:
+    """Adds a colorbar to the scatter plot to indicate guide penalty levels.
+
+    This function creates and customizes a colorbar for the scatter plot, labeling
+    it to show the range of guide penalties.
+
+    Args:
+        im: ScalarMappable object representing the background image.
+        fig: Matplotlib Figure object to which the colorbar will be added.
+        ax: Matplotlib Axes object to which the colorbar will be added.
+
+    Returns:
+        None
+    """
     cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.08, shrink=0.5)
     cbar.set_label("Guide Penalty\n(Low → High)", rotation=270, labelpad=25, fontsize=8)
     cbar.set_ticks([])
@@ -705,6 +810,19 @@ def _add_scatter_colorbar(im: ScalarMappable, fig: Figure, ax: Axes) -> None:
 def _add_scatter_legends(
     variant_handles: Dict[str, Line2D], size_handles: List[Line2D]
 ) -> None:
+    """Adds legends for variant types and sample sizes to the scatter plot.
+
+    This function creates and adds two legends to the scatter plot: one for variant
+    types (displayed on the right) and one for sample size categories (displayed at
+    the bottom center).
+
+    Args:
+        variant_handles: Dictionary mapping variant labels to Line2D legend handles.
+        size_handles: List of Line2D legend handles for sample size categories.
+
+    Returns:
+        None
+    """
     l1 = plt.legend(
         handles=list(variant_handles.values()),
         fontsize=8,
@@ -725,6 +843,19 @@ def _add_scatter_legends(
 
 
 def _save_scatter_figure(cg: CandidateGuide, outdir: str) -> None:
+    """Saves the current scatter plot figure for a candidate guide to the specified
+    directory.
+
+    This function writes the scatter plot as a PNG file named according to the
+    candidate guide and closes the plot to free resources.
+
+    Args:
+        cg: CandidateGuide object for which the scatter plot is being saved.
+        outdir: Output directory where the figure will be saved.
+
+    Returns:
+        None
+    """
     cg_name = str(cg).replace(":", "_")
     filename = f"candidate_guide_{cg_name}_on_off.png"
     output_path = os.path.join(outdir, filename)
@@ -734,10 +865,25 @@ def _save_scatter_figure(cg: CandidateGuide, outdir: str) -> None:
 
 
 def _draw_scatter(df: pd.DataFrame, cg: CandidateGuide, outdir: str) -> None:
+    """Draws and saves a scatter plot for a candidate guide's variant effects
+    and off-target potential.
+
+    This function visualizes the relationship between variant effects and
+    off-target potential for a single candidate guide, including background
+    gradients, legends, and colorbars, and saves the resulting plot to a file.
+
+    Args:
+        df: DataFrame containing the candidate guide report data.
+        cg: CandidateGuide object for which the scatter plot is generated.
+        outdir: Output directory for saving the scatter plot.
+
+    Returns:
+        None
+    """
     df = _prepare_scatter_data(df)
     labels = _extract_variant_labels(df)
     colorlab = _color_labels_dotplot(labels)
-    f, ax = plt.subplots(1, 1, figsize=(8, 8))  # set up figure
+    f, ax = plt.subplots(1, 1, figsize=(9, 9))  # set up figure
     # create and draw background gradient
     diagonal_distance, cmap = _create_diagonal_gradient()
     im = _draw_background_scatter(diagonal_distance, cmap)
@@ -755,46 +901,85 @@ def _draw_scatter(df: pd.DataFrame, cg: CandidateGuide, outdir: str) -> None:
 
 
 def candidate_guides_scatter(
-    cg_reports: Dict[CandidateGuide, str], outdir: str, debug: bool
+    cg_reports: Dict[CandidateGuide, str], outdir: str
 ) -> None:
+    """Generates and saves scatter plots for candidate guide variant effects.
+
+    This function creates scatter plots visualizing the relationship between variant
+    effects and off-target potential for each candidate guide, saving each plot
+    to the specified directory.
+
+    Args:
+        cg_reports: Dictionary mapping CandidateGuide objects to their report
+            file paths.
+        outdir: Output directory for saving the scatter plots.
+
+    Returns:
+        None
+    """
     for cg, report in cg_reports.items():
         _draw_scatter(pd.read_csv(report, sep="\t"), cg, outdir)
 
 
 def draw_candidate_guides_plots(
-    cg_reports: Dict[CandidateGuide, str], outdir: str, debug: bool
+    cg_reports: Dict[CandidateGuide, str], estimate_offtargets: bool, outdir: str
 ) -> None:
-    dotplot_data = _prepare_data_dotplot(cg_reports, debug)  # prepare data for plotting
+    """Generates and saves dot plots and scatter plots for candidate guide analysis.
+
+    This function prepares and saves a dot plot for candidate guide variant effects,
+    and, if requested, generates scatter plots visualizing the relationship between
+    variant effects and off-target potential for each candidate guide.
+
+    Args:
+        cg_reports: Dictionary mapping CandidateGuide objects to their report
+            file paths.
+        estimate_offtargets: Boolean flag indicating whether to generate scatter
+            plots for off-target estimation.
+        outdir: Output directory for saving the generated figures.
+
+    Returns:
+        None
+    """
+    dotplot_data = _prepare_data_dotplot(cg_reports)  # prepare data for plotting
     outdir_gr = os.path.join(outdir, "figures")  # graphical report folder
     if not os.path.isdir(outdir_gr):  # create figures folder
         os.makedirs(outdir_gr)
     candidate_guides_dotplot(dotplot_data, outdir_gr)  # candidate guides dotplot
-    candidate_guides_scatter(cg_reports, outdir_gr, debug)  # candidate guide scatter
+    if estimate_offtargets:  # required for cfd-off score
+        candidate_guides_scatter(cg_reports, outdir_gr)  # candidate guide scatter
 
 
 def candidate_guides_analysis(
-    candidate_guides_coords: List[str],
-    reports: Dict[Region, str],
-    pam: PAM,
-    guidelen: int,
-    outdir: str,
-    verbosity: int,
-    debug: bool,
+    reports: Dict[Region, str], pam: PAM, args: CrisprHawkSearchInputArgs
 ) -> None:
-    print_verbosity("Analyzing candidate guides", verbosity, VERBOSITYLVL[1])
+    """Performs analysis and visualization for candidate CRISPR guides.
+
+    This function processes region reports, subsets data for candidate guides,
+    and generates visualizations such as dot plots and scatter plots for candidate
+    guide analysis.
+
+    Args:
+        reports: Dictionary mapping Region objects to report filenames.
+        pam: PAM object specifying the protospacer adjacent motif and Cas system.
+        args: CrisprHawkSearchInputArgs object containing analysis parameters.
+
+    Returns:
+        None
+    """
+    print_verbosity("Analyzing candidate guides", args.verbosity, VERBOSITYLVL[1])
     start = time()
     candidate_guides = initialize_candidate_guides(
-        candidate_guides_coords, guidelen, debug
+        args.candidate_guides, args.guidelen, args.debug
     )  # initialize canididate guide objects
     region_reports = initialize_region_reports(reports)  # create report map
     # subset reports for candidate guides
     cg_reports = subset_reports(
-        candidate_guides, region_reports, pam, guidelen, outdir, debug
+        candidate_guides, region_reports, pam, args.guidelen, args.outdir, args.debug
     )
     if pam.cas_system in [SPCAS9, XCAS9]:
-        draw_candidate_guides_plots(cg_reports, outdir, debug)
+        draw_candidate_guides_plots(cg_reports, args.estimate_offtargets, args.outdir)
     print_verbosity(
         f"Candidate guides analysis completed in {time() - start:.2f}s",
-        verbosity,
+        args.verbosity,
         VERBOSITYLVL[2],
     )

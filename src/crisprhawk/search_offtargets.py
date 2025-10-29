@@ -6,6 +6,7 @@ It includes utilities to estimate and annotate off-targets for guides across gen
 regions, supporting downstream genome editing analysis.
 """
 
+from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .config_crispritz import CrispritzConfig
 from .offtargets import estimate_offtargets
 from .utils import print_verbosity, VERBOSITYLVL
@@ -18,77 +19,50 @@ from time import time
 
 
 def offtargets_search(
-    guides: Dict[Region, List[Guide]],
-    pam: PAM,
-    crispritz_index: str,
-    crispritz_config: CrispritzConfig,
-    mm: int,
-    bdna: int,
-    brna: int,
-    annotations: List[str],
-    anncolnames: List[str],
-    guidelen: int,
-    compute_elevation: bool,
-    right: bool,
-    threads: int,
-    outdir: str,
-    verbosity: int,
-    debug: bool,
+    guides: Dict[Region, List[Guide]], pam: PAM, args: CrisprHawkSearchInputArgs
 ) -> Dict[Region, List[Guide]]:
-    """Performs off-target search for each guide using CRISPRitz.
+    """Performs off-target search for CRISPR guides using CRISPRitz.
 
-    This function estimates off-targets for all guides in each region, updating
-    the guide objects with off-target information for downstream analysis.
+    This function estimates and annotates off-targets for each guide in the provided
+    regions, updating the guides with off-target information and returning the
+    updated dictionary.
 
     Args:
-        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists
-            of Guide objects.
-        pam (PAM): PAM object specifying the PAM sequence.
-        crispritz_index (str): Path to the CRISPRitz index.
-        crispritz_config (CrispritzConfig): Configuration for CRISPRitz.
-        mm (int): Maximum number of mismatches.
-        bdna (int): Maximum DNA bulge size.
-        brna (int): Maximum RNA bulge size.
-        annotations (List[str]): List of annotation file paths.
-        anncolnames (List[str]): List of annotation column names.
-        guidelen (int): Length of the guide sequence.
-        compute_elevation (bool): Whether to compute Elevation scores.
-        right (bool): Boolean indicating PAM orientation.
-        threads (int): Number of threads to use.
-        outdir (str): Output directory for results.
-        verbosity (int): Verbosity level for logging.
-        debug (bool): Flag to enable debug mode for error handling.
+        guides: Dictionary mapping Region objects to lists of Guide objects.
+        pam: PAM object specifying the protospacer adjacent motif.
+        args: CrisprHawkSearchInputArgs object containing search parameters.
 
     Returns:
-        Dict[Region, List[Guide]]: The dictionary of regions with guides annotated
-            for off-targets.
+        Dictionary mapping Region objects to updated lists of Guide objects with
+            off-target information.
     """
     # search off-targets for each retrieved guide
-    print_verbosity("Searching off-targets", verbosity, VERBOSITYLVL[1])
+    assert args.crispritz_config  # if here, must be defined
+    print_verbosity("Searching off-targets", args.verbosity, VERBOSITYLVL[1])
     start = time()  # offtargets search start time
     for region, guides_list in guides.items():
         guides[region] = estimate_offtargets(
             guides_list,
             pam,
-            crispritz_index,
+            args.crispritz_index,
             region,
-            crispritz_config,
-            mm,
-            bdna,
-            brna,
-            annotations,
-            anncolnames,
-            guidelen,
-            compute_elevation,
-            right,
-            threads,
-            outdir,
-            verbosity,
-            debug,
+            args.crispritz_config,
+            args.mm,
+            args.bdna,
+            args.brna,
+            args.offtargets_annotations,
+            args.offtargets_annotation_colnames,
+            args.guidelen,
+            args.compute_elevation,
+            args.right,
+            args.threads,
+            args.outdir,
+            args.verbosity,
+            args.debug,
         )
     print_verbosity(
         f"Off-targets search completed in {time() - start:.2f}s",
-        verbosity,
+        args.verbosity,
         VERBOSITYLVL[2],
     )
     return guides

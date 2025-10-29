@@ -9,6 +9,7 @@ It supports comprehensive annotation of guides for downstream CRISPR analysis wo
 """
 
 from .crisprhawk_error import CrisprHawkAnnotationError, CrisprHawkGcContentError
+from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .exception_handlers import exception_handler
 from .bedfile import BedAnnotation
 from .guide import Guide
@@ -358,60 +359,56 @@ def gc_content(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
 
 
 def annotate_guides(
-    guides: Dict[Region, List[Guide]],
-    annotations: List[str],
-    gene_annotations: List[str],
-    verbosity: int,
-    debug: bool,
+    guides: Dict[Region, List[Guide]], args: CrisprHawkSearchInputArgs
 ) -> Dict[Region, List[Guide]]:
-    """Annotates CRISPR guides with variant, allele frequency, functional, gene,
-    and GC content information.
+    """Annotates CRISPR guides with variant, functional, gene, and GC content
+    information.
 
-    This function processes each guide in the input dictionary, applying variant
-    annotation, allele frequency assignment, reverse complement adjustment, GC
-    content calculation, and functional/gene annotations from BED files.
+    This function processes each region's guides, adding variant, allele frequency,
+    reverse complement, GC content, and optional functional and gene annotations,
+    returning the updated guides.
 
     Args:
-        guides (Dict[Region, List[Guide]]): Dictionary mapping regions to lists
-            of Guide objects.
-        annotations (List[str]): List of BED annotation file paths for functional
-            annotation.
-        gene_annotations (List[str]): List of BED annotation file paths for gene
-            annotation.
-        verbosity (int): Verbosity level for logging.
-        debug (bool): Flag to enable debug mode for error handling.
+        guides: Dictionary mapping Region objects to lists of Guide objects.
+        args: CrisprHawkSearchInputArgs object containing annotation parameters.
 
     Returns:
-        Dict[Region, List[Guide]]: Dictionary of regions to lists of annotated
-            Guide objects.
+        Dictionary mapping Region objects to lists of annotated Guide objects.
     """
     # annotate guides with variants, functional and gene data and adjust positions
-    print_verbosity("Annotating guides", verbosity, VERBOSITYLVL[1])
+    print_verbosity("Annotating guides", args.verbosity, VERBOSITYLVL[1])
     start = time()  # annotation start time
     for region, guides_list in guides.items():
         # set variants for current guide
-        guides_list = annotate_variants(guides_list, verbosity, debug)
+        guides_list = annotate_variants(guides_list, args.verbosity, args.debug)
         # add allele frequencies for variants occurring in guides
-        guides_list = annotate_variants_afs(guides_list, verbosity)
+        guides_list = annotate_variants_afs(guides_list, args.verbosity)
         # compute reverse complement for guides occurring on rev strand
-        guides_list = reverse_guides(guides_list, verbosity)
+        guides_list = reverse_guides(guides_list, args.verbosity)
         # compute gc content (pam excluded) for each guide
-        guides_list = gc_content(guides_list, verbosity, debug)
-        if annotations:  # annotate each guide
+        guides_list = gc_content(guides_list, args.verbosity, args.debug)
+        if args.annotations:  # annotate each guide
             guides_list = ann_guides(
                 guides_list,
                 region.contig,
-                annotations,
+                args.annotations,
                 0,
-                verbosity,
-                debug,
+                args.verbosity,
+                args.debug,
             )
-        if gene_annotations:  # annotate each guide with gene data
+        if args.gene_annotations:  # annotate each guide with gene data
             guides_list = ann_guides(
-                guides_list, region.contig, gene_annotations, 1, verbosity, debug
+                guides_list,
+                region.contig,
+                args.gene_annotations,
+                1,
+                args.verbosity,
+                args.debug,
             )
         guides[region] = guides_list  # store annotated guides
     print_verbosity(
-        f"Annotation completed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[2]
+        f"Annotation completed in {time() - start:.2f}s",
+        args.verbosity,
+        VERBOSITYLVL[2],
     )
     return guides
