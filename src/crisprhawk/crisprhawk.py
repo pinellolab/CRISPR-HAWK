@@ -157,9 +157,7 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
             for the search workflow.
     """
     # extract genomic regions defined in input bed file
-    regions = construct_regions(
-        args.fastas, args.bedfile, args.fasta_idx, args.verbosity, args.debug
-    )
+    regions = construct_regions(args.fastas, args.bedfile, args.verbosity, args.debug)
     # reconstruct haplotypes for each input region
     haplotypes, variants_present, phased = reconstruct_haplotypes(regions, args)
     # encode pam and haplotype sequences in bit for efficient guides search

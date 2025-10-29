@@ -174,23 +174,6 @@ class CrisprHawkSearchInputArgs:
         if not self._fastas:
             self._parser.error(f"No FASTA file found in {self._args.fasta}")
 
-    def _validate_fasta_index(self) -> None:
-        """Validates the existence and content of the input FASTA index file.
-
-        This function checks that the specified FASTA index file exists and is not empty.
-
-        Returns:
-            None
-        """
-        if not self._args.fasta_idx:
-            return
-        if self._args.fasta_idx and (
-            not os.path.exists(self._args.fasta) or not os.path.isfile(self._args.fasta)
-        ):
-            self._parser.error(f"Cannot find input FASTA index {self._args.fasta_idx}")
-        if self._args.fasta_idx and os.stat(self._args.fasta_idx).st_size <= 0:
-            self._parser.error(f"{self._args.fasta_idx} is empty")
-
     def _validate_bed(self) -> None:
         """Validates the existence and content of the input BED file.
 
@@ -489,7 +472,6 @@ class CrisprHawkSearchInputArgs:
             None
         """
         self._validate_fasta_files()  # check fasta file
-        self._validate_fasta_index()  # check fasta index
         self._validate_bed()  # check bed file
         self._validate_vcf_folder()  # check vcf folder
         self._validate_pam()  # check pam
@@ -510,10 +492,6 @@ class CrisprHawkSearchInputArgs:
     @property
     def fastadir(self) -> str:
         return self._args.fasta
-
-    @property
-    def fasta_idx(self) -> str:
-        return self._args.fasta_idx
 
     @property
     def bedfile(self) -> str:

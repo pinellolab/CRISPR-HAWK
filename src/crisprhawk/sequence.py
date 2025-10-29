@@ -188,17 +188,15 @@ class Fasta:
 
     Attributes:
         _fname (str): The path to the FASTA file.
-        _faidx (str): The path to the FASTA index file.
         _fasta (pysam.FastaFile): The pysam FastaFile object.
         _contigs (list): A list of contig names in the FASTA file.
     """
 
-    def __init__(
-        self, fname: str, verbosity: int, debug: bool, faidx: str = ""
-    ) -> None:
+    def __init__(self, fname: str, verbosity: int, debug: bool) -> None:
         """Initialize a Fasta object for handling FASTA file operations.
 
-        Sets up the Fasta object by validating the input FASTA file, searching for or creating an index, and initializing internal data structures.
+        Sets up the Fasta object by validating the input FASTA file, searching
+        for or creating an index, and initializing internal data structures.
 
         Args:
             fname: The path to the FASTA file.
@@ -219,7 +217,7 @@ class Fasta:
                 self._debug,
             )
         self._fname = fname  # store input file name
-        self._faidx = self._search_index(faidx)  # initialize fasta index
+        self._faidx = self._search_index()  # initialize fasta index
         if not self._faidx:  # index not found compute it
             self.index_fasta()
         # initialize FastaFile object with the previously computed index

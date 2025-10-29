@@ -126,7 +126,7 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "-f",
         "--fasta",
         type=str,
-        metavar="FASTA-FILE",
+        metavar="FASTA-DIR",
         dest="fasta",
         required=True,
         help="folder containing genome FASTA files for guide search. Each "
@@ -172,17 +172,6 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "(default: current working directory)",
     )
     optional_group = parser_search.add_argument_group("Optional arguments")
-    optional_group.add_argument(
-        "-i",
-        "--fasta-idx",
-        type=str,
-        metavar="FASTA-IDX",
-        dest="fasta_idx",
-        nargs="?",
-        default="",
-        help="optional FASTA index file (FAI) for the input reference (default: "
-        "compute FAI)",
-    )
     optional_group.add_argument(
         "-v",
         "--vcf",
