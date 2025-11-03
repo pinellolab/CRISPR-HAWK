@@ -296,7 +296,6 @@ def outofframe_score(
     start = time()  # out-of-frame score calculation start time
     try:  # compute out-of-frame score
         idx = GUIDESEQPAD if right else GUIDESEQPAD + guidelen
-        # scores = [0] * len(guides)
         scores = ooframe_score(guides, idx)
     except Exception as e:
         exception_handler(
@@ -350,10 +349,10 @@ def scoring_guides(
         ):
             # elevation requires 23 bp long sequences, where last 3 bp are pam
             guides_list = elevationon_score(guides_list, args.verbosity, args.debug)
-        # compute out-of-frame score
-        guides_list = outofframe_score(
-            guides_list, args.guidelen, args.right, args.verbosity, args.debug
-        )
+        # compute out-of-frame score (skipped)
+        # guides_list = outofframe_score(
+        #     guides_list, args.guidelen, args.right, args.verbosity, args.debug
+        # )
         guides[region] = guides_list  # store scored guides
     print_verbosity(
         f"Scoring completed in {time() - start:.2f}s", args.verbosity, VERBOSITYLVL[2]
