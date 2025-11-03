@@ -1,4 +1,14 @@
-""" """
+"""
+This module provides classes and functions for identifying and scoring microhomology
+patterns in nucleotide sequences.
+
+This module adapts the method described in Bae et al., Nat Methods 2014.
+
+It includes utilities for matching sequences with IUPAC ambiguity codes, finding
+and scoring microhomology patterns, and calculating microhomology scores for guide
+sequences. The module is designed to support genome editing applications by evaluating
+the likelihood of microhomology-mediated end joining events.
+"""
 
 from itertools import product
 from typing import Union, List, Tuple
@@ -28,9 +38,9 @@ class MicrohomologyPattern:
     """
     Represents a microhomology pattern within a nucleotide sequence.
 
-    This class stores the sequence and positional information for a microhomology 
-    pattern, including the left and right start/stop positions and the pattern 
-    length. It provides equality, hashing, and string representation methods for 
+    This class stores the sequence and positional information for a microhomology
+    pattern, including the left and right start/stop positions and the pattern
+    length. It provides equality, hashing, and string representation methods for
     use in microhomology scoring.
 
     Args:
@@ -97,7 +107,7 @@ class MicrohomologyPattern:
         """
         Compute a hash value for the microhomology pattern.
 
-        Returns a hash based on the sequence and positional attributes of the 
+        Returns a hash based on the sequence and positional attributes of the
         pattern, enabling use in sets and as dictionary keys.
 
         Returns:
@@ -143,23 +153,24 @@ class MicrohomologyResult:
     """
     Stores the results of microhomology scoring for a guide sequence.
 
-    This class holds the total microhomology score, the out-of-frame score, and 
-    the list of deletion patterns with their associated scores. It provides 
+    This class holds the total microhomology score, the out-of-frame score, and
+    the list of deletion patterns with their associated scores. It provides
     property accessors for each result component.
 
     Args:
         mh_score (int): The total microhomology score.
-        ooframe_score (int): The out-of-frame score as a percentage of the total 
+        ooframe_score (int): The out-of-frame score as a percentage of the total
             score.
-        deletion_patterns (List[Tuple[float, str]]): List of tuples containing 
+        deletion_patterns (List[Tuple[float, str]]): List of tuples containing
             the score and the corresponding deletion sequence.
 
     Attributes:
         _mh_score (int): The total microhomology score.
         _ooframe_score (int): The out-of-frame score.
-        _deletion_patterns (List[Tuple[float, str]]): The deletion patterns and 
+        _deletion_patterns (List[Tuple[float, str]]): The deletion patterns and
             their scores.
     """
+
     def __init__(
         self,
         mh_score: int,
@@ -181,17 +192,36 @@ class MicrohomologyResult:
     @property
     def deletion_patterns(self) -> List[Tuple[float, str]]:
         return self._deletion_patterns
-    
+
 
 def _match(seq1: str, seq2: str) -> bool:
+    """
+    Determines if two nucleotide sequences match, considering IUPAC ambiguity codes.
+
+    Compares each position in the two sequences and returns True if all positions
+    have at least one nucleotide in common according to IUPAC codes, otherwise False.
+
+    Args:
+        seq1 (str): The first nucleotide sequence.
+        seq2 (str): The second nucleotide sequence.
+
+    Returns:
+        bool: True if the sequences match at all positions, False otherwise.
+
+    Raises:
+        ValueError: If an invalid IUPAC character is encountered.
+    """
     seq1, seq2 = seq1.upper(), seq2.upper()
     for i, (nt1, nt2) in enumerate(zip(seq1, seq2)):
         if nt1 not in IUPACTABLE or nt2 not in IUPACTABLE:
-            raise ValueError(f"Invalid IUPAC characters ({nt1} - {nt2}) at position {i}")
+            raise ValueError(
+                f"Invalid IUPAC characters ({nt1} - {nt2}) at position {i}"
+            )
         ntiupac1, ntiupac2 = set(IUPACTABLE[nt1]), set(IUPACTABLE[nt2])
         if not ntiupac1.intersection(ntiupac2):  # check possible overlap
             return False
     return True
+
 
 def _find_microhomology_patterns(
     sequence: str, start: int, stop: int
@@ -199,8 +229,8 @@ def _find_microhomology_patterns(
     """
     Identify all microhomology patterns in a nucleotide sequence.
 
-    Searches for and returns all microhomology patterns of length 2 up to start-1 
-    within the specified region of the sequence. Each pattern is represented as 
+    Searches for and returns all microhomology patterns of length 2 up to start-1
+    within the specified region of the sequence. Each pattern is represented as
     a MicrohomologyPattern object.
 
     Args:
@@ -220,9 +250,7 @@ def _find_microhomology_patterns(
             if _match(leftseq, rightseq):
                 deletion_length = j - i
                 patterns.append(
-                    MicrohomologyPattern(
-                        leftseq, i, i + k, j, j + k, deletion_length
-                    )
+                    MicrohomologyPattern(leftseq, i, i + k, j, j + k, deletion_length)
                 )
     return patterns
 
@@ -235,8 +263,8 @@ def _compute_pattern_scores(
     """
     Compute scores for microhomology patterns in a sequence.
 
-    Calculates the score for each microhomology pattern based on length, GC content, 
-    and position, and classifies them as in-frame or out-of-frame. Returns the 
+    Calculates the score for each microhomology pattern based on length, GC content,
+    and position, and classifies them as in-frame or out-of-frame. Returns the
     deletion patterns with their scores, and the total in-frame and out-of-frame scores.
 
     Args:
@@ -245,8 +273,8 @@ def _compute_pattern_scores(
         length_weight (Union[None, float]): The length weighting factor for scoring.
 
     Returns:
-        Tuple[List[Tuple[float, str]], float, float]: A tuple containing the list 
-            of (score, deletion sequence) pairs, the total in-frame score, and the 
+        Tuple[List[Tuple[float, str]], float, float]: A tuple containing the list
+            of (score, deletion sequence) pairs, the total in-frame score, and the
             total out-of-frame score.
     """
     deletion_patterns = []  # initialize deletion patterns
@@ -280,11 +308,11 @@ def _remove_duplicate_patterns(
     """
     Remove duplicate microhomology patterns from a list.
 
-    Filters out duplicate microhomology patterns based on their positional 
+    Filters out duplicate microhomology patterns based on their positional
     attributes, ensuring only unique patterns are retained in the result.
 
     Args:
-        patterns (List[MicrohomologyPattern]): The list of microhomology patterns 
+        patterns (List[MicrohomologyPattern]): The list of microhomology patterns
             to filter.
 
     Returns:
@@ -314,8 +342,8 @@ def calculate_microhomology_score(
     """
     Calculate the microhomology score for a guide sequence.
 
-    Identifies all unique microhomology patterns in the guide sequence, computes 
-    their scores, and returns a MicrohomologyResult containing the total score, 
+    Identifies all unique microhomology patterns in the guide sequence, computes
+    their scores, and returns a MicrohomologyResult containing the total score,
     out-of-frame score, and deletion patterns.
 
     Args:
