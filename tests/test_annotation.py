@@ -13,7 +13,7 @@ def make_guide(**kwargs):
     defaults = dict(
         position_start=1,
         position_stop=24,
-        sequence="N" * 50 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 50,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -27,10 +27,12 @@ def make_guide(**kwargs):
     defaults.update(kwargs)
     return Guide(**defaults)
 
+
 def test_reverse_guides():
     guides = [make_guide(direction=1), make_guide(direction=0)]
     reversed_guides = reverse_guides(guides, verbosity=0)
     assert len(reversed_guides) == 2
+
 
 def test_polish_variants_annotation():
     guide = make_guide()
@@ -49,6 +51,7 @@ def test_annotate_variants_afs():
     annotated = annotate_variants_afs(guides, verbosity=0)
     assert isinstance(annotated, list)
     assert annotated[0].afs_str == "0.1,0.2"
+
 
 def test_gc_content(monkeypatch):
     guides = [make_guide()]

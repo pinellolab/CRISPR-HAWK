@@ -92,9 +92,9 @@ def test_regionlist_extend_and_append():
     region_list1.append(r3)
     assert len(region_list1) == 3
     with pytest.raises(TypeError):
-        region_list1.append("not_a_region") # type: ignore
+        region_list1.append("not_a_region")  # type: ignore
     with pytest.raises(TypeError):
-        region_list1.extend(["not_a_regionlist"]) # type: ignore
+        region_list1.extend(["not_a_regionlist"])  # type: ignore
 
 
 def test_regionlistiterator_next():

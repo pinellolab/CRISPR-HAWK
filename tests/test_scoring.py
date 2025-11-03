@@ -13,12 +13,11 @@ from crisprhawk.utils import prepare_package
 import pytest
 
 
-
 def make_guide(**kwargs):
     defaults = dict(
         position_start=1,
         position_stop=24,
-        sequence="N" * 50 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 50,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,

@@ -69,7 +69,5 @@ def test_construct_regions(monkeypatch):
         "extract_regions",
         lambda bed, fastas, verbosity, debug: ["regionX"],
     )
-    regions = region_constructor.construct_regions(
-        ["chr1.fa"], "regions.bed", 0, False
-    )
+    regions = region_constructor.construct_regions(["chr1.fa"], "regions.bed", 0, False)
     assert regions == ["regionX"]

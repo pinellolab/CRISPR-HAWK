@@ -27,7 +27,7 @@ def test_write_guides_file_creates_file():
         Guide(
             0,
             120,
-            "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNACTGACTGACTGACTGACTGTGGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
             20,
             3,
             0,
@@ -42,7 +42,9 @@ def test_write_guides_file_creates_file():
     guides_seq = {g.guide.upper() for g in guides}
     pam = PAM("NGG", False, False)
     with tempfile.TemporaryDirectory() as tmpdir:
-        fname = _write_guides_file(guides_seq, pam, tmpdir, False, verbosity=0, debug=False)
+        fname = _write_guides_file(
+            guides_seq, pam, tmpdir, False, verbosity=0, debug=False
+        )
         assert os.path.exists(fname)
         with open(fname) as f:
             lines = f.readlines()
@@ -73,7 +75,7 @@ def test_prepare_input_data_creates_files():
         Guide(
             0,
             120,
-            "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNACTGACTGACTGACTGACTGTGGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
             20,
             3,
             0,
@@ -89,7 +91,13 @@ def test_prepare_input_data_creates_files():
     config = DummyConfig()
     with tempfile.TemporaryDirectory() as tmpdir:
         guides_fname, pam_fname = _prepare_input_data(
-            config, {guides[0].guide.upper()}, pam, tmpdir, False, verbosity=0, debug=False
+            config,
+            {guides[0].guide.upper()},
+            pam,
+            tmpdir,
+            False,
+            verbosity=0,
+            debug=False,
         )
         assert os.path.exists(guides_fname)
         assert os.path.exists(pam_fname)
@@ -104,7 +112,7 @@ def test_calculate_offtargets_map_returns_dict():
         Guide(
             0,
             120,
-            "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNACTGACTGACTGACTGACTGTGGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
             20,
             3,
             0,
@@ -142,7 +150,7 @@ def test_annotate_guides_offtargets_sets_attributes():
         Guide(
             0,
             120,
-            "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNACTGACTGACTGACTGACTGTGGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
             20,
             3,
             0,
