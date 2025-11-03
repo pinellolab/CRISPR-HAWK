@@ -19,11 +19,12 @@ from .crisprhawk_error import (
 from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .exception_handlers import exception_handler
 from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, ooframe_score
-from .utils import flatten_list, print_verbosity, VERBOSITYLVL
+from .utils import calculate_chunks, flatten_list, print_verbosity, VERBOSITYLVL
 from .region import Region
 from .guide import Guide, GUIDESEQPAD
 from .pam import PAM, SPCAS9, XCAS9, CPF1
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Dict, List, Tuple, Union
 from collections import defaultdict
 from time import time
@@ -33,14 +34,99 @@ import numpy as np
 import os
 
 
-def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+def _extract_guide_sequences(guides: List[Guide]) -> List[str]:
+    """Extracts guide RNA sequences with required flanking nucleotides.
+
+    This function returns a list of guide sequences, each including 4 nucleotides
+    upstream and 3 nucleotides downstream of the PAM, formatted in uppercase.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to extract sequences from.
+
+    Returns:
+        List[str]: List of formatted guide sequences with flanking nucleotides.
+    """
+    return [
+        guide.sequence[(GUIDESEQPAD - 4) : (-GUIDESEQPAD + 3)].upper()
+        for guide in guides
+    ]
+
+
+def _azimuth(guides_chunks: Tuple[int, List[str]]) -> Tuple[int, List[float]]:
+    """Calculates Azimuth scores for a chunk of guide RNAs.
+
+    This function computes Azimuth efficiency scores for a given chunk of guides
+    and returns the starting index along with the list of scores.
+
+    Args:
+        guides_chunks (Tuple[int, List[Guide]]): A tuple containing the start
+            index and a list of Guide objects.
+
+    Returns:
+        Tuple[int, List[float]]: The start index and the list of Azimuth scores
+            for the guides.
+    """
+    start_idx, guides = guides_chunks
+    scores = azimuth(np.array(guides))
+    return start_idx, scores
+
+
+def _execute_azimuth(
+    guides_chunks: List[Tuple[int, List[str]]], size: int, threads: int, debug: bool
+) -> List[float]:
+    """Executes Azimuth scoring in parallel for guide RNA chunks.
+
+    This function distributes guide RNA chunks across multiple processes to
+    compute Azimuth scores efficiently, collecting and returning the scores in
+    the original order.
+
+    Args:
+        guides_chunks (List[Tuple[int, List[Guide]]]): List of tuples containing
+            the start index and guide chunk.
+        size (int): Total number of guides.
+        threads (int): Number of threads for parallel execution.
+
+    Returns:
+        List[float]: List of Azimuth scores for each guide.
+
+    Raises:
+        CrisprHawkAzimuthScoreError: If Azimuth score calculation fails for any chunk.
+    """
+    azimuth_scores = [np.nan] * size  # azimuth scores
+    with ProcessPoolExecutor(max_workers=threads) as executor:
+        future_to_chunk = {
+            executor.submit(_azimuth, chunk): chunk[0] for chunk in guides_chunks
+        }
+        for future in as_completed(future_to_chunk):
+            start_idx = future_to_chunk[future]
+            try:
+                chunk_start_idx, chunk_scores = future.result()
+                for offset, score in enumerate(chunk_scores):
+                    azimuth_scores[chunk_start_idx + offset] = score
+            except Exception as e:
+                exception_handler(
+                    CrisprHawkAzimuthScoreError,
+                    f"Azimuth score calculation failed for chunk at index {start_idx}",
+                    os.EX_DATAERR,
+                    debug,
+                    e,
+                )
+    assert all(not np.isnan(s) for s in azimuth_scores)
+    assert len(azimuth_scores) == size  # should match
+    return azimuth_scores
+
+
+def azimuth_score(
+    guides: List[Guide], threads: int, verbosity: int, debug: bool
+) -> List[Guide]:
     """Computes Azimuth scores for a list of guide RNAs.
 
-    This function calculates the Azimuth efficiency score for each guide and updates
-    the guide objects with the computed values.
+    This function calculates the Azimuth efficiency score for each guide in
+    parallel and updates the guide objects with the computed values.
 
     Args:
         guides (List[Guide]): List of Guide objects to score.
+        threads (int): Number of threads to use for parallel computation.
         verbosity (int): Verbosity level for logging.
         debug (bool): Flag to enable debug mode for error handling.
 
@@ -53,23 +139,22 @@ def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guid
         return guides
     print_verbosity("Computing Azimuth score", verbosity, VERBOSITYLVL[3])
     start = time()  # azimuth score start time
-    guides_seqs = np.array(
-        [
-            guide.sequence[(GUIDESEQPAD - 4) : (-GUIDESEQPAD + 3)].upper()
-            for guide in guides
-        ]
-    )
-    try:  # compute azimuth scores
-        azimuth_scores = azimuth(guides_seqs)
+    guides_seqs = _extract_guide_sequences(guides)
+    guides_seqs_chunks = calculate_chunks(
+        guides_seqs, threads
+    )  # split guides in chunks
+    try:  # compute azimuth scores in parallel
+        azimuth_scores = _execute_azimuth(
+            guides_seqs_chunks, len(guides), threads, debug
+        )
     except Exception as e:
         exception_handler(
             CrisprHawkAzimuthScoreError,
-            "Azimuth score calculation failed",
+            "Azimuth score parallel execution failed",
             os.EX_DATAERR,
             debug,
             e,
         )
-    assert len(azimuth_scores) == len(guides)  # should match
     for i, score in enumerate(azimuth_scores):
         guides[i].azimuth_score = score  # assign score to each guide
     print_verbosity(
@@ -78,14 +163,82 @@ def azimuth_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guid
     return guides
 
 
-def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+def _rs3(guides_chunks: Tuple[int, List[str]]) -> Tuple[int, List[float]]:
+    """Calculates RS3 scores for a chunk of guide RNAs.
+
+    This function computes RS3 efficiency scores for a given chunk of guide
+    sequences and returns the starting index along with the list of scores.
+
+    Args:
+        guides_chunks (Tuple[int, List[str]]): A tuple containing the start index
+            and a list of guide sequences.
+
+    Returns:
+        Tuple[int, List[float]]: The start index and the list of RS3 scores for
+            the guides.
+    """
+    start_idx, guides = guides_chunks
+    scores = rs3(guides)
+    return start_idx, scores
+
+
+def _execute_rs3(
+    guides_chunks: List[Tuple[int, List[str]]], size: int, threads: int, debug: bool
+) -> List[float]:
+    """Executes RS3 scoring in parallel for guide RNA chunks.
+
+    This function distributes guide RNA chunks across multiple processes to
+    compute RS3 scores efficiently, collecting and returning the scores in the
+    original order.
+
+    Args:
+        guides_chunks (List[Tuple[int, List[str]]]): List of tuples containing
+            the start index and guide chunk.
+        size (int): Total number of guides.
+        threads (int): Number of threads for parallel execution.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[float]: List of RS3 scores for each guide.
+
+    Raises:
+        CrisprHawkAzimuthScoreError: If RS3 score calculation fails for any chunk.
+    """
+    rs3_scores = [np.nan] * size  # rs3 scores
+    with ProcessPoolExecutor(max_workers=threads) as executor:
+        future_to_chunk = {
+            executor.submit(_rs3, chunk): chunk[0] for chunk in guides_chunks
+        }
+        for future in as_completed(future_to_chunk):
+            start_idx = future_to_chunk[future]
+            try:
+                chunk_start_idx, chunk_scores = future.result()
+                for offset, score in enumerate(chunk_scores):
+                    rs3_scores[chunk_start_idx + offset] = score
+            except Exception as e:
+                exception_handler(
+                    CrisprHawkAzimuthScoreError,
+                    f"RS3 score calculation failed for chunk at index {start_idx}",
+                    os.EX_DATAERR,
+                    debug,
+                    e,
+                )
+    assert all(not np.isnan(s) for s in rs3_scores)
+    assert len(rs3_scores) == size  # should match
+    return rs3_scores
+
+
+def rs3_score(
+    guides: List[Guide], threads: int, verbosity: int, debug: bool
+) -> List[Guide]:
     """Computes RS3 scores for a list of guide RNAs.
 
-    This function calculates the RS3 efficiency score for each guide and updates
-    the guide objects with the computed values.
+    This function calculates the RS3 efficiency score for each guide in parallel
+    and updates the guide objects with the computed values.
 
     Args:
         guides (List[Guide]): List of Guide objects to score.
+        threads (int): Number of threads to use for parallel computation.
         verbosity (int): Verbosity level for logging.
         debug (bool): Flag to enable debug mode for error handling.
 
@@ -96,12 +249,12 @@ def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
         return guides
     print_verbosity("Computing RS3 score", verbosity, VERBOSITYLVL[3])
     start = time()  # rs3 score start time
-    guides_seqs = [
-        guide.sequence[(GUIDESEQPAD - 4) : (-GUIDESEQPAD + 3)].upper()
-        for guide in guides
-    ]
-    try:  # compute rs3 scores
-        rs3_scores = rs3(guides_seqs)
+    guides_seqs = _extract_guide_sequences(guides)
+    guides_seqs_chunks = calculate_chunks(
+        guides_seqs, threads
+    )  # split guides in chunks
+    try:  # compute rs3 scores in parallel
+        rs3_scores = _execute_rs3(guides_seqs_chunks, len(guides), threads, debug)
     except Exception as e:
         exception_handler(
             CrisprHawkRs3ScoreError,
@@ -110,7 +263,6 @@ def rs3_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
             debug,
             e,
         )
-    assert len(rs3_scores) == len(guides)  # should match
     for i, score in enumerate(rs3_scores):
         guides[i].rs3_score = score  # assign score to each guide
     print_verbosity(
@@ -337,9 +489,13 @@ def scoring_guides(
     for region, guides_list in guides.items():
         if pam.cas_system in [SPCAS9, XCAS9]:  # cas9 system pam
             # score each guide with azimuth
-            guides_list = azimuth_score(guides_list, args.verbosity, args.debug)
+            guides_list = azimuth_score(
+                guides_list, args.threads, args.verbosity, args.debug
+            )
             # score each guide with rs3
-            guides_list = rs3_score(guides_list, args.verbosity, args.debug)
+            guides_list = rs3_score(
+                guides_list, args.threads, args.verbosity, args.debug
+            )
             # score each guide with CFDon
             guides_list = cfdon_score(guides_list, args.verbosity, args.debug)
         if pam.cas_system == CPF1:  # cpf1 system pam

@@ -16,7 +16,7 @@ from .guide import Guide
 from .utils import print_verbosity, VERBOSITYLVL
 from .region import Region
 
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Tuple
 from Bio.SeqUtils import gc_fraction
 from time import time
 
@@ -54,6 +54,109 @@ def reverse_guides(guides: List[Guide], verbosity: int) -> List[Guide]:
     return guides
 
 
+def _parse_variant(variant_id: str) -> Tuple[str, int, str, str]:
+    """Parses a variant identifier string into its components.
+
+    This function splits a variant ID into chromosome, position, reference allele,
+    and alternate allele.
+
+    Args:
+        variant_id (str): The variant identifier string in the format 'chrom-pos-ref/alt'.
+
+    Returns:
+        Tuple[str, int, str, str]: A tuple containing chromosome, position,
+            reference allele, and alternate allele.
+    """
+    parts = variant_id.split("-")
+    chrom = parts[0]  # chromosome
+    position = int(parts[1])  # variant position
+    ref, alt = parts[2].split("/")
+    return chrom, position, ref, alt
+
+
+def _is_snv(ref: str, alt: str) -> bool:
+    """Determines if a variant is a single nucleotide variant (SNV).
+
+    This function returns True if the reference and alternate alleles are of
+    equal length, indicating an SNV.
+
+    Args:
+        ref (str): The reference allele.
+        alt (str): The alternate allele.
+
+    Returns:
+        bool: True if the variant is an SNV, False otherwise.
+    """
+    return len(ref) == len(alt)
+
+
+def sort_variants(variants):
+    """Sorts variant identifiers in natural genomic order.
+
+    This function sorts variants by chromosome, position, variant type (SNV or indel),
+    reference, and alternate allele.
+
+    Args:
+        variants: An iterable of variant identifier strings.
+
+    Returns:
+        List[str]: The sorted list of variant identifiers.
+    """
+
+    def _sort_key(variant):
+        chrom, pos, ref, alt = _parse_variant(variant)
+        # extract numeric part from chromosome for natural sorting
+        chrom_parts = chrom.replace("chr", "")
+        try:
+            chrom_num = int(chrom_parts)
+        except ValueError:
+            chrom_num = float("inf")  # handle X, Y, M, etc.
+            chrom_parts = chrom_parts.lower()
+        # return tuple for sorting:
+        # (chrom_number, chrom_string, position, is_indel, ref, alt)
+        return (chrom_num, chrom_parts, pos, not _is_snv(ref, alt), ref, alt)
+
+    return sorted(variants, key=_sort_key)
+
+
+def _create_variant_position_map(variants: Set[str]) -> Dict[int, str]:
+    """Creates a mapping from variant positions to variant identifiers.
+
+    This function generates a dictionary mapping each variant's genomic position
+    to its identifier string.
+
+    Args:
+        variants (Set[str]): A set of variant identifier strings.
+
+    Returns:
+        Dict[int, str]: A dictionary mapping positions to variant identifiers.
+    """
+    varposmap = {}  # map variant positions to variant strings for quick lookup
+    for variant in sort_variants(variants):
+        _, pos, _, _ = _parse_variant(variant)
+        varposmap[pos] = variant
+    return varposmap
+
+
+def _compute_indel_offset(ref: str, alt: str) -> Tuple[int, int]:
+    """Computes the offset for insertions and deletions between reference and
+    alternate alleles.
+
+    This function calculates the number of bases deleted and inserted by comparing
+    the lengths of the reference and alternate alleles.
+
+    Args:
+        ref (str): The reference allele.
+        alt (str): The alternate allele.
+
+    Returns:
+        Tuple[int, int]: A tuple containing the deletion offset and insertion offset.
+    """
+    deletion_offset = max(0, len(ref) - len(alt))
+    insertion_offset = max(0, len(alt) - len(ref))
+    return deletion_offset, insertion_offset
+
+
 def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
     """Validates and filters variants that overlap with a guide sequence.
 
@@ -69,25 +172,30 @@ def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
             sequence.
     """
     # map variant positions to variant strings for quick lookup
-    varposmap = {int(variant.split("-")[1]): variant for variant in variants}
+    varposmap = _create_variant_position_map(variants)
+    offset_insertion = 0  # Skip bases in guide sequence for insertions
+    offset_deletion = 0  # Adjust position calculation for deletions
     validated_variants = set()
     # check each nucleotide position in the guide sequence
     for seqidx, nt in enumerate(guide.guidepam):
-        pos = guide.start + seqidx
-        if pos not in varposmap:
+        if offset_insertion > 0:  # skip positions if in an insertion
+            offset_insertion -= 1
+            continue
+        # genomic position accounting for deletions
+        pos = guide.start + seqidx + offset_deletion
+        if pos not in varposmap:  # check if there's a variant at this position
             continue
         # parse variant information: "chrom-pos-ref/alt"
         variant_id = varposmap[pos]
-        ref, alt = variant_id.split("-")[2].split("/")
-        if len(ref) != len(
-            alt
-        ):  # patch to handle indels overlapping guide's start or stop
+        _, pos, ref, alt = _parse_variant(variant_id)
+        if not _is_snv(ref, alt):  #  handle indels
             validated_variants.add(variant_id)
+            # update indel offsets
+            do, offset_insertion = _compute_indel_offset(ref, alt)
+            offset_deletion += do
             continue
-        # calculate sequence length difference (indel offset)
-        offset = max(0, len(alt) - len(ref))
         # validate: lowercase sequence in guide should match uppercase alt allele
-        guide_segment = guide.guidepam[seqidx : seqidx + offset + 1]
+        guide_segment = guide.guidepam[seqidx : seqidx + 1]
         if guide_segment.islower() and guide_segment.upper() == alt:
             validated_variants.add(variant_id)
     return validated_variants

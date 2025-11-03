@@ -17,7 +17,7 @@ def make_guide(**kwargs):
     defaults = dict(
         position_start=1,
         position_stop=24,
-        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
+        sequence="C" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "C" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -36,16 +36,16 @@ def test_azimuth_score(monkeypatch):
     prepare_package()
     guides = [make_guide()]
     monkeypatch.setattr("crisprhawk.scoring.azimuth", lambda seqs: [0.5])
-    scored = azimuth_score(guides, verbosity=0, debug=False)
-    assert scored[0].azimuth_score == "0.5"
+    scored = azimuth_score(guides, 1, verbosity=0, debug=False)
+    assert scored[0].azimuth_score == "0.4717"
 
 
 def test_rs3_score(monkeypatch):
     prepare_package()
     guides = [make_guide()]
     monkeypatch.setattr("crisprhawk.scoring.rs3", lambda seqs: [0.7])
-    scored = rs3_score(guides, verbosity=0, debug=False)
-    assert scored[0].rs3_score == "0.7"
+    scored = rs3_score(guides, 1, verbosity=0, debug=False)
+    assert scored[0].rs3_score == "-0.9961"
 
 
 def test_deepcpf1_score(monkeypatch):

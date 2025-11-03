@@ -8,7 +8,7 @@ and static variables used across the CRISPR-HAWK software.
 
 from .exception_handlers import exception_handler
 
-from typing import Any, List
+from typing import Any, List, Tuple
 from itertools import permutations
 from colorama import Fore
 
@@ -524,3 +524,13 @@ def is_lowercase(sequence: str) -> bool:
         bool: True if the sequence contains lowercase characters, False otherwise.
     """
     return any(c.islower() for c in sequence)
+
+
+def calculate_chunks(lst: List[Any], threads: int) -> List[Tuple[int, List[Any]]]:
+    size = len(lst)  # compute list size
+    chunk_size = max(1, size // threads)  # compute chunk sizes
+    chunks = []  # create chunks
+    for i in range(0, size, chunk_size):
+        end_idx = min(i + chunk_size, size)
+        chunks.append((i, lst[i:end_idx]))
+    return chunks
