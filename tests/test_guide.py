@@ -14,7 +14,7 @@ def test_guide_initialization():
     guide = Guide(
         position_start=100,
         position_stop=123,
-        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -27,7 +27,7 @@ def test_guide_initialization():
     )
     assert guide.start == 100
     assert guide.stop == 123
-    assert guide.sequence.startswith("N" * 50)
+    assert guide.sequence.startswith("N" * 10)
     assert guide.samples == "sample1"
     assert guide.variants == "var1"
     assert guide.afs == {"var1": 0.5}
@@ -49,7 +49,7 @@ def test_guide_repr_and_len():
     guide = Guide(
         position_start=1,
         position_stop=24,
-        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -70,7 +70,7 @@ def test_guide_getitem_and_iter():
     guide = Guide(
         position_start=1,
         position_stop=24,
-        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -93,7 +93,7 @@ def test_guide_reverse_complement():
     guide = Guide(
         position_start=1,
         position_stop=24,
-        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -114,7 +114,7 @@ def test_guide_setters_and_properties():
     guide = Guide(
         position_start=1,
         position_stop=24,
-        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -155,7 +155,7 @@ def test_guide_geneann_type_error():
     guide = Guide(
         position_start=1,
         position_stop=24,
-        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -174,7 +174,7 @@ def test_guide_offtargets_type_error():
     guide = Guide(
         position_start=1,
         position_stop=24,
-        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -193,7 +193,7 @@ def test_guide_cfd_type_error():
     guide = Guide(
         position_start=1,
         position_stop=24,
-        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,
@@ -212,7 +212,7 @@ def test_guideiterator_next_and_stopiteration():
     guide = Guide(
         position_start=1,
         position_stop=24,
-        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         guidelen=23,
         pamlen=3,
         direction=1,

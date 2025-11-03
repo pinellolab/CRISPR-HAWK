@@ -27,7 +27,7 @@ def test_write_guides_file_creates_file():
         Guide(
             0,
             120,
-            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
             20,
             3,
             0,
@@ -49,7 +49,7 @@ def test_write_guides_file_creates_file():
         with open(fname) as f:
             lines = f.readlines()
         assert len(lines) == 1
-        assert "ACTGACTGACTGACTGACTG" in lines[0].strip()
+        assert "AGCTTAGCTAGCTAGCTAGC" in lines[0].strip()
 
 
 def test_write_pam_file_creates_file():
@@ -75,7 +75,7 @@ def test_prepare_input_data_creates_files():
         Guide(
             0,
             120,
-            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
             20,
             3,
             0,
@@ -112,7 +112,7 @@ def test_calculate_offtargets_map_returns_dict():
         Guide(
             0,
             120,
-            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
             20,
             3,
             0,
@@ -124,7 +124,7 @@ def test_calculate_offtargets_map_returns_dict():
             "hap1",
         )
     ]
-    offtargets = [DummyOfftarget("ACTGACTGACTGACTGACTG")]
+    offtargets = [DummyOfftarget("AGCTTAGCTAGCTAGCTAGC")]
     otmap = _calculate_offtargets_map(offtargets, guides)
     assert isinstance(otmap, dict)
     assert guides[0].guide.upper() in otmap
@@ -150,7 +150,7 @@ def test_annotate_guides_offtargets_sets_attributes():
         Guide(
             0,
             120,
-            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
             20,
             3,
             0,
@@ -162,7 +162,7 @@ def test_annotate_guides_offtargets_sets_attributes():
             "hap1",
         )
     ]
-    offtargets = [DummyOfftarget("ACTGACTGACTGACTGACTG", "0.5")]
+    offtargets = [DummyOfftarget("AGCTTAGCTAGCTAGCTAGC", "0.5")]
     guides = annotate_guides_offtargets(offtargets, guides, verbosity=0)
     assert hasattr(guides[0], "offtargets")
     assert hasattr(guides[0], "cfd")

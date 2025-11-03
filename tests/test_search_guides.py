@@ -91,7 +91,7 @@ def test_group_guides_position_and_remove_redundant():
     guide1 = Guide(
         100,
         123,
-        "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         23,
         3,
         0,
@@ -105,7 +105,7 @@ def test_group_guides_position_and_remove_redundant():
     guide2 = Guide(
         100,
         123,
-        "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAGC" + "N" * 10,
+        "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
         23,
         3,
         0,
