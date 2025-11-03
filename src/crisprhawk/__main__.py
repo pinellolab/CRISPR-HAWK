@@ -466,9 +466,9 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         type=str,
         dest="suffix",
         required=False,
-        default="",
+        default="converted",
         help="Optional suffix to append to the names of the converted VCF files. "
-        "Useful for distinguishing output files (default: no suffix)",
+        "Useful for distinguishing output files (default: 'converted')",
     )
     parser_converter.add_argument(
         "-t",

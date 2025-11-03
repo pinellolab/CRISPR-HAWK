@@ -5,6 +5,24 @@ from typing import Union, List, Tuple
 
 import math
 
+IUPACTABLE = {
+    "A": "A",
+    "C": "C",
+    "G": "G",
+    "T": "T",
+    "R": "AG",
+    "Y": "CT",
+    "M": "AC",
+    "K": "GT",
+    "S": "CG",
+    "W": "AT",
+    "H": "ACT",
+    "B": "CGT",
+    "V": "ACG",
+    "D": "AGT",
+    "N": "ACGT",
+}
+
 
 class MicrohomologyPattern:
     """
@@ -163,7 +181,17 @@ class MicrohomologyResult:
     @property
     def deletion_patterns(self) -> List[Tuple[float, str]]:
         return self._deletion_patterns
+    
 
+def _match(seq1: str, seq2: str) -> bool:
+    seq1, seq2 = seq1.upper(), seq2.upper()
+    for i, (nt1, nt2) in enumerate(zip(seq1, seq2)):
+        if nt1 not in IUPACTABLE or nt2 not in IUPACTABLE:
+            raise ValueError(f"Invalid IUPAC characters ({nt1} - {nt2}) at position {i}")
+        ntiupac1, ntiupac2 = set(IUPACTABLE[nt1]), set(IUPACTABLE[nt2])
+        if not ntiupac1.intersection(ntiupac2):  # check possible overlap
+            return False
+    return True
 
 def _find_microhomology_patterns(
     sequence: str, start: int, stop: int
@@ -184,13 +212,12 @@ def _find_microhomology_patterns(
         List[MicrohomologyPattern]: A list of found microhomology patterns.
     """
     patterns = []  # list of microhomology patterns founf for current guide
-    for k in reversed(
-        list(range(2, start))
-    ):  # search for patterns of length k (from 2 to start - 1)
+    for k in reversed(list(range(2, start))):
+        # search for patterns of length k (from 2 to start - 1)
         for j, i in product(range(start, start + stop - k + 1), range(start - k + 1)):
             leftseq = sequence[i : i + k]
             rightseq = sequence[j : j + k]
-            if leftseq == rightseq:
+            if _match(leftseq, rightseq):
                 deletion_length = j - i
                 patterns.append(
                     MicrohomologyPattern(
