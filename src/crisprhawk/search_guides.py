@@ -236,26 +236,29 @@ def _valid_guide(
     return all((ntbit & pam.bitsrc[i]).to_bool() for i, ntbit in enumerate(p.bits))
 
 
+# def _decode_iupac(
+#     nt: str, pos: int, llimit: int, rlimit: int, h: Haplotype, debug: bool
+# ) -> str:
 def _decode_iupac(nt: str, pos: int, h: Haplotype, debug: bool) -> str:
-    """Decodes an IUPAC nucleotide character to its possible alleles for a given
-    position.
+    """Decodes an IUPAC nucleotide code at a given position within specified limits.
 
-    Returns the decoded nucleotide(s), using lowercase for non-reference alleles
-    and handling errors for invalid IUPAC codes.
+    Returns the resolved nucleotide(s) for the given IUPAC code, handling ambiguity
+    and variant alleles.
 
     Args:
-        nt (str): The IUPAC nucleotide character to decode.
-        pos (int): The position in the haplotype.
+        nt (str): The nucleotide or IUPAC code to decode.
+        pos (int): The position of the nucleotide in the sequence.
         h (Haplotype): The Haplotype object containing variant allele information.
         debug (bool): Whether to enable debug mode for error handling.
 
     Returns:
-        str: The decoded nucleotide(s) as a string, with non-reference alleles in
-            lowercase.
+        str: The decoded nucleotide(s).
 
     Raises:
         CrisprHawkIupacTableError: If the IUPAC character is invalid.
     """
+    # if pos < llimit or pos > rlimit:
+    #     return nt
     try:
         ntiupac = IUPACTABLE[nt.upper()]
     except KeyError as e:
@@ -297,10 +300,16 @@ def resolve_guide(
     """
     # retrieve guide sequence relative start position
     p = pos - GUIDESEQPAD if right else pos - guidelen - GUIDESEQPAD
+    llimit = pos - 10 if right else pos - guidelen - 10
+    rlimit = pos + len(pam) + guidelen + 10 if right else pos + len(pam) + 10
     guide_alts = [
         "".join(g)
         for g in product(
-            *[list(_decode_iupac(nt, p + i, h, debug)) for i, nt in enumerate(guideseq)]
+            *[
+                # list(_decode_iupac(nt, p + i, llimit, rlimit, h, debug))
+                list(_decode_iupac(nt, p + i, h, debug))
+                for i, nt in enumerate(guideseq)
+            ]
         )
     ]  # decode iupac string
     idx = GUIDESEQPAD if right else (len(guideseq) - GUIDESEQPAD - len(pam))

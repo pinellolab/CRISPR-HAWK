@@ -27,7 +27,7 @@ def test_read_fasta(monkeypatch):
         lambda path, verbosity, debug, faidx=None: DummyFasta(path),
     )
     fastafiles = ["chr1.fa", "chr2.fa"]
-    result = region_constructor.read_fasta(fastafiles, "index", 0, False)
+    result = region_constructor.read_fasta(fastafiles, 0, False)
     assert isinstance(result, dict)
     assert set(result.keys()) == set(fastafiles)
     for v in result.values():
@@ -57,7 +57,7 @@ def test_construct_regions(monkeypatch):
     monkeypatch.setattr(
         region_constructor,
         "read_fasta",
-        lambda fastafiles, fasta_idx, verbosity, debug: {"chr1": DummyFasta("chr1")},
+        lambda fastafiles, verbosity, debug: {"chr1": DummyFasta("chr1")},
     )
     monkeypatch.setattr(
         region_constructor,
@@ -69,7 +69,5 @@ def test_construct_regions(monkeypatch):
         "extract_regions",
         lambda bed, fastas, verbosity, debug: ["regionX"],
     )
-    regions = region_constructor.construct_regions(
-        ["chr1.fa"], "regions.bed", "index", 0, False
-    )
+    regions = region_constructor.construct_regions(["chr1.fa"], "regions.bed", 0, False)
     assert regions == ["regionX"]

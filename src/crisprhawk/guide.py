@@ -17,7 +17,8 @@ import numpy as np
 
 import os
 
-GUIDESEQPAD = 50  # upstream and downstream sequence padding for guides scoring
+# GUIDESEQPAD = 50  # upstream and downstream sequence padding for guides scoring
+GUIDESEQPAD = 10  # upstream and downstream sequence padding for guides scoring
 
 
 class Guide:

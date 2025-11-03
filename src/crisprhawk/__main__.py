@@ -126,7 +126,7 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "-f",
         "--fasta",
         type=str,
-        metavar="FASTA-FILE",
+        metavar="FASTA-DIR",
         dest="fasta",
         required=True,
         help="folder containing genome FASTA files for guide search. Each "
@@ -172,17 +172,6 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "(default: current working directory)",
     )
     optional_group = parser_search.add_argument_group("Optional arguments")
-    optional_group.add_argument(
-        "-i",
-        "--fasta-idx",
-        type=str,
-        metavar="FASTA-IDX",
-        dest="fasta_idx",
-        nargs="?",
-        default="",
-        help="optional FASTA index file (FAI) for the input reference (default: "
-        "compute FAI)",
-    )
     optional_group.add_argument(
         "-v",
         "--vcf",
@@ -326,6 +315,31 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "estimation. Only used if --estimate-offtargets is enabled (default: 0)",
     )
     optional_group.add_argument(
+        "--offtargets-annotation",
+        type=str,
+        metavar="ANNOTATION-BED",
+        dest="offtargets_annotations",
+        nargs="*",
+        default=[],
+        help="one or more BED files specifying genomic regions used to annotate "
+        "estimated offtargets. Each file should follow the standard BED format "
+        "(at least: chrom, start, end), and should include additional annotation "
+        "on the 4th column (default: no annotation)",
+    )
+    optional_group.add_argument(
+        "--offtargets-annotation-colnames",
+        type=str,
+        metavar="ANNOTATION-COLNAMES",
+        dest="offtargets_annotation_colnames",
+        nargs="*",
+        default=[],
+        help="list of custom column names to use in the offtargets report. Each "
+        "name corresponds to one of the input BED files provided with "
+        "'--offtargets-annotation'. Must match the number and order of files in "
+        "'--offtargets-annotation' (default: annotation columns are named "
+        "'annotation_<i>')",
+    )
+    optional_group.add_argument(
         "--graphical-reports",
         action="store_true",
         dest="graphical_reports",
@@ -335,6 +349,22 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "alternative, spacer alternative, PAM alternative) and delta plots "
         "illustrating the impact of genetic diversity on guide efficiency and "
         "on-target activity (default: disabled)",
+    )
+    optional_group.add_argument(
+        "--candidate-guides",
+        type=str,
+        metavar="CHR:POS",
+        dest="candidate_guides",
+        nargs="*",
+        default=[],
+        help="One or more genomic coordinates of candidate guides to analyze in "
+        f"detail with {TOOLNAME}. Each guide must be specified in chromosome:position "
+        "format (e.g., 'chr1:123456'). For each candidate guide, a dedicated subreport "
+        "will be generated containing the guide and its alternative gRNAs for "
+        "side-by-side comparison. If enabled, graphical reports will also be "
+        "produced to visualize the impact of genetic variants on on-target "
+        "efficiency, using CFD and Elevation scores when applicable. (default: "
+        "no candidate guides)",
     )
     optional_group.add_argument(
         "-t",
@@ -436,9 +466,9 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         type=str,
         dest="suffix",
         required=False,
-        default="",
+        default="converted",
         help="Optional suffix to append to the names of the converted VCF files. "
-        "Useful for distinguishing output files (default: no suffix)",
+        "Useful for distinguishing output files (default: 'converted')",
     )
     parser_converter.add_argument(
         "-t",

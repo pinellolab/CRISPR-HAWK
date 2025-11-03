@@ -27,7 +27,7 @@ def test_write_guides_file_creates_file():
         Guide(
             0,
             120,
-            "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNACTGACTGACTGACTGACTGTGGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
             20,
             3,
             0,
@@ -42,12 +42,14 @@ def test_write_guides_file_creates_file():
     guides_seq = {g.guide.upper() for g in guides}
     pam = PAM("NGG", False, False)
     with tempfile.TemporaryDirectory() as tmpdir:
-        fname = _write_guides_file(guides_seq, pam, tmpdir, False, verbosity=0, debug=False)
+        fname = _write_guides_file(
+            guides_seq, pam, tmpdir, False, verbosity=0, debug=False
+        )
         assert os.path.exists(fname)
         with open(fname) as f:
             lines = f.readlines()
         assert len(lines) == 1
-        assert "ACTGACTGACTGACTGACTG" in lines[0].strip()
+        assert "AGCTTAGCTAGCTAGCTAGC" in lines[0].strip()
 
 
 def test_write_pam_file_creates_file():
@@ -73,7 +75,7 @@ def test_prepare_input_data_creates_files():
         Guide(
             0,
             120,
-            "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNACTGACTGACTGACTGACTGTGGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
             20,
             3,
             0,
@@ -89,7 +91,13 @@ def test_prepare_input_data_creates_files():
     config = DummyConfig()
     with tempfile.TemporaryDirectory() as tmpdir:
         guides_fname, pam_fname = _prepare_input_data(
-            config, {guides[0].guide.upper()}, pam, tmpdir, False, verbosity=0, debug=False
+            config,
+            {guides[0].guide.upper()},
+            pam,
+            tmpdir,
+            False,
+            verbosity=0,
+            debug=False,
         )
         assert os.path.exists(guides_fname)
         assert os.path.exists(pam_fname)
@@ -104,7 +112,7 @@ def test_calculate_offtargets_map_returns_dict():
         Guide(
             0,
             120,
-            "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNACTGACTGACTGACTGACTGTGGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
             20,
             3,
             0,
@@ -116,7 +124,7 @@ def test_calculate_offtargets_map_returns_dict():
             "hap1",
         )
     ]
-    offtargets = [DummyOfftarget("ACTGACTGACTGACTGACTG")]
+    offtargets = [DummyOfftarget("AGCTTAGCTAGCTAGCTAGC")]
     otmap = _calculate_offtargets_map(offtargets, guides)
     assert isinstance(otmap, dict)
     assert guides[0].guide.upper() in otmap
@@ -142,7 +150,7 @@ def test_annotate_guides_offtargets_sets_attributes():
         Guide(
             0,
             120,
-            "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNACTGACTGACTGACTGACTGTGGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+            "N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
             20,
             3,
             0,
@@ -154,7 +162,7 @@ def test_annotate_guides_offtargets_sets_attributes():
             "hap1",
         )
     ]
-    offtargets = [DummyOfftarget("ACTGACTGACTGACTGACTG", "0.5")]
+    offtargets = [DummyOfftarget("AGCTTAGCTAGCTAGCTAGC", "0.5")]
     guides = annotate_guides_offtargets(offtargets, guides, verbosity=0)
     assert hasattr(guides[0], "offtargets")
     assert hasattr(guides[0], "cfd")

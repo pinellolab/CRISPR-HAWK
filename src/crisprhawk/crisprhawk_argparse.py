@@ -157,16 +157,15 @@ class CrisprHawkSearchInputArgs:
         self._parser = parser
         self._check_consistency()  # check input args consistency
 
-    def _check_consistency(self):  # sourcery skip: low-code-quality
-        """Check the consistency and validity of parsed input arguments.
+    def _validate_fasta_files(self) -> None:
+        """Validates the existence and content of the input FASTA directory.
 
-        Validates the existence, type, and content of input files and directories,
-        and sets the list of VCF files found in the specified directory.
+        This function checks that the specified FASTA directory exists and contains
+        at least one FASTA file.
 
         Returns:
             None
         """
-        # fasta file
         if not os.path.exists(self._args.fasta) or not os.path.isdir(self._args.fasta):
             self._parser.error(f"Cannot find input FASTA folder {self._args.fasta}")
         self._fastas = glob(os.path.join(self._args.fasta, "*.fa")) + glob(
@@ -174,114 +173,185 @@ class CrisprHawkSearchInputArgs:
         )
         if not self._fastas:
             self._parser.error(f"No FASTA file found in {self._args.fasta}")
-        # fasta index
-        if self._args.fasta_idx and (
-            not os.path.exists(self._args.fasta) or not os.path.isfile(self._args.fasta)
-        ):
-            self._parser.error(f"Cannot find input FASTA index {self._args.fasta_idx}")
-        if self._args.fasta_idx and os.stat(self._args.fasta_idx).st_size <= 0:
-            self._parser.error(f"{self._args.fasta_idx} is empty")
-        # bed file
+
+    def _validate_bed(self) -> None:
+        """Validates the existence and content of the input BED file.
+
+        This function checks that the specified BED file exists and is not empty.
+
+        Returns:
+            None
+        """
         if not os.path.exists(self._args.bedfile) or not os.path.isfile(
             self._args.bedfile
         ):
             self._parser.error(f"Cannot find input BED {self._args.bedfile}")
         if os.stat(self._args.bedfile).st_size <= 0:
             self._parser.error(f"{self._args.bdefile} is empty")
-        # vcf folder
-        if self._args.vcf and (not os.path.isdir(self._args.vcf)):
+
+    def _validate_vcf_folder(self) -> None:
+        """Validates the existence and content of the input VCF folder.
+
+        This function checks that the specified VCF directory exists and contains
+        at least one VCF file.
+
+        Returns:
+            None
+        """
+        if not self._args.vcf:
+            self._vcfs = []
+            return
+        if not os.path.isdir(self._args.vcf):
             self._parser.error(f"Cannot find VCF folder {self._args.vcf}")
         self._vcfs = glob(os.path.join(self._args.vcf, "*.vcf.gz"))
-        if self._args.vcf and not self._vcfs:
+        if not self._vcfs:
             self._parser.error(f"No VCF file found in {self._args.vcf}")
-        # pam
+
+    def _validate_pam(self) -> None:
+        """Validates the PAM sequence for allowed IUPAC nucleotide characters.
+
+        This function checks that the PAM sequence contains only valid IUPAC characters.
+
+        Returns:
+            None
+        """
         if any(nt not in IUPAC for nt in self._args.pam):
             self._parser.error(f"PAM {self._args.pam} contains non IUPAC characters")
-        # guide length
+
+    def _validate_guide_length(self) -> None:
+        """Validates the guide length argument for minimum allowed value.
+
+        This function checks that the guide length is at least 1.
+
+        Returns:
+            None
+        """
         if self._args.guidelen < 1:
             self._parser.error(f"Forbidden guide length ({self._args.guidelen})")
-        # output folder
+
+    def _validate_output_folder(self) -> None:
+        """Validates the existence of the output folder and creates it if necessary.
+
+        This function checks that the specified output directory exists, creates
+        it if missing, and sets its absolute path.
+
+        Returns:
+            None
+        """
         if not os.path.exists(self._args.outdir) or not os.path.isdir(
             self._args.outdir
         ):
-            self._parser.error(f"Cannot find output folder {self._args.outdir}")
-        # functional annotation bed
-        if self._args.annotations and (
-            any(not os.path.isfile(f) for f in self._args.annotations)
-        ):
+            if not os.path.isdir(
+                os.path.dirname(self._args.outdir)
+            ):  # parent doesn't exist
+                self._parser.error(f"Cannot find output folder {self._args.outdir}")
+            os.makedirs(self._args.outdir)  # create output folder
+        self._outdir = os.path.abspath(self._args.outdir)
+        assert os.path.isdir(self._outdir)
+
+    def _validate_annotation_colnames(
+        self, colnames: List[str], annotation_files: List[str], annotation_type: str
+    ) -> None:
+        """Validates the consistency between annotation column names and annotation files.
+
+        This function checks that annotation column names are provided only when
+        annotation files exist, and that the number of column names matches the
+        number of annotation files.
+
+        Args:
+            colnames (List[str]): List of annotation column names.
+            annotation_files (List[str]): List of annotation file paths.
+            annotation_type (str): Type of annotation (e.g., "Annotation", "Gene
+                Annotation").
+
+        Returns:
+            None
+        """
+        if colnames and not annotation_files:
+            self._parser.error(
+                f"{annotation_type} column names provided, but no input {annotation_type.lower()} file"
+            )
+
+        if colnames and len(colnames) != len(annotation_files):
+            self._parser.error(
+                f"Mismatching number of {annotation_type.lower()} files and {annotation_type.lower()} column names"
+            )
+
+    def _validate_annotations(self) -> None:
+        """Validates the existence and content of input annotation BED files.
+
+        This function checks that all specified annotation files exist, are not empty,
+        and validates their column names.
+
+        Returns:
+            None
+        """
+        if not self._args.annotations:
+            return  # no input annotation file
+        if any(not os.path.isfile(f) for f in self._args.annotations):
             annfiles = ", ".join(self._args.annotations)
             self._parser.error(
                 f"Cannot find the specified annotation BED files {annfiles}"
             )
-        if self._args.annotations and any(
-            os.stat(f).st_size <= 0 for f in self._args.annotations
-        ):
+        if any(os.stat(f).st_size <= 0 for f in self._args.annotations):
             annfiles = ", ".join(self._args.annotations)
             self._parser.error(f"{annfiles} look empty")
-        # functional annotation colnames
-        if self._args.annotation_colnames and not self._args.annotations:
-            self._parser.error(
-                "Annotation column names provided, but no input annotation file"
-            )
-        if self._args.annotation_colnames and (
-            len(self._args.annotation_colnames) != len(self._args.annotations)
-        ):
-            self._parser.error(
-                "Mismatching number of annotation files and annotation column names"
-            )
-        # gene annotation bed
-        if self._args.gene_annotations and (
-            any(not os.path.isfile(f) for f in self._args.gene_annotations)
-        ):
+        # validate annotation colnames
+        self._validate_annotation_colnames(
+            self._args.annotation_colnames, self._args.annotations, "Annotation"
+        )
+
+    def _validate_gene_annotations(self) -> None:
+        """Validates the existence and content of input gene annotation BED files.
+
+        This function checks that all specified gene annotation files exist, are
+        not empty, and validates their column names.
+
+        Returns:
+            None
+        """
+        if not self._args.gene_annotations:
+            return  # no input gene annotation file
+        if any(not os.path.isfile(f) for f in self._args.gene_annotations):
             annfiles = ", ".join(self._args.gene_annotations)
             self._parser.error(f"Cannot find gene annotation BED files {annfiles}")
-        if self._args.gene_annotations and any(
-            os.stat(f).st_size <= 0 for f in self._args.gene_annotations
-        ):
+        if any(os.stat(f).st_size <= 0 for f in self._args.gene_annotations):
             annfiles = ", ".join(self._args.gene_annotations)
             self._parser.error(f"{annfiles} look empty")
-        # gene annotation colnames
-        if self._args.gene_annotation_colnames and not self._args.gene_annotations:
-            self._parser.error(
-                "Gene annotation column names provided, but no input gene annotation file"
-            )
-        if self._args.gene_annotation_colnames and (
-            len(self._args.gene_annotation_colnames) != len(self._args.gene_annotations)
-        ):
-            self._parser.error(
-                "Mismatching number of gene annotation files and gene annotation column names"
-            )
-        # elevation score
-        if self._args.compute_elevation and (
-            self._args.guidelen + len(self._args.pam) != 23 or self._args.right
-        ):
+        self._validate_annotation_colnames(
+            self._args.gene_annotation_colnames,
+            self._args.gene_annotations,
+            "Gene annotation",
+        )
+
+    def _validate_elevation_score(self) -> None:
+        """Validates the input arguments for Elevation score computation.
+
+        This function checks that the guide and PAM lengths sum to 23 and that
+        the guide is downstream of the PAM.
+
+        Returns:
+            None
+        """
+        if not self._args.compute_elevation:
+            return  # no elevation score request
+        if self._args.guidelen + len(self._args.pam) != 23 or self._args.right:
             self._parser.error(
                 "Elevation score requires that the combined length of the guide "
                 "and PAM is exactly 23 bp, and that the guide sequence is located "
                 "downstream of the PAM"
             )
-        # off-targets estimation
-        if self._args.estimate_offtargets and platform.system() != OSSYSTEMS[0]:
-            warning(
-                f"Off-target estimation is only supported on {OSSYSTEMS[0]} "
-                "systems. Off-target estimation automatically disabled",
-                1,
-            )  # always disply this warning
-            self._estimate_offtargets = False
-            self._crispritz_config = None
-        if self._args.estimate_offtargets:
-            self._estimate_offtargets = self._args.estimate_offtargets
-            self._crispritz_config = CrispritzConfig()  # read crispritz config
-            if not self._crispritz_config.set_command() or not check_crispritz_env(
-                self._crispritz_config.env_name, self._crispritz_config.conda
-            ):  # check if mamba/conda and crispritz environment are available
-                self._estimate_offtargets = False
-                self._crispritz_config = None
-        else:
-            self._estimate_offtargets = False
-            self._crispritz_config = None
-        # crispritz genome index
-        if self._args.estimate_offtargets and not self._args.crispritz_index:
+
+    def _validate_offtargets_parameters(self) -> None:
+        """Validates the input parameters for off-targets estimation.
+
+        This function checks that the CRISPRitz genome index is provided and that
+        the mismatch, DNA bulge, and RNA bulge arguments are non-negative.
+
+        Returns:
+            None
+        """
+        if not self._args.crispritz_index:  # check crispritz genome index
             self._parser.error("Genome index required for off-targets estimation")
         # check mm, bdna and brna arguments
         if self._args.estimate_offtargets and self._args.mm < 0:
@@ -294,18 +364,126 @@ class CrisprHawkSearchInputArgs:
             self._parser.error(
                 f"Forbidden number of RNA bulges given: {self._args.brna}"
             )
-        # threads number
-        if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
+
+    def _validate_offtargets_annotations(self) -> None:
+        """Validates the consistency of off-targets annotation arguments.
+
+        This function checks that off-targets annotation is only requested when
+        off-targets estimation is enabled, and validates the annotation column
+        names and files.
+
+        Returns:
+            None
+        """
+        if not self._args.estimate_offtargets and (
+            self._args.offtargets_annotation_colnames
+            or self._args.offtargets_annotations
+        ):
             self._parser.error(
-                f"Forbidden number of threads provided ({self._args.threads}). Max number of available cores: {multiprocessing.cpu_count()}"
+                "Off-targets annotation requested, but missing off-targets estimation argument"
             )
-        if self._args.threads == 0:  # use all cores
-            self._args.threads = multiprocessing.cpu_count()
-        # verbosity
+        if self._args.estimate_offtargets:
+            self._validate_annotation_colnames(
+                self._args.offtargets_annotation_colnames,
+                self._args.offtargets_annotations,
+                "Off-targets annotation",
+            )
+
+    def _validate_offtargets_estimation(self) -> None:
+        """Validates the input arguments and environment for off-targets estimation.
+
+        This function checks that off-targets estimation is supported on the current
+        system, initializes the CRISPRitz configuration, and validates annotation
+        and parameter arguments.
+
+        Returns:
+            None
+        """
+        if self._args.estimate_offtargets and platform.system() != OSSYSTEMS[0]:
+            warning(
+                f"Off-target estimation is only supported on {OSSYSTEMS[0]} "
+                "systems. Off-target estimation automatically disabled",
+                1,
+            )  # always disply this warning
+            self._estimate_offtargets = False
+            self._crispritz_config = None
+            return  # skip off-targets estimation
+        if self._args.estimate_offtargets:
+            self._estimate_offtargets = self._args.estimate_offtargets
+            self._crispritz_config = CrispritzConfig()  # read crispritz config
+            if not self._crispritz_config.set_command() or not check_crispritz_env(
+                self._crispritz_config.env_name, self._crispritz_config.conda
+            ):  # check if mamba/conda and crispritz environment are available
+                self._estimate_offtargets = False
+                self._crispritz_config = None
+        else:
+            self._estimate_offtargets = False
+            self._crispritz_config = None
+        self._validate_offtargets_annotations()
+        if self._args.estimate_offtargets:
+            self._validate_offtargets_parameters()
+
+    def _validate_candidate_guides(self) -> None:
+        if any(len(g.split(":")) != 2 for g in self._args.candidate_guides):
+            self._parser.error(
+                "Candidate guides appear to not follow <chr>:<position> format"
+            )
+        if any(int(g.split(":")[1]) < 1 for g in self._args.candidate_guides):
+            self._parser.error("Do candidate guides have negative position?")
+
+    def _validate_threads(self) -> None:
+        """Validates the thread count argument for allowed range.
+
+        This function checks that the number of threads is non-negative and does
+        not exceed the number of available CPU cores.
+
+        Returns:
+            None
+        """
+        max_threads = multiprocessing.cpu_count()
+        if self._args.threads < 0 or self._args.threads > max_threads:
+            self._parser.error(
+                f"Forbidden number of threads provided ({self._args.threads}). "
+                f"Max number of available cores: {max_threads}"
+            )
+        self._threads = max_threads if self._args.threads == 0 else self._args.threads
+
+    def _validate_verbosity(self) -> None:
+        """Validates the verbosity level argument for allowed values.
+
+        This function checks that the verbosity level is one of the accepted values.
+
+        Returns:
+            None
+        """
         if self._args.verbosity not in VERBOSITYLVL:
             self._parser.error(
                 f"Forbidden verbosity level selected ({self._args.verbosity})"
             )
+
+    def _check_consistency(self):
+        """Checks the consistency and validity of all parsed input arguments.
+
+        This function runs all validation routines for input files, parameters,
+        and options, ensuring that the command-line arguments are correct and
+        compatible for CRISPR-HAWK analysis.
+
+        Returns:
+            None
+        """
+        self._validate_fasta_files()  # check fasta file
+        self._validate_bed()  # check bed file
+        self._validate_vcf_folder()  # check vcf folder
+        self._validate_pam()  # check pam
+        self._validate_guide_length()  # check guide length
+        self._validate_output_folder()  # check output folder
+        self._validate_annotations()  # check functional annotation bed
+        self._validate_gene_annotations()  # check gene annotation bed
+        self._validate_elevation_score()  # check elevation score
+        self._validate_offtargets_estimation()  # check off-targets estimation
+        self._validate_candidate_guides()  # check candidate guides
+        self._validate_threads()  # check threads number
+        self._validate_verbosity()  # check verbosity
 
     @property
     def fastas(self) -> List[str]:
@@ -314,10 +492,6 @@ class CrisprHawkSearchInputArgs:
     @property
     def fastadir(self) -> str:
         return self._args.fasta
-
-    @property
-    def fasta_idx(self) -> str:
-        return self._args.fasta_idx
 
     @property
     def bedfile(self) -> str:
@@ -341,7 +515,7 @@ class CrisprHawkSearchInputArgs:
 
     @property
     def outdir(self) -> str:
-        return self._args.outdir
+        return self._outdir
 
     @property
     def no_filter(self) -> bool:
@@ -376,7 +550,7 @@ class CrisprHawkSearchInputArgs:
         return self._estimate_offtargets
 
     @property
-    def crispritz_config(self) -> Union[None, CrispritzConfig]:
+    def crispritz_config(self) -> Optional[CrispritzConfig]:
         return self._crispritz_config
 
     @property
@@ -396,12 +570,24 @@ class CrisprHawkSearchInputArgs:
         return self._args.brna
 
     @property
+    def offtargets_annotations(self) -> List[str]:
+        return self._args.offtargets_annotations
+
+    @property
+    def offtargets_annotation_colnames(self) -> List[str]:
+        return self._args.offtargets_annotation_colnames
+
+    @property
+    def candidate_guides(self) -> List[str]:
+        return self._args.candidate_guides
+
+    @property
     def graphical_reports(self) -> bool:
         return self._args.graphical_reports
 
     @property
     def threads(self) -> int:
-        return self._args.threads
+        return self._threads
 
     @property
     def verbosity(self) -> int:
@@ -434,15 +620,16 @@ class CrisprHawkConverterInputArgs:
         self._parser = parser
         self._check_consistency()  # check input args consistency
 
-    def _check_consistency(self) -> None:
-        """Check the consistency and validity of parsed input arguments for VCF
-        conversion.
+    def _validate_gnomad_vcf_folder(self) -> None:
+        """Validates the existence and content of the input gnomAD VCF folder.
 
-        Validates the existence and content of input VCF directories, output
-        directories, thread count, and verbosity level.
+        This function checks that the specified gnomAD VCF directory exists and
+        contains at least one VCF file.
+
+        Returns:
+            None
         """
-        # vcf folder
-        if self._args.gnomad_vcf_dir and (not os.path.isdir(self._args.gnomad_vcf_dir)):
+        if not os.path.isdir(self._args.gnomad_vcf_dir):
             self._parser.error(f"Cannot find VCF folder {self._args.gnomad_vcf_dir}")
         self._gnomad_vcfs = glob(
             os.path.join(self._args.gnomad_vcf_dir, "*.vcf.bgz")
@@ -451,24 +638,72 @@ class CrisprHawkConverterInputArgs:
             self._parser.error(
                 f"No gnomAD VCF file found in {self._args.gnomad_vcf_dir}"
             )
-        # output folder
+
+    def _validate_output_folder(self) -> None:
+        """Validates the existence of the output folder and creates it if necessary.
+
+        This function checks that the specified output directory exists, creates
+        it if missing, and sets its absolute path.
+
+        Returns:
+            None
+        """
         if not os.path.exists(self._args.outdir) or not os.path.isdir(
             self._args.outdir
         ):
-            self._parser.error(f"Cannot find output folder {self._args.outdir}")
-        # threads number
-        if self._args.threads < 0 or self._args.threads > multiprocessing.cpu_count():
+            if not os.path.isdir(
+                os.path.dirname(self._args.outdir)
+            ):  # parent doesn't exist
+                self._parser.error(f"Cannot find output folder {self._args.outdir}")
+            os.makedirs(self._args.outdir)  # create output folder
+        self._outdir = os.path.abspath(self._args.outdir)
+        assert os.path.isdir(self._outdir)
+
+    def _validate_threads(self) -> None:
+        """Validates the thread count argument for allowed range.
+
+        This function checks that the number of threads is non-negative and does
+        not exceed the number of available CPU cores.
+
+        Returns:
+            None
+        """
+        max_threads = multiprocessing.cpu_count()
+        if self._args.threads < 0 or self._args.threads > max_threads:
             self._parser.error(
                 f"Forbidden number of threads provided ({self._args.threads}). "
-                f"Max number of available cores: {multiprocessing.cpu_count()}"
+                f"Max number of available cores: {max_threads}"
             )
-        if self._args.threads == 0:  # use all cores
-            self._args.threads = multiprocessing.cpu_count()
-        # verbosity
+        self._threads = max_threads if self._args.threads == 0 else self._args.threads
+
+    def _validate_verbosity(self) -> None:
+        """Validates the verbosity level argument for allowed values.
+
+        This function checks that the verbosity level is one of the accepted values.
+
+        Returns:
+            None
+        """
         if self._args.verbosity not in VERBOSITYLVL:
             self._parser.error(
                 f"Forbidden verbosity level selected ({self._args.verbosity})"
             )
+
+    def _check_consistency(self) -> None:
+        """Checks the consistency and validity of all parsed input arguments for
+        gnomAD VCF conversion.
+
+        This function runs all validation routines for gnomAD VCF folder, output
+        folder, thread count, and verbosity, ensuring that the command-line arguments
+        are correct and compatible for CRISPR-HAWK VCF conversion analysis.
+
+        Returns:
+            None
+        """
+        self._validate_gnomad_vcf_folder()  # check gnomad vcf folder
+        self._validate_output_folder()  # check output folder
+        self._validate_threads()  # check threads number
+        self._validate_verbosity()  # check verbosity
 
     @property
     def gnomad_vcfs(self) -> List[str]:
@@ -529,20 +764,51 @@ class CrisprHawkPrepareDataInputArgs:
         self._parser = parser
         self._check_consistency()  # check input args consistency
 
-    def _check_consistency(self) -> None:
-        """Check the consistency and validity of parsed input arguments for
-        CRISPRme's data preparation.
+    def _validate_report(self) -> None:
+        """Validates the existence of the CRISPR-HAWK report file.
 
-        Validates the existence of the CRISPR-HAWK report file and output directory.
+        This function checks that the specified report file exists before proceeding
+        with data preparation.
+
+        Returns:
+            None
         """
-        # crisprhawk report
         if self._args.report and (not os.path.isfile(self._args.report)):
             self._parser.error(f"Cannot find {TOOLNAME} report {self._args.report}")
-        # output folder
+
+    def _validate_output_folder(self) -> None:
+        """Validates the existence of the output folder and creates it if necessary.
+
+        This function checks that the specified output directory exists, creates
+        it if missing, and sets its absolute path.
+
+        Returns:
+            None
+        """
         if not os.path.exists(self._args.outdir) or not os.path.isdir(
             self._args.outdir
         ):
-            self._parser.error(f"Cannot find output folder {self._args.outdir}")
+            if not os.path.isdir(
+                os.path.dirname(self._args.outdir)
+            ):  # parent doesn't exist
+                self._parser.error(f"Cannot find output folder {self._args.outdir}")
+            os.makedirs(self._args.outdir)  # create output folder
+        self._outdir = os.path.abspath(self._args.outdir)
+        assert os.path.isdir(self._outdir)
+
+    def _check_consistency(self) -> None:
+        """Checks the consistency and validity of all parsed input arguments for
+        CRISPRme data preparation.
+
+        This function runs all validation routines for the CRISPR-HAWK report and
+        output folder, ensuring that the command-line arguments are correct and
+        compatible for CRISPRme data preparation.
+
+        Returns:
+            None
+        """
+        self._validate_report()  # check crisprhawk report
+        self._validate_output_folder()  # check output folder
 
     @property
     def report(self) -> str:
@@ -587,22 +853,33 @@ class CrisprHawkCrispritzConfigInputArgs:
         self._parser = parser
         self._check_consistency()  # check input args consistency
 
-    def _check_consistency(self) -> None:
-        """Check the consistency and validity of parsed input arguments for Crispritz
-        configuration.
+    def _validate_targets_dir(self) -> None:
+        """Validates the existence of the CRISPRitz targets directory.
 
-        Validates the exclusivity and correctness of configuration options such
-        as targets directory, environment name, show, reset, and validate.
+        This function checks that the specified targets directory exists before
+        proceeding with configuration.
+
+        Returns:
+            None
         """
-        # crispritz config file
-        if self._args.targets_dir and (
-            not os.path.exists(self._args.targets_dir)
-            and not os.path.isdir(self._args.targets_dir)
+        if not self._args.targets_dir:
+            return  # no targets folder specified, use default
+        if not os.path.exists(self._args.targets_dir) and not os.path.isdir(
+            self._args.targets_dir
         ):
             self._parser.error(
                 f"Cannot find targets directory {self._args.targets_dir}"
             )
-        # show option
+
+    def _validate_show_option(self) -> None:
+        """Validates the --show option for CRISPRitz configuration argument parsing.
+
+        This function checks that the --show option is not used in combination with
+        other input arguments.
+
+        Returns:
+            None
+        """
         if (
             self._args.env_name
             or self._args.targets_dir
@@ -612,17 +889,17 @@ class CrisprHawkCrispritzConfigInputArgs:
             self._parser.error(
                 "--show options cannot be used with other input arguments"
             )
-        # reset option
-        if (
-            self._args.env_name
-            or self._args.targets_dir
-            or self._args.show
-            or self._args.validate
-        ) and self._args.reset:
-            self._parser.error(
-                "--reset options cannot be used with other input arguments"
-            )
-        # validate option
+
+    def _validate_validate_option(self) -> None:
+        """Validates the --validate option for CRISPRitz configuration argument
+        parsing.
+
+        This function checks that the --validate option is not used in combination
+        with other input arguments.
+
+        Returns:
+            None
+        """
         if (
             self._args.env_name
             or self._args.targets_dir
@@ -632,6 +909,41 @@ class CrisprHawkCrispritzConfigInputArgs:
             self._parser.error(
                 "--validate options cannot be used with other input arguments"
             )
+
+    def _validate_reset_option(self) -> None:
+        """Validates the --reset option for CRISPRitz configuration argument parsing.
+
+        This function checks that the --reset option is not used in combination with
+        other input arguments.
+
+        Returns:
+            None
+        """
+        if (
+            self._args.env_name
+            or self._args.targets_dir
+            or self._args.show
+            or self._args.validate
+        ) and self._args.reset:
+            self._parser.error(
+                "--reset options cannot be used with other input arguments"
+            )
+
+    def _check_consistency(self) -> None:
+        """Checks the consistency and validity of all parsed input arguments for
+        CRISPRitz configuration.
+
+        This function runs all validation routines for the CRISPRitz targets directory
+        and configuration options, ensuring that the command-line arguments are correct
+        and compatible for CRISPRitz configuration management.
+
+        Returns:
+            None
+        """
+        self._validate_targets_dir()  # check crispritz config file
+        self._validate_show_option()  # check show option
+        self._validate_reset_option()  # check reset option
+        self._validate_validate_option()  # check validate option
 
     @property
     def env_name(self) -> str:

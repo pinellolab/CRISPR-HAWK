@@ -1,9 +1,9 @@
 """
 Scoring functions for CRISPR guide evaluation.
 
-This module provides wrappers and utilities for computing various CRISPR guide 
-scores, including Azimuth, RuleSet3, CFD, DeepCpf1, Elevation, and out-of-frame 
-scores. It integrates multiple models and scoring algorithms to assess guide 
+This module provides wrappers and utilities for computing various CRISPR guide
+scores, including Azimuth, RuleSet3, CFD, DeepCpf1, Elevation, and out-of-frame
+scores. It integrates multiple models and scoring algorithms to assess guide
 efficiency and specificity.
 """
 
@@ -29,7 +29,7 @@ import numpy as np
 def azimuth(guides: np.ndarray) -> List[float]:
     """Predict Azimuth scores for a set of guides.
 
-    Returns a list of Azimuth scores for the provided guide sequences using the 
+    Returns a list of Azimuth scores for the provided guide sequences using the
     Azimuth model.
 
     Args:
@@ -45,7 +45,7 @@ def azimuth(guides: np.ndarray) -> List[float]:
 def rs3(guides: List[str]) -> List[float]:
     """Predict RuleSet3 scores for a list of guide sequences.
 
-    Returns a list of RuleSet3 scores for the provided guide sequences using the 
+    Returns a list of RuleSet3 scores for the provided guide sequences using the
     RuleSet3 model.
 
     Args:
@@ -65,7 +65,7 @@ def cfdon(
 ) -> List[float]:
     """Compute CFD on-target scores for a list of guides.
 
-    Returns a list of CFD (Cutting Frequency Determination) scores for the provided 
+    Returns a list of CFD (Cutting Frequency Determination) scores for the provided
     guides using the reference guide and loaded mismatch and PAM scoring models.
 
     Args:
@@ -88,7 +88,7 @@ def cfdon(
 def deepcpf1(guides: List[str]) -> List[float]:
     """Predict DeepCpf1 scores for a list of guide sequences.
 
-    Returns a list of DeepCpf1 scores for the provided guide sequences using the 
+    Returns a list of DeepCpf1 scores for the provided guide sequences using the
     DeepCpf1 model.
 
     Args:
@@ -108,7 +108,7 @@ def deepcpf1(guides: List[str]) -> List[float]:
 def elevation(wildtypes: List[str], offtargets: List[str]) -> List[float]:
     """Compute Elevation scores for pairs of wildtype and offtarget sequences.
 
-    Returns a list of Elevation scores for the provided wildtype and offtarget 
+    Returns a list of Elevation scores for the provided wildtype and offtarget
     sequence pairs using the Elevation model.
 
     Args:
@@ -128,13 +128,13 @@ def elevationon(
 ) -> List[Guide]:
     """Compute Elevation on-target scores for groups of guides.
 
-    Returns a list of Guide objects with their elevationon_score attribute set, 
-    using the Elevation model for on-target scoring. Guides without a reference 
+    Returns a list of Guide objects with their elevationon_score attribute set,
+    using the Elevation model for on-target scoring. Guides without a reference
     alternative are assigned a score of NaN.
 
     Args:
-        guide_groups (Dict[str, Tuple[Union[None, Guide], List[Guide]]]): A dictionary 
-            mapping group keys to tuples of (reference guide or None, list of 
+        guide_groups (Dict[str, Tuple[Union[None, Guide], List[Guide]]]): A dictionary
+            mapping group keys to tuples of (reference guide or None, list of
             Guide objects).
 
     Returns:
@@ -162,7 +162,7 @@ def elevationon(
 def ooframe_score(guides: List[Guide], idx: int) -> List[int]:
     """Compute out-of-frame scores for a list of guides at a given index.
 
-    Returns a list of out-of-frame (ooframe) scores for each guide, calculated 
+    Returns a list of out-of-frame (ooframe) scores for each guide, calculated
     using the microhomology score at the specified index.
 
     Args:
@@ -174,7 +174,6 @@ def ooframe_score(guides: List[Guide], idx: int) -> List[int]:
     """
     guides_seqs = [g.sequence[idx - 30 : idx + 30] for g in guides]
     mhscores = [
-        calculate_microhomology_score(gs.upper(), len(gs) // 2)
-        for gs in guides_seqs
+        calculate_microhomology_score(gs.upper(), len(gs) // 2) for gs in guides_seqs
     ]
     return [mhscore.ooframe_score for mhscore in mhscores]

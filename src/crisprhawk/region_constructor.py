@@ -21,34 +21,29 @@ import os
 PADDING = 100  # padding length for regions
 
 
-def read_fasta(
-    fastafiles: List[str], fasta_idx: str, verbosity: int, debug: bool
-) -> Dict[str, Fasta]:
-    """Read multiple FASTA files and return a dictionary of Fasta objects.
+def read_fasta(fastafiles: List[str], verbosity: int, debug: bool) -> Dict[str, Fasta]:
+    """Reads input FASTA files and constructs Fasta objects for each genomic region.
 
-    Loads the specified FASTA files and returns a dictionary mapping contig
-    names to Fasta objects. Handles errors and prints progress messages.
+    This function loads each FASTA file, creates Fasta objects, and returns a
+    dictionary mapping contig names to Fasta objects for downstream region
+    extraction.
 
     Args:
-        fastafiles (List[str]): List of paths to FASTA files.
-        fasta_idx (str): Path to the FASTA index file.
-        verbosity (int): The verbosity level for logging.
-        debug (bool): Flag to enable debug mode.
+        fastafiles: List of FASTA file paths to read.
+        verbosity: Verbosity level for logging.
+        debug: Flag to enable debug mode.
 
     Returns:
-        Dict[str, Fasta]: A dictionary mapping contig names to Fasta objects.
+        Dictionary mapping contig names to Fasta objects.
 
     Raises:
-        Exception: If the FASTA files cannot be parsed.
+        Exception: If any FASTA file cannot be parsed.
     """
     # read input fasta and bed and construct Region object for each genomic region
     print_verbosity("Reading input Fasta files", verbosity, VERBOSITYLVL[3])
     start = time()  # track processing time
     try:
-        fastas = [
-            Fasta(fastafile, verbosity, debug, faidx=fasta_idx)
-            for fastafile in fastafiles
-        ]
+        fastas = [Fasta(fastafile, verbosity, debug) for fastafile in fastafiles]
         fastas_dict = {fasta.contig: fasta for fasta in fastas}
     except Exception as e:
         exception_handler(
@@ -137,33 +132,27 @@ def extract_regions(
 def construct_regions(
     fastafiles: List[str],
     bedfile: str,
-    fasta_idx: str,
     verbosity: int,
     debug: bool,
 ) -> RegionList:
-    """Construct genomic regions from input FASTA and BED files.
+    """Constructs genomic regions from input FASTA and BED files.
 
-    Reads the provided FASTA and BED files, extracts the specified regions, and
-    returns a RegionList object containing the genomic regions. Handles errors and
-    prints progress messages.
+    This function reads the provided FASTA and BED files, extracts the specified
+    regions, and returns a RegionList containing the constructed genomic regions.
 
     Args:
-        fastafiles (List[str]): List of paths to FASTA files.
-        bedfile (str): Path to the BED file.
-        fasta_idx (str): Path to the FASTA index file.
-        verbosity (int): The verbosity level for logging.
-        debug (bool): Flag to enable debug mode.
+        fastafiles: List of FASTA file paths to read.
+        bedfile: Path to the BED file specifying regions.
+        verbosity: Verbosity level for logging.
+        debug: Flag to enable debug mode.
 
     Returns:
         RegionList: A RegionList object containing the constructed genomic regions.
-
-    Raises:
-        Exception: If reading files or region extraction fails.
     """
     # read input fasta and bed and construct Region object for each genomic region
     print_verbosity("Retrieving input genomic regions", verbosity, VERBOSITYLVL[1])
     start = time()  # track processing time
-    fastas = read_fasta(fastafiles, fasta_idx, verbosity, debug)
+    fastas = read_fasta(fastafiles, verbosity, debug)
     bed = read_bed(bedfile, verbosity, debug)
     regions = extract_regions(bed, fastas, verbosity, debug)
     print_verbosity(
