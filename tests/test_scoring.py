@@ -35,7 +35,7 @@ def make_guide(**kwargs):
 def test_azimuth_score(monkeypatch):
     prepare_package()
     guides = [make_guide()]
-    monkeypatch.setattr("crisprhawk.scoring.azimuth", lambda seqs: [0.5])
+    # monkeypatch.setattr("crisprhawk.scoring.azimuth", lambda seqs: [0.5])
     scored = azimuth_score(guides, 1, verbosity=0, debug=False)
     assert scored[0].azimuth_score == "0.4717"
 
@@ -43,7 +43,7 @@ def test_azimuth_score(monkeypatch):
 def test_rs3_score(monkeypatch):
     prepare_package()
     guides = [make_guide()]
-    monkeypatch.setattr("crisprhawk.scoring.rs3", lambda seqs: [0.7])
+    # monkeypatch.setattr("crisprhawk.scoring.rs3", lambda seqs: [0.7])
     scored = rs3_score(guides, 1, verbosity=0, debug=False)
     assert scored[0].rs3_score == "-0.9961"
 
