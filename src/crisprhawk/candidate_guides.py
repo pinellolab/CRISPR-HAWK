@@ -4,8 +4,7 @@ from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .crisprhawk_error import CrisprHawkCandidateGuideError
 from .exception_handlers import exception_handler
 from .coordinate import Coordinate
-from .utils import warning, print_verbosity, CANDIDATEGUIDESREPORTPREFIX, VERBOSITYLVL
-from .graphical_reports import FIGURE_SIZE
+from .utils import print_verbosity, CANDIDATEGUIDESREPORTPREFIX, VERBOSITYLVL
 from .reports import REPORTCOLS
 from .region import Region
 from .pam import PAM, SPCAS9, XCAS9
@@ -221,10 +220,10 @@ def _retrieve_scores_samples(report: pd.DataFrame) -> Tuple[List[float], List[in
     Returns:
         Tuple containing a list of CFD scores and a list of sample counts.
     """
-    rdf = report[report[REPORTCOLS[14]] != "ref"]  # keep only alternative grnas
+    rdf = report[report[REPORTCOLS[13]] != "ref"]  # keep only alternative grnas
     scores = list(map(float, rdf[REPORTCOLS[10]].tolist()))  # cfdon scores
     # count number of samples per grna
-    numsamples = rdf[REPORTCOLS[15]].str.split(",").apply(len)
+    numsamples = rdf[REPORTCOLS[14]].str.split(",").apply(len)
     numsamples = numsamples.fillna(1)  # fill potential na values
     return scores, list(numsamples)
 
@@ -583,7 +582,7 @@ def _prepare_scatter_data(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with an added 'n_samples' column representing sample counts.
     """
     df = df.copy()
-    df["n_samples"] = df.apply(lambda x: len(set(x[REPORTCOLS[15]].split(","))), axis=1)
+    df["n_samples"] = df.apply(lambda x: len(set(x[REPORTCOLS[14]].split(","))), axis=1)
     return df
 
 
@@ -600,7 +599,7 @@ def _extract_variant_labels(df: pd.DataFrame) -> List[str]:
         List of variant labels as strings, with 'REF' for missing values.
     """
     return [
-        "REF" if str(cname) == "nan" else cname for cname in df[REPORTCOLS[16]].tolist()
+        "REF" if str(cname) == "nan" else cname for cname in df[REPORTCOLS[15]].tolist()
     ]
 
 
@@ -656,7 +655,7 @@ def _create_variant_legend_handle(
 ) -> Line2D:
     # use diamond if this variant has any single-sample entries
     has_single_sample = (
-        df[(df[REPORTCOLS[16]] == row[REPORTCOLS[16]]) & (df["n_samples"] == 1)].shape[
+        df[(df[REPORTCOLS[15]] == row[REPORTCOLS[15]]) & (df["n_samples"] == 1)].shape[
             0
         ]
         > 0
@@ -702,14 +701,14 @@ def _plot_scatter_points(
         # grey for reference, variant-specific otherwise
         color = (
             "grey"
-            if str(row[REPORTCOLS[16]]) == "nan"
-            else colorlab[row[REPORTCOLS[16]]]
+            if str(row[REPORTCOLS[15]]) == "nan"
+            else colorlab[row[REPORTCOLS[15]]]
         )
         size = 150 * np.sqrt(
             row["n_samples"]
         )  # scale size by square root of sample count
         plt.scatter(
-            row[REPORTCOLS[21]],  # off-target potential (x-axis)
+            row[REPORTCOLS[20]],  # off-target potential (x-axis)
             row[REPORTCOLS[10]],  # variant effect on-target (y-axis)
             color=color,
             s=size,
@@ -720,8 +719,8 @@ def _plot_scatter_points(
             zorder=2,
         )
         # Create legend handle for this variant (if not already created)
-        if row[REPORTCOLS[16]] not in variant_handles:
-            variant_handles[row[REPORTCOLS[16]]] = _create_variant_legend_handle(df, row, color)  # type: ignore
+        if row[REPORTCOLS[15]] not in variant_handles:
+            variant_handles[row[REPORTCOLS[15]]] = _create_variant_legend_handle(df, row, color)  # type: ignore
     return variant_handles
 
 
