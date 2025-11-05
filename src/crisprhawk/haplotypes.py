@@ -401,20 +401,7 @@ def generate_variants_combinations(
         List[List[VariantRecord]]: List of variant combinations, each as a list
             of variant records.
     """
-    variant_groups = {}  # groups of alternative variants
-    is_snv = True  # variant.vtype[0] == VTYPES[0]
-    for variant in variants:
-        # retrieve variant id to match multiallelic sites
-        vid = _split_id(variant.id[0])
-        is_homozygous = all(sample in call for call in variant.samples[0])
-        if is_snv or is_homozygous:  # only one option available
-            variant_groups[vid] = [variant]
-        elif vid in variant_groups:
-            # remove reference allele for alternatives in multiallelic site
-            variant_groups[vid] = [v for v in variant_groups[vid] if v is not None]
-            variant_groups[vid].append(variant)  # add alt to multiallelic
-        else:
-            variant_groups[vid] = [variant, None]  # add reference (None)
+    variant_groups = {variant.id[0]: [variant] for variant in variants}
     return [list(comb) for comb in product(*variant_groups.values())]
 
 

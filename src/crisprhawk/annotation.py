@@ -220,36 +220,39 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
         "Annotating variants occurring in guides", verbosity, VERBOSITYLVL[3]
     )
     start = time()  # position calculation start time
-    for guide in guides:
-        guide_vars = set()  # variants occurring in variant
-        is_reference = False
-        for variant in guide.variants.split(","):
-            if variant == "NA":  # reference sequence (no variants)
-                if guide_vars:  # shouldn't have both NA and actual variants
-                    exception_handler(
-                        ValueError, "Forbidden NA variant", os.EX_DATAERR, debug
-                    )
-                guide_vars.add("NA")
-                is_reference = True
-                break
-            try:  # retrieve each variant position
-                variant_position = int(variant.split("-")[1])
-            except TypeError as e:
-                exception_handler(
-                    TypeError,
-                    f"Variant {variant} seems to have a non int position",
-                    os.EX_DATAERR,
-                    debug,
-                    e,
-                )
-            # assess whether the snp occurs within the guide or is part of the haplotype
-            if guide.start <= variant_position < guide.stop:
-                guide_vars.add(variant)
-        if guide_vars:  # process guides with variants
-            if not is_reference:  # polish variants to validate sequence matches
-                guide_vars = polish_variants_annotation(guide, guide_vars)
-            guide.variants = ",".join(sorted(guide_vars))
-            guides_lst.append(guide)
+    # for guide in guides:
+    #     guide_vars = set()  # variants occurring in variant
+    #     is_reference = False
+    #     for variant in guide.variants.split(","):
+    #         if variant == "NA":  # reference sequence (no variants)
+    #             if guide_vars:  # shouldn't have both NA and actual variants
+    #                 exception_handler(
+    #                     ValueError, "Forbidden NA variant", os.EX_DATAERR, debug
+    #                 )
+    #             guide_vars.add("NA")
+    #             is_reference = True
+    #             break
+    #         try:  # retrieve each variant position
+    #             variant_position = int(variant.split("-")[1])
+    #         except TypeError as e:
+    #             exception_handler(
+    #                 TypeError,
+    #                 f"Variant {variant} seems to have a non int position",
+    #                 os.EX_DATAERR,
+    #                 debug,
+    #                 e,
+    #             )
+    #         # assess whether the snp occurs within the guide or is part of the haplotype
+    #         if guide.start <= variant_position < guide.stop:
+    #             guide_vars.add(variant)
+    #     if guide_vars:  # process guides with variants
+    #         if not is_reference:  # polish variants to validate sequence matches
+    #             guide_vars = polish_variants_annotation(guide, guide_vars)
+    #         guide.variants = ",".join(sorted(guide_vars))
+    #         guides_lst.append(guide)
+    for g in guides:
+        g.variants = "NA"
+        guides_lst.append(g)
     print_verbosity(
         f"Variants annotated in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )

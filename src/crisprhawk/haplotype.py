@@ -278,7 +278,7 @@ class Haplotype(Region):
             )
         self._variant_alleles[posrel] = (ref, alt)  # to solve haplotype
         if vtype == VTYPES[0]:  # if snv encode as iupac
-            alt = _encode_iupac(ref, alt, position, self._debug)
+            alt = _encode_iupac(refnt, alt, position, self._debug)
         if vtype == VTYPES[1]:  # if indel update variant alleles map positions
             self._update_variant_alleles(posrel, len(alt) - len(ref))
         # update haplotype sequence and positions map
@@ -535,7 +535,7 @@ def _encode_iupac(ref: str, alt: str, position: int, debug: bool) -> str:
             as IUPAC.
     """
     try:
-        return IUPAC_ENCODER["".join({IUPACTABLE[ref], alt})]
+        return IUPAC_ENCODER["".join({IUPACTABLE[ref.upper()], alt})]
     except KeyError as e:
         exception_handler(
             CrisprHawkIupacTableError,
