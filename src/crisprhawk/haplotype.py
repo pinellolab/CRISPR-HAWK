@@ -13,7 +13,7 @@ from .region import Region
 from .sequence import Sequence
 from .coordinate import Coordinate
 from .variant import VariantRecord, VTYPES
-from .utils import match_iupac, IUPAC_ENCODER
+from .utils import match_iupac, IUPAC_ENCODER, IUPACTABLE
 
 from typing import List, Dict, Tuple
 
@@ -535,7 +535,7 @@ def _encode_iupac(ref: str, alt: str, position: int, debug: bool) -> str:
             as IUPAC.
     """
     try:
-        return IUPAC_ENCODER["".join({ref, alt})]
+        return IUPAC_ENCODER["".join({IUPACTABLE[ref], alt})]
     except KeyError as e:
         exception_handler(
             CrisprHawkIupacTableError,
