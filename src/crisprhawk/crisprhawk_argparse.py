@@ -424,9 +424,9 @@ class CrisprHawkSearchInputArgs:
             self._validate_offtargets_parameters()
 
     def _validate_candidate_guides(self) -> None:
-        if any(len(g.split(":")) != 2 for g in self._args.candidate_guides):
+        if any(len(g.split(":")) != 3 for g in self._args.candidate_guides):
             self._parser.error(
-                "Candidate guides appear to not follow <chr>:<position> format"
+                "Candidate guides appear to not follow <chr>:<position>:<strand> format"
             )
         if any(int(g.split(":")[1]) < 1 for g in self._args.candidate_guides):
             self._parser.error("Do candidate guides have negative position?")

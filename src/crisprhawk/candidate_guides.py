@@ -40,10 +40,28 @@ class CandidateGuide:
 
     def __init__(self, coordinate: str, guidelen: int, debug: bool) -> None:
         self._debug = debug  # store debug flag
-        self._coordinate = _parse_candidate_coord(coordinate, guidelen, self._debug)
+        self._parse_candidate_coord(coordinate, guidelen, self._debug)
 
     def __str__(self) -> str:
         return f"{self.contig}:{self.position}"
+
+    def _parse_candidate_coord(
+        self, coordinate: str, guidelen: int, debug: bool
+    ) -> None:
+        contig, position, strand = coordinate.split(":")  # retrieve contig and position
+        try:
+            self._coordinate = Coordinate(
+                contig, int(position), int(position) + guidelen, 0
+            )
+            self._strand = strand
+        except Exception as e:
+            exception_handler(
+                CrisprHawkCandidateGuideError,
+                f"Forbidden candidate guide coordinate ({coordinate})",
+                os.EX_DATAERR,
+                debug,
+                e,
+            )
 
     @property
     def coordinate(self) -> Coordinate:
@@ -57,19 +75,9 @@ class CandidateGuide:
     def position(self) -> int:
         return self._coordinate.start
 
-
-def _parse_candidate_coord(coordinate: str, guidelen: int, debug: bool) -> Coordinate:
-    contig, position = coordinate.split(":")  # retrieve contig and position
-    try:
-        return Coordinate(contig, int(position), int(position) + guidelen, 0)
-    except Exception as e:
-        exception_handler(
-            CrisprHawkCandidateGuideError,
-            f"Forbidden candidate guide coordinate ({coordinate})",
-            os.EX_DATAERR,
-            debug,
-            e,
-        )
+    @property
+    def strand(self) -> str:
+        return self._strand
 
 
 def initialize_candidate_guides(

@@ -353,13 +353,13 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
     optional_group.add_argument(
         "--candidate-guides",
         type=str,
-        metavar="CHR:POS",
+        metavar="CHR:POS:STRAND",
         dest="candidate_guides",
         nargs="*",
         default=[],
         help="One or more genomic coordinates of candidate guides to analyze in "
-        f"detail with {TOOLNAME}. Each guide must be specified in chromosome:position "
-        "format (e.g., 'chr1:123456'). For each candidate guide, a dedicated subreport "
+        f"detail with {TOOLNAME}. Each guide must be specified in chromosome:position:strand "
+        "format (e.g., 'chr1:123456:+'). For each candidate guide, a dedicated subreport "
         "will be generated containing the guide and its alternative gRNAs for "
         "side-by-side comparison. If enabled, graphical reports will also be "
         "produced to visualize the impact of genetic variants on on-target "
