@@ -262,11 +262,21 @@ def _decode_iupac(nt: str, pos: int, h: Haplotype, debug: bool) -> str:
     try:
         ntiupac = IUPACTABLE[nt.upper()]
     except KeyError as e:
-        exception_handler(CrisprHawkIupacTableError, f"Invalid IUPAC character ({nt})", os.EX_DATAERR, debug, e)  # type: ignore
+        exception_handler(
+            CrisprHawkIupacTableError,
+            f"Invalid IUPAC character ({nt})",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
     if len(ntiupac) == 1:  # A, C, G, or T (reference / indel / homozygous)
         return ntiupac.lower() if nt.islower() else ntiupac
     return "".join(
-        [n if n == h.variant_alleles[pos][0] else n.lower() for n in list(ntiupac)]
+        [
+            n if n == alleles[0] else n.lower()
+            for n in list(ntiupac)
+            for alleles in h.variant_alleles[pos]
+        ]
     )
 
 
@@ -300,16 +310,10 @@ def resolve_guide(
     """
     # retrieve guide sequence relative start position
     p = pos - GUIDESEQPAD if right else pos - guidelen - GUIDESEQPAD
-    llimit = pos - 10 if right else pos - guidelen - 10
-    rlimit = pos + len(pam) + guidelen + 10 if right else pos + len(pam) + 10
     guide_alts = [
         "".join(g)
         for g in product(
-            *[
-                # list(_decode_iupac(nt, p + i, llimit, rlimit, h, debug))
-                list(_decode_iupac(nt, p + i, h, debug))
-                for i, nt in enumerate(guideseq)
-            ]
+            *[list(_decode_iupac(nt, p + i, h, debug)) for i, nt in enumerate(guideseq)]
         )
     ]  # decode iupac string
     idx = GUIDESEQPAD if right else (len(guideseq) - GUIDESEQPAD - len(pam))
@@ -341,6 +345,29 @@ def adjust_guide_position(
     start = posmap[posrel] if right else posmap[posrel - guidelen]
     stop = posmap[posrel + guidelen + pamlen] if right else posmap[posrel + pamlen]
     return start, stop
+
+
+def retrieve_guide_posmap(
+    posmap: Dict[int, int], posrel: int, guidelen: int, pamlen: int, right: bool
+) -> Dict[int, int]:
+    """Returns a mapping of guide-relative positions to genomic positions for a guide.
+
+    This function computes the mapping from guide-relative indices to genomic positions,
+    based on the provided position map, guide length, PAM length, and strand orientation.
+
+    Args:
+        posmap (Dict[int, int]): Mapping from sequence-relative to genomic positions.
+        posrel (int): The relative position in the sequence.
+        guidelen (int): The length of the guide sequence.
+        pamlen (int): The length of the PAM sequence.
+        right (bool): Whether the guide is on the right (forward) strand.
+
+    Returns:
+        Dict[int, int]: A dictionary mapping guide-relative indices to genomic
+            positions.
+    """
+    pivot = posrel if right else posrel - guidelen
+    return {i: posmap[pivot + i] for i in range(guidelen + pamlen)}
 
 
 def group_guides_position(
@@ -522,6 +549,9 @@ def retrieve_guides(
             guide_start, guide_stop = adjust_guide_position(
                 haplotype.posmap, pos, guidelen, len(pam), right
             )
+            posmap = retrieve_guide_posmap(
+                haplotype.posmap, pos, guidelen, len(pam), right
+            )
             guide = Guide(
                 guide_start,
                 guide_stop,
@@ -532,6 +562,7 @@ def retrieve_guides(
                 haplotype.samples,
                 haplotype.variants,
                 haplotype.afs,
+                posmap,
                 debug,
                 right,
                 haplotype.id,

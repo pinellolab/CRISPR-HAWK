@@ -14,17 +14,17 @@ def test_compute_id():
 
 
 def test_adjust_multiallelic_snp():
-    ref, alt, pos = variant._adjust_multiallelic("A", "T", 100)
+    ref, alt, pos = variant.adjust_multiallelic("A", "T", 100)
     assert (ref, alt, pos) == ("A", "T", 100)
 
 
 def test_adjust_multiallelic_deletion():
-    ref, alt, pos = variant._adjust_multiallelic("AAT", "AA", 200)
+    ref, alt, pos = variant.adjust_multiallelic("AAT", "AA", 200)
     assert (ref, alt, pos) == ("AT", "A", 201)
 
 
 def test_adjust_multiallelic_insertion():
-    ref, alt, pos = variant._adjust_multiallelic("AA", "AAT", 300)
+    ref, alt, pos = variant.adjust_multiallelic("AA", "AAT", 300)
     assert (ref, alt, pos) == ("A", "AT", 301)
 
 

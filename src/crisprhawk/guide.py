@@ -42,6 +42,7 @@ class Guide:
         _samples (str): Samples carrying guide variants.
         _variants (str): Variants overlapping guide.
         _afs (Dict[str, float]): Allele frequencies of variants overlapping guide.
+        _posmap (Dict[int, int]): Positions hashmap for guide.
         _hapid (str): Haplotype ID.
         _guide_id (str): Unique guide identifier.
         _azimuth_score (str): Azimuth score for guide.
@@ -69,6 +70,7 @@ class Guide:
         samples: str,
         variants: str,
         afs: Dict[str, float],
+        posmap: Dict[int, int],
         debug: bool,
         right: bool,
         hapid: str,
@@ -89,6 +91,7 @@ class Guide:
             samples: Samples carrying guide variants.
             variants: Variants overlapping the guide.
             afs: Allele frequencies of variants overlapping the guide.
+            posmap: Positions hashmap
             debug: Flag to enable debug mode.
             right: Indicates if the guide is on the right side of the PAM.
             hapid: Haplotype ID for the guide.
@@ -108,6 +111,7 @@ class Guide:
         self._samples = samples  # samples carrying guide variants
         self._variants = variants  # variants overlapping guide
         self._afs = afs  # allele frequencies of variants overlapping guide
+        self._posmap = posmap  # position map
         self._hapid = hapid  # haplotype ID
         self._compute_guide_id()  # compute unique guide ID
         self._initialize_scores()  # initialize scores to NAs
@@ -317,6 +321,32 @@ class Guide:
             if not value or (len(set(value)) == 1 and value[0] == "NA")
             else ",".join(value)
         )
+
+    @property
+    def posmap(self) -> Dict[int, int]:
+        return self._posmap
+
+    @posmap.setter
+    def posmap(self, value: Dict[int, int]) -> None:
+        """Sets the position map for the Guide object.
+
+        This method validates and updates the guide's position map, ensuring the
+        value is a dictionary.
+
+        Args:
+            value: A dictionary mapping positions for the guide.
+
+        Raises:
+            CrisprHawkGuideError: If the value is not a dictionary.
+        """
+        if not isinstance(value, dict):
+            exception_handler(
+                CrisprHawkGuideError,
+                f"Position map must be a dictionary, got {type(value).__name__} instead",
+                os.EX_DATAERR,
+                True,
+            )
+        self._posmap = value  # set position hashmap
 
     @property
     def pam(self) -> str:

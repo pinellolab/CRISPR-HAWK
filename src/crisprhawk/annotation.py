@@ -15,6 +15,7 @@ from .bedfile import BedAnnotation
 from .guide import Guide
 from .utils import print_verbosity, VERBOSITYLVL
 from .region import Region
+from .variant import adjust_multiallelic
 
 from typing import List, Dict, Set, Tuple
 from Bio.SeqUtils import gc_fraction
@@ -55,23 +56,26 @@ def reverse_guides(guides: List[Guide], verbosity: int) -> List[Guide]:
 
 
 def _parse_variant(variant_id: str) -> Tuple[str, int, str, str]:
-    """Parses a variant identifier string into its components.
+    """Parses a variant identifier string into its chromosome, position, reference,
+    and alternate alleles.
 
-    This function splits a variant ID into chromosome, position, reference allele,
-    and alternate allele.
+    This function splits the variant identifier, extracts the chromosome, position,
+    reference, and alternate alleles, and normalizes them for multiallelic sites.
 
     Args:
         variant_id (str): The variant identifier string in the format 'chrom-pos-ref/alt'.
 
     Returns:
-        Tuple[str, int, str, str]: A tuple containing chromosome, position,
-            reference allele, and alternate allele.
+        Tuple[str, int, str, str]: A tuple containing the chromosome, normalized
+            position, reference allele, and alternate allele.
     """
     parts = variant_id.split("-")
     chrom = parts[0]  # chromosome
     position = int(parts[1])  # variant position
     ref, alt = parts[2].split("/")
-    return chrom, position, ref, alt
+    # normalize for multiallelic sites
+    ref_, alt_, position_ = adjust_multiallelic(ref, alt, position)
+    return chrom, position_, ref_, alt_
 
 
 def _is_snv(ref: str, alt: str) -> bool:
@@ -90,122 +94,204 @@ def _is_snv(ref: str, alt: str) -> bool:
     return len(ref) == len(alt)
 
 
-def sort_variants(variants):
-    """Sorts variant identifiers in natural genomic order.
+def retrieve_guide_variants(guide: Guide) -> Set[str]:
+    """Retrieves the set of variant identifiers associated with a guide.
 
-    This function sorts variants by chromosome, position, variant type (SNV or indel),
-    reference, and alternate allele.
+    This function splits the guide's variants string into a set of individual
+    variant identifiers.
 
     Args:
-        variants: An iterable of variant identifier strings.
+        guide (Guide): The guide object from which to retrieve variant identifiers.
 
     Returns:
-        List[str]: The sorted list of variant identifiers.
+        Set[str]: A set of variant identifier strings associated with the guide.
     """
-
-    def _sort_key(variant):
-        chrom, pos, ref, alt = _parse_variant(variant)
-        # extract numeric part from chromosome for natural sorting
-        chrom_parts = chrom.replace("chr", "")
-        try:
-            chrom_num = int(chrom_parts)
-        except ValueError:
-            chrom_num = float("inf")  # handle X, Y, M, etc.
-            chrom_parts = chrom_parts.lower()
-        # return tuple for sorting:
-        # (chrom_number, chrom_string, position, is_indel, ref, alt)
-        return (chrom_num, chrom_parts, pos, not _is_snv(ref, alt), ref, alt)
-
-    return sorted(variants, key=_sort_key)
+    return set(guide.variants.split(","))  # split variants string
 
 
-def _create_variant_position_map(variants: Set[str]) -> Dict[int, str]:
-    """Creates a mapping from variant positions to variant identifiers.
+def is_reference_guide(guide_variants: Set[str], debug: bool) -> bool:
+    """Determines if a guide is a reference guide based on its variant identifiers.
 
-    This function generates a dictionary mapping each variant's genomic position
-    to its identifier string.
+    This function checks if the guide's variants set contains only 'NA', indicating
+    a reference guide. If 'NA' is present with other variants, it raises an exception.
+
+    Args:
+        guide_variants (Set[str]): Set of variant identifier strings for the guide.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        bool: True if the guide is a reference guide, False otherwise.
+
+    Raises:
+        ValueError: If 'NA' is present with other variants in the set.
+    """
+    if "NA" in guide_variants:  # reference guide
+        if len(guide_variants) != 1:
+            exception_handler(ValueError, "Forbidden NA variant", os.EX_DATAERR, debug)
+        return True
+    return False
+
+
+def _create_variants_map(variants: Set[str]) -> List[Tuple[int, str]]:
+    """Creates a mapping of variant positions to variant identifiers.
+
+    This function parses each variant identifier to extract its genomic position
+    and returns a list of (position, variant) tuples.
 
     Args:
         variants (Set[str]): A set of variant identifier strings.
 
     Returns:
-        Dict[int, str]: A dictionary mapping positions to variant identifiers.
+        List[Tuple[int, str]]: A list of tuples mapping positions to variant
+            identifiers.
     """
-    varposmap = {}  # map variant positions to variant strings for quick lookup
-    for variant in sort_variants(variants):
+    variants_map = []  # variants map
+    for variant in variants:
         _, pos, _, _ = _parse_variant(variant)
-        varposmap[pos] = variant
-    return varposmap
+        variants_map.append((int(pos), variant))
+    return variants_map
 
 
-def _compute_indel_offset(ref: str, alt: str) -> Tuple[int, int]:
-    """Computes the offset for insertions and deletions between reference and
-    alternate alleles.
+def search_variant(
+    variants_map: List[Tuple[int, str]], pos: int, debug: bool
+) -> Set[str]:
+    """Searches for variant identifiers at a specific position in a variants map.
 
-    This function calculates the number of bases deleted and inserted by comparing
-    the lengths of the reference and alternate alleles.
+    This function returns a set of variant identifiers for the given position if found,
+    otherwise raises an exception if the position is not present in the map.
 
     Args:
-        ref (str): The reference allele.
-        alt (str): The alternate allele.
+        variants_map (List[Tuple[int, str]]): List of (position, variant) tuples.
+        pos (int): The genomic position to search for.
+        debug (bool): Flag to enable debug mode for error handling.
 
     Returns:
-        Tuple[int, int]: A tuple containing the deletion offset and insertion offset.
+        Set[str]: A set of variant identifiers at the specified position.
+
+    Raises:
+        CrisprHawkAnnotationError: If the position is not found in the variants map.
     """
-    deletion_offset = max(0, len(ref) - len(alt))
-    insertion_offset = max(0, len(alt) - len(ref))
-    return deletion_offset, insertion_offset
+    variants = {v for p, v in variants_map if p == pos}
+    if not variants:
+        exception_handler(
+            CrisprHawkAnnotationError,
+            "Variant annotation requested for variant out of bounds",
+            os.EX_DATAERR,
+            debug,
+        )
+    return variants
 
 
-def polish_variants_annotation(guide: Guide, variants: Set[str]) -> Set[str]:
-    """Validates and filters variants that overlap with a guide sequence.
+def _find_insertion_stop(guideseq: str, debug: bool) -> int:
+    """Finds the stop index of an insertion in a guide sequence.
 
-    This function checks each variant to ensure it matches the expected sequence
-    context within the guide and returns only validated variants.
+    This function asserts that the insertion overlaps the start of the guide and
+    returns the index of the first uppercase (reference) nucleotide, indicating
+    where the insertion ends.
 
     Args:
-        guide (Guide): The guide object whose sequence is used for validation.
+        guideseq (str): The guide sequence containing the insertion.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        int: The index of the first reference nucleotide after the insertion.
+    """
+    # if insertion overlapping start, must not start with reference nts
+    assert not guideseq[0].isupper() and not all(nt.isupper() for nt in guideseq)
+    return next((i for i, nt in enumerate(guideseq) if nt.isupper()), 0)
+
+
+def _check_insertion(
+    guideseq: str, alt: str, posrel: int, pos: int, stop: int, is_snv: bool, debug: bool
+) -> bool:
+    """Checks if a guide sequence matches an insertion variant at a given position.
+
+    This function determines whether the guide sequence context and the alternate allele
+    are consistent with an insertion event, considering position and variant type.
+
+    Args:
+        guideseq (str): The guide sequence segment to check.
+        alt (str): The alternate allele sequence.
+        posrel (int): The relative position in the guide sequence.
+        pos (int): The genomic position of the variant.
+        stop (int): The stop position of the guide.
+        is_snv (bool): Whether the variant is a single nucleotide variant.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        bool: True if the guide sequence matches the insertion variant, False otherwise.
+    """
+    if is_snv:  # do not even start
+        return False
+    if posrel == 0 and alt.endswith(
+        guideseq.upper()[: _find_insertion_stop(guideseq, debug)]
+    ):
+        return True
+    return bool(pos == stop and alt.startswith(guideseq.upper()))
+
+
+def _check_snv(guideseq: str, alt: str) -> bool:
+    """Checks if a guide sequence segment matches a single nucleotide variant (SNV)
+    allele.
+
+    This function returns True if the guide sequence is entirely lowercase and its
+    uppercase form matches the alternate allele.
+
+    Args:
+        guideseq (str): The guide sequence segment to check.
+        alt (str): The alternate allele sequence.
+
+    Returns:
+        bool: True if the guide sequence matches the SNV allele, False otherwise.
+    """
+    return guideseq.islower() and guideseq.upper() == alt
+
+
+def polish_guide_variants(guide: Guide, variants: Set[str], debug: bool) -> str:
+    """Validates and filters variants for a guide based on sequence and position.
+
+    This function checks each variant for correct sequence context within the guide,
+    handling indels and SNVs, and returns a comma-separated string of validated
+    variant IDs.
+
+    Args:
+        guide (Guide): The guide object whose sequence and position map are used
+            for validation.
         variants (Set[str]): Set of variant identifiers to validate.
+        debug (bool): Flag to enable debug mode for error handling.
 
     Returns:
-        Set[str]: The set of validated variant identifiers that match the guide
-            sequence.
+        str: A comma-separated string of validated variant identifiers for the guide.
     """
-    # map variant positions to variant strings for quick lookup
-    varposmap = _create_variant_position_map(variants)
-    offset_insertion = 0  # Skip bases in guide sequence for insertions
-    offset_deletion = 0  # Adjust position calculation for deletions
-    validated_variants = set()
-    # check each nucleotide position in the guide sequence
-    for seqidx, nt in enumerate(guide.guidepam):
-        if offset_insertion > 0:  # skip positions if in an insertion
-            offset_insertion -= 1
-            continue
-        # genomic position accounting for deletions
-        pos = guide.start + seqidx + offset_deletion
-        if pos not in varposmap:  # check if there's a variant at this position
-            continue
-        # parse variant information: "chrom-pos-ref/alt"
-        variant_id = varposmap[pos]
-        _, pos, ref, alt = _parse_variant(variant_id)
-        if not _is_snv(ref, alt):  #  handle indels
-            validated_variants.add(variant_id)
-            # update indel offsets
-            do, offset_insertion = _compute_indel_offset(ref, alt)
-            offset_deletion += do
-            continue
-        # validate: lowercase sequence in guide should match uppercase alt allele
-        guide_segment = guide.guidepam[seqidx : seqidx + 1]
-        if guide_segment.islower() and guide_segment.upper() == alt:
-            validated_variants.add(variant_id)
-    return validated_variants
+    variants_polished = set()  # polished set of variants for guide
+    variants_map = _create_variants_map(variants)  # variants map
+    variants_positions = {p for (p, _) in variants_map}
+    variants = set(sorted(variants))
+    for i, _ in enumerate(guide.guidepam):
+        offset = 0  # offset for indels allele check
+        if (p := guide.posmap[i]) in variants_positions:
+            variant_ids = search_variant(variants_map, p, debug)
+            for variant_id in variant_ids:
+                # recover ref/alt alleles
+                _, _, ref, alt = _parse_variant(variant_id)
+                # indel, compute offset to retrieve allele
+                if not (is_snv := _is_snv(ref, alt)):
+                    offset = abs(len(ref) - len(alt)) if len(ref) < len(alt) else 0
+                guide_segment = guide.guidepam[i : i + offset + 1]
+                if _check_insertion(
+                    guide_segment, alt, i, p, guide.stop, is_snv, debug
+                ) or _check_snv(guide_segment, alt):
+                    variants_polished.add(variant_id)
+    return ",".join(sorted(variants_polished))
 
 
 def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
-    """Annotates guides with variants that overlap their sequence.
+    """Annotates guides with validated variant information based on their sequence
+    context.
 
-    This function identifies and validates variants that occur within each guide's
-    sequence and updates the guide objects with the relevant variant information.
+    This function processes each guide, determines if it is a reference or
+    alternative guide, and updates its variants property with either 'NA' or a
+    polished, validated set of variants.
 
     Args:
         guides (List[Guide]): List of Guide objects to annotate.
@@ -220,39 +306,13 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
         "Annotating variants occurring in guides", verbosity, VERBOSITYLVL[3]
     )
     start = time()  # position calculation start time
-    # for guide in guides:
-    #     guide_vars = set()  # variants occurring in variant
-    #     is_reference = False
-    #     for variant in guide.variants.split(","):
-    #         if variant == "NA":  # reference sequence (no variants)
-    #             if guide_vars:  # shouldn't have both NA and actual variants
-    #                 exception_handler(
-    #                     ValueError, "Forbidden NA variant", os.EX_DATAERR, debug
-    #                 )
-    #             guide_vars.add("NA")
-    #             is_reference = True
-    #             break
-    #         try:  # retrieve each variant position
-    #             variant_position = int(variant.split("-")[1])
-    #         except TypeError as e:
-    #             exception_handler(
-    #                 TypeError,
-    #                 f"Variant {variant} seems to have a non int position",
-    #                 os.EX_DATAERR,
-    #                 debug,
-    #                 e,
-    #             )
-    #         # assess whether the snp occurs within the guide or is part of the haplotype
-    #         if guide.start <= variant_position < guide.stop:
-    #             guide_vars.add(variant)
-    #     if guide_vars:  # process guides with variants
-    #         if not is_reference:  # polish variants to validate sequence matches
-    #             guide_vars = polish_variants_annotation(guide, guide_vars)
-    #         guide.variants = ",".join(sorted(guide_vars))
-    #         guides_lst.append(guide)
-    for g in guides:
-        g.variants = "NA"
-        guides_lst.append(g)
+    for guide in guides:
+        guide_variants = retrieve_guide_variants(guide)  # retrieve guide's variants
+        if is_reference_guide(guide_variants, debug):  # reference guide
+            guide.variants = "NA"
+        else:  # alternative guide
+            guide.variants = polish_guide_variants(guide, guide_variants, debug)
+        guides_lst.append(guide)
     print_verbosity(
         f"Variants annotated in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )

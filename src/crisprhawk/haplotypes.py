@@ -436,7 +436,7 @@ def _solve_haplotypes_unphased(
         variant_combination = [v for v in variant_combination if v is not None]
         h = Haplotype(Sequence(sequence, debug), coordinates, phased, 0, debug)
         # add variants to sample haplotypes
-        h.add_variants_unphased(variant_combination, sample)  
+        h.add_variants_unphased(variant_combination, sample)
         haps.append(h)  # insert haplotype to haplotypes list
     return [haps[0]] if ishomozygous(haps) else haps
 

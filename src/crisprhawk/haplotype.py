@@ -158,17 +158,25 @@ class Haplotype(Region):
                 )
         self._posmap_reverse = {pos: posrel for posrel, pos in self._posmap.items()}
 
-    def _update_variant_alleles(self, pos: int, offset: int) -> None:
-        """Updates the variant alleles mapping after an indel event.
+    def _update_variant_alleles(self, pos: int, stop: int, offset: int) -> None:
+        """Updates the variant alleles mapping after an indel event in the haplotype.
 
-        Adjusts the positions of variant alleles to account for insertions or
-        deletions in the haplotype sequence.
+        This method removes variant alleles within the affected region and shifts
+        positions of alleles occurring after the indel by the specified offset.
 
         Args:
-            pos (int): The position in the haplotype sequence where the indel occurs.
-            offset (int): The change in length caused by the indel (positive for
-                insertions, negative for deletions).
+            pos (int): The position where the indel starts.
+            stop (int): The position where the indel ends (exclusive).
+            offset (int): The offset to apply to positions after the indel.
+
+        Returns:
+            None
         """
+        self._variant_alleles = {
+            p: alleles
+            for p, alleles in self._variant_alleles.items()
+            if p <= pos or p >= stop
+        }
         self._variant_alleles = {
             (p + offset if p > pos else p): alleles
             for p, alleles in self._variant_alleles.items()
@@ -276,11 +284,15 @@ class Haplotype(Region):
             raise ValueError(
                 f"Mismatching reference alleles in VCF and reference sequence at position {position} ({refnt} - {ref})"
             )
-        self._variant_alleles[posrel] = (ref, alt)  # to solve haplotype
+        if posrel in self._variant_alleles:  # to solve haplotypes
+            if position == self._variant_alleles[posrel][0][2]:
+                self._variant_alleles[posrel].append((ref, alt, position))
+        else:
+            self._variant_alleles[posrel] = [(ref, alt, position)]
         if vtype == VTYPES[0]:  # if snv encode as iupac
             alt = _encode_iupac(refnt, alt, position, self._debug)
         if vtype == VTYPES[1]:  # if indel update variant alleles map positions
-            self._update_variant_alleles(posrel, len(alt) - len(ref))
+            self._update_variant_alleles(posrel, posrel_stop, len(alt) - len(ref))
         # update haplotype sequence and positions map
         self._update_sequence(posrel, posrel_stop, alt)
         self._update_posmap(posrel, chain)
@@ -367,13 +379,15 @@ class Haplotype(Region):
         self._posmap = posmap  # set position map to haplotype
         self._posmap_reverse = posmap_rev
 
-    def set_variant_alleles(self, variant_alleles: Dict[int, Tuple[str, str]]) -> None:
+    def set_variant_alleles(
+        self, variant_alleles: Dict[int, List[Tuple[str, str, int]]]
+    ) -> None:
         """Sets the variant alleles mapping for the haplotype.
 
         Assigns the provided dictionary of variant alleles to the haplotype.
 
         Args:
-            variant_alleles (Dict[int, Tuple[str, str]]): Dictionary mapping
+            variant_alleles (Dict[int, List[Tuple[str, str, int]]]): Dictionary mapping
                 positions to (ref, alt) allele tuples.
         """
         self._variant_alleles = variant_alleles  # set variant alleles
@@ -473,7 +487,7 @@ class Haplotype(Region):
         self._id = value  # set haplotype ID
 
     @property
-    def variant_alleles(self) -> Dict[int, Tuple[str, str]]:
+    def variant_alleles(self) -> Dict[int, List[Tuple[str, str, int]]]:
         return self._variant_alleles
 
 
