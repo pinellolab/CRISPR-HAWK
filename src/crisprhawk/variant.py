@@ -213,6 +213,7 @@ class VariantRecord:
             return [np.nan] * self._allelesnum
         i += 3  # skip 'AF=' in info
         j = info.find(";", i)  # find the next semicolon delimiter
+        j = len(info) if j == -1 else j  # patch for no multiple info fields
         afs = list(map(float, info[i:j].split(",")))
         if len(afs) != self._allelesnum:  # one af per af value per allele
             exception_handler(
@@ -267,7 +268,7 @@ class VariantRecord:
         # copy current variant record instance
         vrecord = VariantRecord(self._debug)  # create new instance
         # adjust ref/alt alleles and positions for multiallelic sites
-        ref, alt, position = _adjust_multiallelic(
+        ref, alt, position = adjust_multiallelic(
             self._ref, self._alt[i], self._position
         )
         vrecord._chrom = self._chrom
@@ -452,7 +453,7 @@ def _compute_id(chrom: str, pos: int, ref: str, alt: str) -> str:
     return f"{chrom}-{pos}-{ref}/{alt}"
 
 
-def _adjust_multiallelic(ref: str, alt: str, pos: int) -> Tuple[str, str, int]:
+def adjust_multiallelic(ref: str, alt: str, pos: int) -> Tuple[str, str, int]:
     """Adjust reference/alternative alleles and position for multiallelic sites.
 
     Adjusts the reference and alternative alleles, and the variant position for

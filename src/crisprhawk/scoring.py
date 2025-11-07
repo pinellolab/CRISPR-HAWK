@@ -46,27 +46,30 @@ def _extract_guide_sequences(guides: List[Guide]) -> List[str]:
     Returns:
         List[str]: List of formatted guide sequences with flanking nucleotides.
     """
+    # each guide must have 4 nts upstream the guide sequence, and 3 nts downstream
+    # the pam (Azimuth, RS3, and DeepCpf1)
     return [
         guide.sequence[(GUIDESEQPAD - 4) : (-GUIDESEQPAD + 3)].upper()
         for guide in guides
     ]
 
 
-def _azimuth(guides_chunks: Tuple[int, List[str]]) -> Tuple[int, List[float]]:
+def _azimuth(guides_chunk: Tuple[int, List[str]]) -> Tuple[int, List[float]]:
     """Calculates Azimuth scores for a chunk of guide RNAs.
 
     This function computes Azimuth efficiency scores for a given chunk of guides
     and returns the starting index along with the list of scores.
 
     Args:
-        guides_chunks (Tuple[int, List[Guide]]): A tuple containing the start
+        guides_chunk (Tuple[int, List[Guide]]): A tuple containing the start
             index and a list of Guide objects.
 
     Returns:
         Tuple[int, List[float]]: The start index and the list of Azimuth scores
             for the guides.
     """
-    start_idx, guides = guides_chunks
+    start_idx, guides = guides_chunk
+    # create guides np.ndarray required by azimuth
     scores = azimuth(np.array(guides))
     return start_idx, scores
 
@@ -133,16 +136,13 @@ def azimuth_score(
     Returns:
         List[Guide]: The list of guides with Azimuth scores assigned.
     """
-    # create guides np.ndarray required by azimuth; each guide must have 4 nts
-    # upstream the guide sequence, and 3 nts downstream the pam
     if not guides:
-        return guides
+        return guides  # no guide?
     print_verbosity("Computing Azimuth score", verbosity, VERBOSITYLVL[3])
     start = time()  # azimuth score start time
     guides_seqs = _extract_guide_sequences(guides)
-    guides_seqs_chunks = calculate_chunks(
-        guides_seqs, threads
-    )  # split guides in chunks
+    # split guides in chunks
+    guides_seqs_chunks = calculate_chunks(guides_seqs, threads)
     try:  # compute azimuth scores in parallel
         azimuth_scores = _execute_azimuth(
             guides_seqs_chunks, len(guides), threads, debug
@@ -163,21 +163,21 @@ def azimuth_score(
     return guides
 
 
-def _rs3(guides_chunks: Tuple[int, List[str]]) -> Tuple[int, List[float]]:
+def _rs3(guides_chunk: Tuple[int, List[str]]) -> Tuple[int, List[float]]:
     """Calculates RS3 scores for a chunk of guide RNAs.
 
     This function computes RS3 efficiency scores for a given chunk of guide
     sequences and returns the starting index along with the list of scores.
 
     Args:
-        guides_chunks (Tuple[int, List[str]]): A tuple containing the start index
+        guides_chunk (Tuple[int, List[str]]): A tuple containing the start index
             and a list of guide sequences.
 
     Returns:
         Tuple[int, List[float]]: The start index and the list of RS3 scores for
             the guides.
     """
-    start_idx, guides = guides_chunks
+    start_idx, guides = guides_chunk
     scores = rs3(guides)
     return start_idx, scores
 
@@ -250,9 +250,8 @@ def rs3_score(
     print_verbosity("Computing RS3 score", verbosity, VERBOSITYLVL[3])
     start = time()  # rs3 score start time
     guides_seqs = _extract_guide_sequences(guides)
-    guides_seqs_chunks = calculate_chunks(
-        guides_seqs, threads
-    )  # split guides in chunks
+    # split guides in chunks
+    guides_seqs_chunks = calculate_chunks(guides_seqs, threads)
     try:  # compute rs3 scores in parallel
         rs3_scores = _execute_rs3(guides_seqs_chunks, len(guides), threads, debug)
     except Exception as e:
@@ -358,14 +357,83 @@ def cfdon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]
     return guides
 
 
-def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+def _deepcpf1(guides_chunk: Tuple[int, List[str]]) -> Tuple[int, List[float]]:
+    """Calculates DeepCpf1 scores for a chunk of guide RNAs.
+
+    This function computes DeepCpf1 efficiency scores for a given chunk of guide
+    sequences and returns the starting index along with the list of scores.
+
+    Args:
+        guides_chunk (Tuple[int, List[str]]): A tuple containing the start index
+            and a list of guide sequences.
+
+    Returns:
+        Tuple[int, List[float]]: The start index and the list of DeepCpf1 scores
+            for the guides.
+    """
+    start_idx, guides = guides_chunk
+    scores = deepcpf1(guides)
+    return start_idx, scores
+
+
+def _execute_deepcpf1(
+    guides_chunks: List[Tuple[int, List[str]]], size: int, threads: int, debug: bool
+) -> List[float]:
+    """Executes DeepCpf1 scoring in parallel for guide RNA chunks.
+
+    This function distributes guide RNA chunks across multiple processes to
+    compute DeepCpf1 scores efficiently, collecting and returning the scores in
+    the original order.
+
+    Args:
+        guides_chunks (List[Tuple[int, List[str]]]): List of tuples containing
+            the start index and guide chunk.
+        size (int): Total number of guides.
+        threads (int): Number of threads for parallel execution.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[float]: List of DeepCpf1 scores for each guide.
+
+    Raises:
+        CrisprHawkAzimuthScoreError: If DeepCpf1 score calculation fails for
+            any chunk.
+    """
+    deepcpf1_scores = [np.nan] * size  # deepcpf1 scores
+    with ProcessPoolExecutor(max_workers=threads) as executor:
+        future_to_chunk = {
+            executor.submit(_deepcpf1, chunk): chunk[0] for chunk in guides_chunks
+        }
+        for future in as_completed(future_to_chunk):
+            start_idx = future_to_chunk[future]
+            try:
+                chunk_start_idx, chunk_scores = future.result()
+                for offset, score in enumerate(chunk_scores):
+                    deepcpf1_scores[chunk_start_idx + offset] = score
+            except Exception as e:
+                exception_handler(
+                    CrisprHawkAzimuthScoreError,
+                    f"DeepCpf1 score calculation failed for chunk at index {start_idx}",
+                    os.EX_DATAERR,
+                    debug,
+                    e,
+                )
+    assert all(not np.isnan(s) for s in deepcpf1_scores)
+    assert len(deepcpf1_scores) == size  # should match
+    return deepcpf1_scores
+
+
+def deepcpf1_score(
+    guides: List[Guide], threads: int, verbosity: int, debug: bool
+) -> List[Guide]:
     """Computes DeepCpf1 scores for a list of guide RNAs.
 
-    This function calculates the DeepCpf1 efficiency score for each guide and
-    updates the guide objects with the computed values.
+    This function calculates the DeepCpf1 efficiency score for each guide in
+    parallel and updates the guide objects with the computed values.
 
     Args:
         guides (List[Guide]): List of Guide objects to score.
+        threads (int): Number of threads to use for parallel computation.
         verbosity (int): Verbosity level for logging.
         debug (bool): Flag to enable debug mode for error handling.
 
@@ -376,12 +444,13 @@ def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Gui
         return guides
     print_verbosity("Computing DeepCpf1 score", verbosity, VERBOSITYLVL[3])
     start = time()  # deepcpf1 score start time
-    guides_seqs = [
-        guide.sequence[(GUIDESEQPAD - 4) : (-GUIDESEQPAD + 3)].upper()
-        for guide in guides
-    ]
+    guides_seqs = _extract_guide_sequences(guides)
+    # split guides in chunks
+    guides_seqs_chunks = calculate_chunks(guides_seqs, threads)
     try:  # compute deepcpf1 scores
-        deepcpf1_scores = deepcpf1(guides_seqs)
+        deepcpf1_scores = _execute_deepcpf1(
+            guides_seqs_chunks, len(guides), threads, debug
+        )
     except Exception as e:
         exception_handler(
             CrisprHawkDeepCpf1ScoreError,
@@ -390,7 +459,6 @@ def deepcpf1_score(guides: List[Guide], verbosity: int, debug: bool) -> List[Gui
             debug,
             e,
         )
-    assert len(deepcpf1_scores) == len(guides)  # should match
     for i, score in enumerate(deepcpf1_scores):
         guides[i].deepcpf1_score = score  # assign score to each guide
     print_verbosity(
@@ -499,7 +567,9 @@ def scoring_guides(
             # score each guide with CFDon
             guides_list = cfdon_score(guides_list, args.verbosity, args.debug)
         if pam.cas_system == CPF1:  # cpf1 system pam
-            guides_list = deepcpf1_score(guides_list, args.verbosity, args.debug)
+            guides_list = deepcpf1_score(
+                guides_list, args.threads, args.verbosity, args.debug
+            )
         if args.compute_elevation and (
             args.guidelen + len(pam) == 23 and not args.right
         ):

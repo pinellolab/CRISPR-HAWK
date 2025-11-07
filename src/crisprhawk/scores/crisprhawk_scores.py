@@ -101,7 +101,8 @@ def deepcpf1(guides: List[str]) -> List[float]:
     model = SeqDeepCpf1()  # initialize seqdeepcpf1 model
     load_deepcpf1_weights(model)  # load models weights
     model.eval()
-    return compute_deepcpf1(model, emb_matrix)
+    scores = compute_deepcpf1(model, emb_matrix)
+    return [scores] if isinstance(scores, float) else scores
 
 
 # TODO: aggregate elevation (currently using a hack)
