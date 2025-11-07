@@ -1,5 +1,6 @@
 [![GitHub Release Version](https://img.shields.io/github/v/release/pinellolab/CRISPR-HAWK)](https://github.com/pinellolab/CRISPR-HAWK/releases)
 [![Build Status](https://github.com/pinellolab/CRISPR-HAWK/actions/workflows/python-package.yml/badge.svg)](https://github.com/pinellolab/CRISPR-HAWK/actions/workflows/python-package.yml)
+![license](https://img.shields.io/badge/license-AGPL--3.0-lightgrey)
 
 
 <p align="center">
