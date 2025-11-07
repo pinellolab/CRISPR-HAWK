@@ -160,17 +160,6 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         required=True,
         help="length of the guide (excluding the PAM)",
     )
-    required_group.add_argument(
-        "-o",
-        "--outdir",
-        type=str,
-        metavar="OUTDIR",
-        dest="outdir",
-        nargs="?",
-        default=os.getcwd(),
-        help="output directory where reports and results will be saved. "
-        "(default: current working directory)",
-    )
     optional_group = parser_search.add_argument_group("Optional arguments")
     optional_group.add_argument(
         "-v",
@@ -367,6 +356,17 @@ def create_search_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "no candidate guides)",
     )
     optional_group.add_argument(
+        "-o",
+        "--outdir",
+        type=str,
+        metavar="OUTDIR",
+        dest="outdir",
+        nargs="?",
+        default=os.getcwd(),
+        help="output directory where reports and results will be saved. "
+        "(default: current working directory)",
+    )
+    optional_group.add_argument(
         "-t",
         "--threads",
         type=int,
@@ -424,7 +424,8 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
     general_group.add_argument(
         "-h", "--help", action="help", help="show this help message and exit"
     )
-    parser_converter.add_argument(
+    required_group = parser_converter.add_argument_group("Options")
+    required_group.add_argument(
         "-d",
         "--vcf-dir",
         type=str,
@@ -435,7 +436,7 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "or vcf.gz extension). All .vcf.bgz files in the directory will be automatically "
         "processed",
     )
-    parser_converter.add_argument(
+    required_group.add_argument(
         "-o",
         "--outdir",
         type=str,
@@ -446,14 +447,15 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         help="Output directory where converted VCF files will be saved "
         "(default: current working directory)",
     )
-    parser_converter.add_argument(
+    optional_group = parser_converter.add_argument_group("Optional arguments")
+    optional_group.add_argument(
         "--joint",
         action="store_true",
         dest="joint",
         help="Set this flag if the input VCFs contain joint allele frequencies, "
         "as in gnomAD v4.1 joint exomes/genomes releases (default: disabled)",
     )
-    parser_converter.add_argument(
+    optional_group.add_argument(
         "--keep",
         action="store_true",
         dest="keep",
@@ -461,7 +463,7 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         "By default, only variants with FILTER=PASS are included (default: "
         "disabled)",
     )
-    parser_converter.add_argument(
+    optional_group.add_argument(
         "--suffix",
         type=str,
         dest="suffix",
@@ -470,7 +472,7 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         help="Optional suffix to append to the names of the converted VCF files. "
         "Useful for distinguishing output files (default: 'converted')",
     )
-    parser_converter.add_argument(
+    optional_group.add_argument(
         "-t",
         "--threads",
         type=int,
@@ -480,7 +482,7 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         default=1,
         help="Number of threads. Use 0 for using all available cores (default: 1)",
     )
-    parser_converter.add_argument(
+    optional_group.add_argument(
         "--verbosity",
         type=int,
         metavar="VERBOSITY",
@@ -490,7 +492,7 @@ def create_converter_parser(subparser: _SubParsersAction) -> _SubParsersAction:
         help="Verbosity level of output messages: 0 = Silent, 1 = Normal, 2 = "
         "Verbose, 3 = Debug (default: 1)",
     )
-    parser_converter.add_argument(
+    optional_group.add_argument(
         "--debug",
         action="store_true",
         default=False,

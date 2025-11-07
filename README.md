@@ -3,10 +3,8 @@
 
 
 <p align="center">
-    <img src="assets/readme/logo.jpeg", alt="log.jpeg", height=200, width=200>
+    <img src="assets/readme/logo.jpg", alt="logo.jpg">
 </p>
-
-# CRISPR-HAWK
 
 CRISPR-HAWK is a comprehensive and scalable tool for designing guide RNAs (gRNAs) and assessing genetic variants impact on on-target sites in CRISPR-Cas systems. Available as an offline tool with a user-friendly command-line interface, CRISPR-HAWK integrates large-scale human genetic variation datasets—such as the 1000 Genomes Project, the Human Genome Diversity Project (HGDP), and gnomAD—with orthogonal genomic annotations to systematically prioritize gRNAs targeting regions of interest. CRISPR-HAWK is Cas system-independent, supporting a wide range of nucleases including Cas9, SaCas9, Cpf1 (Cas12a), and others. It offers users full flexibility to define custom PAM sequences and guide lengths, enabling compatibility with emerging CRISPR technologies and tailored experimental requirements. The tool accounts for both single-nucleotide variants (SNVs) and small insertions and deletions (indels), and it is capable of handling individual- and population-specific haplotypes. This makes CRISPR-HAWK particularly suitable for both personalized and population-wide gRNA design. CRISPR-HAWK automates the entire workflow—from variant-aware preprocessing to gRNA discovery—delivering comprehensive outputs including ranked tables, annotated sequences, and high-quality figures. Its modular design ensures easy integration with existing pipelines and tools, such as [CRISPRme](https://github.com/pinellolab/CRISPRme) or [CRISPRitz](https://github.com/pinellolab/CRISPRitz), for subsequent off-target prediction and analysis of prioritized gRNAs.
 
@@ -56,7 +54,7 @@ To ensure optimal performance, CRISPR-HAWK requires the following system specifi
 
     - Processing large-scale variant datasets (e.g., gnomAD data)
 
-> ⚠️ **Note**: For optimal performance and stability, especially when dealing with large-scale variant datasets, ensure that your system meets or exceeds the recommended specifications.
+> 📝 **Note**: For optimal performance and stability, especially when dealing with large-scale variant datasets, ensure that your system meets or exceeds the recommended specifications.
 
 ## 1 Installation
 
@@ -74,7 +72,7 @@ This section provides step-by-step instructions to install CRISPR-HAWK and exter
 - **[Install CRISPR-HAWK from source code](#14-install-crispr-hawk-from-source-code)**
 <br>Suitable for developers or contributors who want full control over the codebase or plan to customize CRISPR-HAWK.
 
-> ⚠️ **Note:** We recommend using the Mamba/Conda or Docker installation methods for most users, as they ensure the highest compatibility and stability across systems.
+> 📝 **Note:** We recommend using the Mamba/Conda or Docker installation methods for most users, as they ensure the highest compatibility and stability across systems.
 
 ### 1.1 Install CRISPR-HAWK from Mamba/Conda
 
@@ -133,7 +131,7 @@ CONDA_SUBDIR=osx-64 mamba create -n crisprhawk-env -c bioconda crispr-hawk
 ```
 
 
-⚠️ If you use this method, remember to prepend CONDA_SUBDIR=osx-64 to every future conda install command within this environment — or set the variable globally in your shell profile.
+> ⚠️ If you use this method, remember to prepend CONDA_SUBDIR=osx-64 to every future conda install command within this environment — or set the variable globally in your shell profile.
 
 
 #### 1.1.2 Install CRISPR-HAWK
@@ -197,7 +195,7 @@ If the help message is displayed correctly, CRISPR-HAWK is successfully installe
 
 CRISPR-HAWK relies on a few external tools for certain optional features, such as genome-wide **off-target nomination**. These dependencies are **not bundled** with the core CRISPR-HAWK installation and must be installed separately if you wish to enable advanced features.
 
-> ⚠️ **Note**: External tools are currently only supported on Linux-based systems. Windows and macOS users can still run the core pipeline (variant-aware gRNA search, scoring, annotation), but **off-target estimation** will not be available.
+> 📝 **Note**: External tools are currently only supported on Linux-based systems. Windows and macOS users can still run the core pipeline (variant-aware gRNA search, scoring, annotation), but **off-target estimation** will not be available.
 
 > 💡 **Tip**: Installing these tools requires Mamba or Conda to be available on your system. If you haven't installed Mamba yet, refer to the instructions in [Section 1.1.1](#111-install-conda-or-mamba).
 
@@ -205,7 +203,7 @@ CRISPR-HAWK relies on a few external tools for certain optional features, such a
 
 [CRISPRitz](https://github.com/pinellolab/CRISPRitz) is an efficient tool for nominating CRISPR-Cas off-target sites across large genomes accounting for mismatches and DNA/RNA bulges. CRISPR-HAWK uses it to enable **fast, high-throughput off-target estimation** in the reference genome for the identified candidate gRNAs.
 
-> ⚠️ **Note**: CRISPRitz is required only if you plan to use the `--estimate-offtargets` feature in the `crisprhawk search` command.
+> 📝 **Note**: CRISPRitz is required only if you plan to use the `--estimate-offtargets` feature in the `crisprhawk search` command.
 
 **Installation Steps**:
 
@@ -219,7 +217,7 @@ mamba create -n crispritz-crisprhawk python=3.8 -y
 mamba install -n crispritz-crisprhawk crispritz=2.6.6 -y
 ```
 
-> 📝 **Why use a separate environment?**
+> 💬 **Why use a separate environment?**
 <br>This prevents potential conflicts between CRISPR-HAWK's and CRISPRitz’s dependencies, and ensures better reproducibility.
 
 
@@ -271,7 +269,7 @@ Usage:
 crisprhawk search -f <fasta-dir> -r <bedfile> -v <vcf-dir> -p <pam> -g <guide-length> -o <output-dir>
 ```
 
-> ⚠️ **Note**: All FASTA files in `<fasta-dir>` must be one per chromosome (e.g., chr1.fa, chr2.fa, etc.).
+> 📝 **Note**: All FASTA files in `<fasta-dir>` must be one per chromosome (e.g., chr1.fa, chr2.fa, etc.).
 
 ---
 
@@ -298,6 +296,7 @@ crisprhawk search -f <fasta-dir> -r <bedfile> -v <vcf-dir> -p <pam> -g <guide-le
 | `--gene-annotation-colnames <name1 name2 ...>` | Custom column names for gene annotations, matching the files in `--gene-annotation`.                                                                                              |
 | `--haplotype-table`                            | When enabled, a TSV file reporting haplotype-aware variants and their associated guide matches will be produced.                                                                  |
 | `--compute-elevation-score`                    | Compute Elevation and Elevation-On scores to evaluate guide efficiency. Requires that the combined length of the guide and PAM is exactly 23 bp, and that the guide is upstream of the PAM. *(Default: disabled)* |
+| `--candidate-guides <STR (format CHR:POS:STRAND)>`                         | One or more genomic coordinates of candidate guides to analyze in detail with {TOOLNAME}. Each guide must be provided in the chromosome:position:strand format (e.g., chr1:123456:+). For each candidate guide, a dedicated subreport will be generated showing the guide and its alternative gRNAs side-by-side. If graphical reports are enabled, additional plots will visualize the impact of genetic variants on on-target efficiency using CFD and Elevation scores where applicable *(Default: no candidate guides)* |
 | `--graphical-reports`                          | Generate graphical reports to summarize findings. Includes a pie chart showing the distribution of guide types (reference, spacer+PAM alternative, spacer alternative, PAM alternative) and delta plots illustrating the impact of genetic diversity on guide efficiency and on-target activity. *(Default: disabled)* |
 | `-t`, `--threads <INT>`                        | Number of threads to use for parallel processing. Use `-t 0` to utilize **all available cores**. *(Default: 1)*                                                                   |
 | `-o`, `--outdir <DIR>`       | Output directory to store results, reports, and intermediate files. If not specified, defaults to the current working directory.               |
@@ -331,11 +330,11 @@ This will:
 
 #### Off-targets Estimation (Optional)
 
-> 🐧 **Note**: Off-target estimation is **only available on Linux-based operating systems** and assumes you have successfully followed the installation instructions in the [Install CRISPRitz](#151-install-crispritz-for-off-target-estimation) section.
+> 🐧 **Linux-note**: Off-target estimation is **only available on Linux-based operating systems** and assumes you have successfully followed the installation instructions in the [Install CRISPRitz](#151-install-crispritz-for-off-target-estimation) section.
 
 CRISPR-HAWK supports genome-wide off-target nomination through integration with [CRISPRitz](https://github.com/pinellolab/CRISPRitz), enabling the identification of potential unintended gRNA binding sites across the reference genome.
 
-> ⚠️ **Note**: Off-target nomination in CRISPR-HAWK is limited to the reference genome only, for performance and scalability reasons. If you need to estimate off-targets while accounting for genetic variants (e.g., SNVs, indels, population haplotypes), we recommend using [CRISPRme](https://github.com/pinellolab/CRISPRme) — a specialized, variant-aware off-target analysis tool.
+> 📝 **Note**: Off-target nomination in CRISPR-HAWK is limited to the reference genome only, for performance and scalability reasons. If you need to estimate off-targets while accounting for genetic variants (e.g., SNVs, indels, population haplotypes), we recommend using [CRISPRme](https://github.com/pinellolab/CRISPRme) — a specialized, variant-aware off-target analysis tool.
 
 When enabled, the off-target module allows:
 
@@ -356,6 +355,9 @@ To run off-target estimation, you must enable `--estimate-offtargets` and provid
 | `--mm <INT>`                | Max number of mismatches allowed in off-target search. *(Default: 4)*                                  |
 | `--bdna <INT>`              | Max number of DNA bulges allowed. *(Default: 0)*                                                       |
 | `--brna <INT>`              | Max number of RNA bulges allowed. *(Default: 0)*                                                       |
+| `--offtargets-annotation <BED1 BED2 ...>`               | Provide one or more BED files with **custom genomic** features (e.g., enhancers, DHS, regulatory elements) to annotate offtargets. Must include a 4th column with annotation name.                                                     |
+| `--offtargets-annotation-colnames <name1 name2 ...>`    | Custom column names for the offtargets annotations from the `--offtargets-annotation` files. Must match the number and order of BED files.
+
 
 Example:
 ```bash
@@ -463,7 +465,7 @@ Usage:
 crisprhawk convert-gnomad-vcf -d <vcf-dir> -o <output-dir>
 ```
 
-> ⚠️ **Note**: All `.vcf.bgz` (or `.vcf.gz`) files in `<vcf-dir>` will be processed. Ensure tabix indices (`.tbi`) are present in the same folder.
+> 📝 **Note**: All `.vcf.bgz` (or `.vcf.gz`) files in `<vcf-dir>` will be processed. Ensure tabix indices (`.tbi`) are present in the same folder.
 
 #### Required Arguments
 | Option                  | Description                                                                                               |
@@ -502,7 +504,7 @@ This command will:
 
 * Run using 4 threads
 
-> ⚠️ **Note**: Make sure your input files are correctly indexed (`.tbi`) and are chromosome-specific. CRISPR-HAWK expects one VCF per chromosome.
+> 📝 **Note**: Make sure your input files are correctly indexed (`.tbi`) and are chromosome-specific. CRISPR-HAWK expects one VCF per chromosome.
 
 ### 2.4 Prepare Data for CRISPRme
 
