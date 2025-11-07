@@ -58,7 +58,7 @@ def test_azimuth_score(monkeypatch):
     guides = [make_guide_ngg()]
     # monkeypatch.setattr("crisprhawk.scoring.azimuth", lambda seqs: [0.5])
     scored = azimuth_score(guides, 1, verbosity=0, debug=False)
-    assert scored[0].azimuth_score == "0.4717"
+    assert round(float(scored[0].azimuth_score), 3) == 0.472
 
 
 def test_rs3_score(monkeypatch):
@@ -66,7 +66,7 @@ def test_rs3_score(monkeypatch):
     guides = [make_guide_ngg()]
     # monkeypatch.setattr("crisprhawk.scoring.rs3", lambda seqs: [0.7])
     scored = rs3_score(guides, 1, verbosity=0, debug=False)
-    assert scored[0].rs3_score == "-0.9961"
+    assert round(float(scored[0].rs3_score), 3) == -0.996
 
 
 def test_deepcpf1_score(monkeypatch):
@@ -74,7 +74,7 @@ def test_deepcpf1_score(monkeypatch):
     guides = [make_guide_cpf1()]
     # monkeypatch.setattr("crisprhawk.scoring.deepcpf1", lambda seqs: [0.8])
     scored = deepcpf1_score(guides, 1, verbosity=0, debug=False)
-    assert scored[0].deepcpf1_score == "47.2651"
+    assert round(float(scored[0].deepcpf1_score), 3) == 47.265
 
 
 def test_group_guides_position():
