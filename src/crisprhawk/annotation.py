@@ -340,7 +340,7 @@ def annotate_variants_afs(guides: List[Guide], verbosity: int) -> List[Guide]:
     for guide in guides:
         afs = (
             [
-                str(guide.afs[v]) if str(guide.afs[v]) != "nan" else "NA"
+                f"{guide.afs[v]:.6e}" if str(guide.afs[v]) != "nan" else "NA"
                 for v in guide.variants.split(",")
             ]
             if guide.variants != "NA"

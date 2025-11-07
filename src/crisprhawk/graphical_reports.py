@@ -316,7 +316,7 @@ def _draw_piechart(
         values,
         explode=explode,
         colors=colors,
-        autopct="%.2f",
+        autopct="%.2f%%",
         shadow=False,
         startangle=140,
         textprops={"fontsize": 14},

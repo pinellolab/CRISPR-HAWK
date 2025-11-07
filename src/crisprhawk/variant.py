@@ -213,6 +213,7 @@ class VariantRecord:
             return [np.nan] * self._allelesnum
         i += 3  # skip 'AF=' in info
         j = info.find(";", i)  # find the next semicolon delimiter
+        j = len(info) if j == -1 else j  # patch for no multiple info fields
         afs = list(map(float, info[i:j].split(",")))
         if len(afs) != self._allelesnum:  # one af per af value per allele
             exception_handler(
