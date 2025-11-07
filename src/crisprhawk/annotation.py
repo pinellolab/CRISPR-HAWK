@@ -333,7 +333,7 @@ def _format_af(af: float) -> str:
     assert isinstance(af, float)  # must be float
     s = f"{af:.10f}".rstrip("0").rstrip(".")  # check number of decimals
     decimal_digits = len(s.split(".")) if "." in s else 0
-    return f"{af:.6e}" if decimal_digits > 4 else str(af)
+    return f"{af:.6e}" if decimal_digits > 3 else f"{af:.6f}"
 
 
 def annotate_variants_afs(guides: List[Guide], verbosity: int) -> List[Guide]:
