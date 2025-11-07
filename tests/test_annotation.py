@@ -1,6 +1,6 @@
 from crisprhawk.annotation import (
     reverse_guides,
-    polish_variants_annotation,
+    polish_guide_variants,
     annotate_variants_afs,
     gc_content,
 )
@@ -14,11 +14,12 @@ def make_guide(**kwargs):
         position_start=1,
         position_stop=24,
         sequence="N" * 10 + "AGCTTAGCTAGCTAGCTAGCTAG" + "N" * 10,
-        guidelen=23,
+        guidelen=20,
         pamlen=3,
         direction=1,
         samples="sample1",
         variants="var1",
+        posmap={i:i for i in range(10 + 20 + 3 + 10)},
         afs={},
         debug=False,
         right=True,
@@ -34,11 +35,11 @@ def test_reverse_guides():
     assert len(reversed_guides) == 2
 
 
-def test_polish_variants_annotation():
+def test_polish_guide_variants():
     guide = make_guide()
     variants = {"chr1-10-A/T", "chr1-12-G/C"}
-    result = polish_variants_annotation(guide, variants)
-    assert isinstance(result, set)
+    result = polish_guide_variants(guide, variants, False)
+    assert isinstance(result, str)
 
 
 def test_annotate_variants_afs():

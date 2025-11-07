@@ -318,6 +318,23 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
     )
     return guides_lst
 
+def _format_af(af: float) -> str:
+    """Formats an allele frequency value for annotation output.
+
+    This function returns the allele frequency as a string, using scientific 
+    notation if it has more than four decimal digits.
+
+    Args:
+        af (float): The allele frequency value to format.
+
+    Returns:
+        str: The formatted allele frequency string.
+    """
+    assert isinstance(af, float)  # must be float
+    s = f"{af:.10f}".rstrip("0").rstrip(".")  # check number of decimals
+    decimal_digits = len(s.split(".")) if "." in s else 0
+    return f"{af:.6e}" if decimal_digits > 4 else str(af)
+
 
 def annotate_variants_afs(guides: List[Guide], verbosity: int) -> List[Guide]:
     """Annotates guides with allele frequencies for variants in their sequence.
@@ -340,7 +357,7 @@ def annotate_variants_afs(guides: List[Guide], verbosity: int) -> List[Guide]:
     for guide in guides:
         afs = (
             [
-                f"{guide.afs[v]:.6e}" if str(guide.afs[v]) != "nan" else "NA"
+                _format_af(guide.afs[v]) if str(guide.afs[v]) != "nan" else "NA"
                 for v in guide.variants.split(",")
             ]
             if guide.variants != "NA"
