@@ -131,7 +131,6 @@ You can also enable Intel compatibility in a specific environment only:
 CONDA_SUBDIR=osx-64 mamba create -n crisprhawk-env -c bioconda crispr-hawk
 ```
 
-
 > ⚠️ If you use this method, remember to prepend CONDA_SUBDIR=osx-64 to every future conda install command within this environment — or set the variable globally in your shell profile.
 
 
@@ -145,7 +144,21 @@ TBA
 
 ### 1.3 Install CRISPR-HAWK from PyPI
 
-TBA
+You can install the latest stable release of CRISPR-HAWK directly from [PyPI](https://pypi.org/project/crisprhawk/) using pip:
+```bash
+pip install crisprhawk
+```
+
+> 💡 **Tip**: To ensure a clean environment and avoid dependency conflicts, we recommend installing CRISPR-HAWK within a virtual environment (or using `mamba`/`conda`).
+
+**Upgrading to the Latest Version**
+
+To upgrade CRISPR-HAWK to the newest release on PyPI, run:
+```bash
+pip install -U crisprhawk
+```
+
+> 💡 **Tip**: If you encounter permission issues, use the `--user` flag or ensure you are operating inside a virtual environment.
 
 ### 1.4 Install CRISPR-HAWK from Source Code
 
