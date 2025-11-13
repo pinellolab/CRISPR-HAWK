@@ -48,4 +48,35 @@ This is the first release of **CRISPR‑HAWK** (v0.1.0) — initial fully functi
 
 ---
 
-If you want, I can prepare a version of this CHANGELOG with suggested dates, or polish it for your release on PyPI / GitHub.
+## v0.1.1 – 2025-11-13
+
+### Added
+
+* Support for off-target annotation via CLI and core logic: users can now supply BED files + custom column names for enriched off-target reporting. (PR #3)  
+* Workflow reorganised into discrete modules (`annotation.py`, `scoring.py`, `search_offtargets.py`), with the main driver updated for better clarity and maintainability. (PR #3)  
+* Enhanced CLI argument parsing/validation in `crisprhawk_argparse.py`, including new flag `--candidate-guides` for detailed guide analysis and graphical reporting. (PR #3)  
+* Introduced `CandidateGuide` class and associated logic (`candidate_guides.py`). Added new reporting features (dot-plot, scatter-plot) for variant‐effect analysis of candidate guides. (PR #3)  
+* Unified `CrisprHawkSearchInputArgs` object for major modules to streamline parameter passing and reduce redundancy. (PR #3)  
+* Removed requirement for manual FASTA index file (FAI) — index handling is now automatic within the Fasta class. (PR #3)  
+* Improved handling of IUPAC nucleotide codes in micro-homology scoring and guide‐search routines (supports ambiguous bases better). (PR #3)  
+
+### Fixed / Improved
+
+* Added parallel computation for DeepCpf1 scoring (chunking guide sequences + `ProcessPoolExecutor`) to improve performance on large guide sets. (PR #4)  
+* Refactored candidate‐guide handling and graphical reports: updated coordinate parsing to require strand information; improved helper functions for guide-ID assignment, delta calculations and colour palette generation. (PR #4)  
+* Fixed IUPAC encoding logic in `haplotypes.py` (use of IUPACTABLE for reference base conversion) and cleaned up variant addition logic. (PR #4)  
+* Fixed bugs in variant annotation and guide mapping logic: guide retrieval and annotation functions now use position‐maps and variant normalisation; handling of multiallelic variants improved. (PR #4)  
+* Improved formatting for allele frequencies (scientific notation) and pie-chart representation in graphical reports; corrected parsing of AF field when no additional info present. (PR #4)  
+* Refactored CLI argument groups: made `--outdir` optional in search & converter subcommands; updated README logo file. (PR #4)  
+* Adjusted test assertions to reflect changes in allele frequency formatting and scoring logic. (PR #4)  
+
+### Breaking Changes / Migration Notes
+
+* The manual provision of the FASTA index (`.fai`) is no longer required – indexing is handled internally.  
+* Some function signatures changed due to the move to the unified `CrisprHawkSearchInputArgs` object; if you extend CRISPR-HAWK modules or have custom downstream code, you may need to update accordingly.  
+* Existing workflows remain supported and functional, but we recommend verifying your pipelines after update.
+
+### Version Bump
+- Version updated to **v0.1.1**.
+
+
