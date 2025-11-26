@@ -128,7 +128,7 @@ This will allow Bioconda to fetch compatible packages globally across all enviro
 
 You can also enable Intel compatibility in a specific environment only:
 ```zsh
-CONDA_SUBDIR=osx-64 mamba create -n crisprhawk-env -c bioconda crispr-hawk
+CONDA_SUBDIR=osx-64 mamba create -n crisprhawk-env -c bioconda crisprhawk
 ```
 
 > ⚠️ If you use this method, remember to prepend CONDA_SUBDIR=osx-64 to every future conda install command within this environment — or set the variable globally in your shell profile.

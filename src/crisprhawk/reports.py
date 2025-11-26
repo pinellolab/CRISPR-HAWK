@@ -420,9 +420,9 @@ def insert_offtargets_reportcols(
     """
     reportcols = []
     if estimate_offtargets:
-        reportcols = REPORTCOLS[20:21]
+        reportcols = REPORTCOLS[19:20]
         if cas_system in [SPCAS9, XCAS9]:  # add CFD score
-            reportcols += REPORTCOLS[21:]
+            reportcols += REPORTCOLS[20:]
     return reportcols
 
 
@@ -635,7 +635,7 @@ def _format_cfd(reportcols: List[str]) -> List[str]:
         List[str]: A list containing the CFD score column if present, otherwise
             an empty list.
     """
-    return REPORTCOLS[21:22] if REPORTCOLS[21] in reportcols else []
+    return REPORTCOLS[20:21] if REPORTCOLS[20] in reportcols else []
 
 
 def format_reportcols(
@@ -729,8 +729,7 @@ def format_report(
         estimate_offtargets,
         report.columns.tolist(),
     )
-    report = report[reportcols]
-    return report
+    return pd.DataFrame(report[reportcols])
 
 
 def store_report(
@@ -1029,7 +1028,7 @@ def collapse_report_entries(
         group_cols += [reportcols[idx + i] for i, _ in enumerate(gene_annotations)]
     if estimate_offtargets:
         group_cols.append(REPORTCOLS[19])
-        if REPORTCOLS[21] in reportcols:
+        if REPORTCOLS[20] in reportcols:
             group_cols.append(REPORTCOLS[20])
     return report.groupby(group_cols, as_index=False).agg(
         collapsed_fields(
