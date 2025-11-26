@@ -79,4 +79,19 @@ This is the first release of **CRISPR‑HAWK** (v0.1.0) — initial fully functi
 ### Version Bump
 - Version updated to **v0.1.1**.
 
+---
+
+## v0.1.2 – 2025-11-26
+
+### Fixed / Improved
+
+* Corrected the formatting and ordering of report columns in off-target estimation output for each reported guide. This fix ensures consistent column alignment across guides, resolves mismatches between header and values, and improves compatibility with downstream parsing/analysis tools (PR #5).
+
+### Breaking Changes / Migration Notes
+
+* Existing workflows remain supported and functional, but we recommend verifying your pipelines after update.
+
+### Version Bump
+- Version updated to **v0.1.2**.
+
 
