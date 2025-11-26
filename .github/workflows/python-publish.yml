@@ -39,6 +39,10 @@ jobs:
     needs: release-build
 
     steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+
       - name: Retrieve release distributions
         uses: actions/download-artifact@v4
         with:
@@ -68,6 +72,10 @@ jobs:
       url: https://pypi.org/project/crisprhawk/
 
     steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+
       - name: Retrieve release distributions
         uses: actions/download-artifact@v4
         with:
