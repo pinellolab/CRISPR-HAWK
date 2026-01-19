@@ -677,14 +677,7 @@ If you encounter a problem that isn't resolved by the above suggestions:
 
 If you use CRISPR-HAWK in your research, please cite:
 
-```bibtex
-@software{crisprhawk2025,
-  title = {CRISPR-HAWK: Haplotype- and vAriant-aWare guide design toolKit},
-  author = {Manuel Tognon},
-  year = {2025},
-  url = {https://github.com/pinellolab/CRISPR-HAWK}
-}
-```
+> Kumbara A, Tognon M, Carone G, Fontanesi A, Bombieri N, Giugno R, Pinello L. CRISPR-HAWK: Haplotype- and Variant-aware guide design toolkit for CRISPR-Cas. bioRxiv [Preprint]. 2025 Dec 27:2025.12.27.696698. doi: 10.64898/2025.12.27.696698. PMID: 41497669; PMCID: PMC12767513.
 
 ## 5 Contacts
 
