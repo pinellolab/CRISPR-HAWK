@@ -8,7 +8,7 @@ The workflow illustrates how haplotype- and variant-aware CRISPR guide design ch
 
 All datasets and pre-computed outputs needed to reproduce the manuscript results are archived on Zenodo:
 
-> <insert-zenodo-link-here>
+[https://zenodo.org/records/18070463](https://zenodo.org/records/18070463)
 
 Download the archive and extract it directly into this directory. After unpacking, the folder structure will appear as:
 
