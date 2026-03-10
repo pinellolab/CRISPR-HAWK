@@ -195,7 +195,7 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
     haplotypes, variants_present, phased = reconstruct_haplotypes(regions, args)
     # encode pam and haplotype sequences in bit for efficient guides search
     pam = encode_pam(args.pam, args.right, args.verbosity, args.debug)
-    # haplotypes_bits = encode_haplotypes(haplotypes, args)
+    haplotypes_bits = encode_haplotypes(haplotypes, args)
     # search guide candidates within input regions (binary encoding)
     # guides = guides_search(
     #     pam, haplotypes, haplotypes_bits, variants_present, phased, args

@@ -35,8 +35,34 @@ def naive_match(pam_pattern: str, hapseq_window: str) -> bool:
     if len(pam_pattern) != len(hapseq_window):
         return False
     for pam_nt, hap_nt in zip(pam_pattern, hapseq_window):
-        allowed = IUPACTABLE.get(pam_nt.upper(), "")
-        if hap_nt.upper() not in allowed:
+        match = False
+        for base in ["A", "C", "G", "T"]:
+            if hap_nt.upper() == base:
+                if pam_nt == "N":
+                    match = True
+                elif pam_nt == base:
+                    match = True
+                elif pam_nt == "R" and base in ["A", "G"]:
+                    match = True
+                elif pam_nt == "Y" and base in ["C", "T"]:
+                    match = True
+                elif pam_nt == "M" and base in ["A", "C"]:
+                    match = True
+                elif pam_nt == "K" and base in ["G", "T"]:
+                    match = True
+                elif pam_nt == "S" and base in ["C", "G"]:
+                    match = True
+                elif pam_nt == "W" and base in ["A", "T"]:
+                    match = True
+                elif pam_nt == "H" and base in ["A", "C", "T"]:
+                    match = True
+                elif pam_nt == "B" and base in ["C", "G", "T"]:
+                    match = True
+                elif pam_nt == "V" and base in ["A", "C", "G"]:
+                    match = True
+                elif pam_nt == "D" and base in ["A", "G", "T"]:
+                    match = True
+        if not match:
             return False
     return True
 
