@@ -28,7 +28,6 @@ from .graphical_reports import compute_graphical_reports
 from .converter import convert_gnomad_vcf
 from .crisprme_data import prepare_data_crisprme
 from .candidate_guides import candidate_guides_analysis
-from .bitset import Bitset
 from .guide import Guide
 from .pam import PAM
 
@@ -66,20 +65,7 @@ def encode_pam(pamseq: str, right: bool, verbosity: int, debug: bool) -> PAM:
 
 def encode_haplotypes(
     haplotypes: Dict[Region, List[Haplotype]], args: CrisprHawkSearchInputArgs
-) -> Dict[Region, List[List[Bitset]]]:
-    """Encodes haplotype sequences as bitsets for efficient guide search.
-
-    This function converts each haplotype sequence into a bit-encoded
-    representation for all regions, enabling efficient downstream guide search
-    operations.
-
-    Args:
-        haplotypes: Dictionary mapping Region objects to lists of Haplotype objects.
-        args: CrisprHawkSearchInputArgs object containing encoding parameters.
-
-    Returns:
-        Dictionary mapping Region objects to lists of bit-encoded haplotypes.
-    """
+) -> Dict[Region, List[List[int]]]:
     # encode haplotypes in bit for efficient guide search
     print_verbosity("Encoding haplotypes in bits", args.verbosity, VERBOSITYLVL[1])
     start = time()  # encoding start time
@@ -100,25 +86,11 @@ def encode_haplotypes(
 def guides_search(
     pam: PAM,
     haplotypes: Dict[Region, List[Haplotype]],
-    haplotypes_bits: Dict[Region, List[List[Bitset]]],
+    haplotypes_bits: Dict[Region, List[List[int]]],
     variants_present: bool,
     phased: bool,
     args: CrisprHawkSearchInputArgs,
 ) -> Dict[Region, List[Guide]]:
-    """Annotates CRISPR guides with variant, functional, gene, and GC content
-    information.
-
-    This function processes each region's guides, adding variant, allele frequency,
-    reverse complement, GC content, and optional functional and gene annotations,
-    returning the updated guides.
-
-    Args:
-        guides: Dictionary mapping Region objects to lists of Guide objects.
-        args: CrisprHawkSearchInputArgs object containing annotation parameters.
-
-    Returns:
-        Dictionary mapping Region objects to lists of annotated Guide objects.
-    """
     # search guide candidates on encoded haplotypes
     print_verbosity("Searching guides on haplotypes", args.verbosity, VERBOSITYLVL[1])
     start = time()  # search start time

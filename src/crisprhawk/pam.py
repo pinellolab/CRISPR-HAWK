@@ -9,7 +9,6 @@ from .exception_handlers import exception_handler
 from .crisprhawk_error import CrisprHawkPamError
 from .utils import reverse_complement, IUPAC
 from .encoder import encode
-from .bitset import Bitset
 
 from typing import List
 
@@ -126,21 +125,12 @@ class PAM:
             self._cas_system = XCAS9
 
     def encode(self, verbosity: int) -> None:
-        """Encodes the PAM sequence and its reverse complement into bit
-        representations.
-
-        This method prepares the PAM object for efficient sequence matching by
-        encoding both the forward and reverse complement sequences.
-
-        Args:
-            verbosity: The verbosity level for logging.
-
-        Raises:
-            CrisprHawkPamError: If encoding the PAM sequence fails.
-        """
         try:  # encode in bit fwd and rev pam sequence
             self._sequence_bits = encode(self._sequence, verbosity, self._debug)
             self._sequence_rc_bits = encode(self._sequence_rc, verbosity, self._debug)
+            # packpam bit-based representation
+            self._packed_bits = _pack_bits(self._sequence_bits)
+            self._packed_bitsrc = _pack_bits(self._sequence_rc_bits)
         except ValueError as e:
             exception_handler(
                 CrisprHawkPamError,  # type: ignore
@@ -160,27 +150,24 @@ class PAM:
         return self._sequence_rc
 
     @property
-    def bits(self) -> List[Bitset]:
-        if not hasattr(self, "_sequence_bits"):  # always trace these errors
-            exception_handler(
-                AttributeError,  # type: ignore
-                f"Missing _sequence_bits attribute on {self.__class__.__name__}",
-                os.EX_DATAERR,
-                True,
-            )
-        return self._sequence_bits
+    def bits(self) -> int:
+        return self._packed_bits
 
     @property
-    def bitsrc(self) -> List[Bitset]:
-        if not hasattr(self, "_sequence_rc_bits"):  # always trace these errors
-            exception_handler(
-                AttributeError,  # type: ignore
-                f"Missing _sequence_rc_bits attribute on {self.__class__.__name__}",
-                os.EX_DATAERR,
-                True,
-            )
-        return self._sequence_rc_bits
+    def bitsrc(self) -> int:
+        return self._packed_bitsrc
+    
+    @property
+    def bits_list(self) -> List[int]:
+        return self._sequence_bits
 
     @property
     def cas_system(self) -> int:
         return self._cas_system
+
+
+def _pack_bits(bits: List[int]) -> int:
+    packed = 0
+    for b in bits:
+        packed = (packed << 4) | b
+    return packed
