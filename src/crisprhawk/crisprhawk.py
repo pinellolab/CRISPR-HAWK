@@ -18,7 +18,7 @@ from .haplotypes import reconstruct_haplotypes
 from .haplotype import Haplotype
 from .region import Region
 from .utils import print_verbosity, VERBOSITYLVL
-from .search_guides import search
+from .search_guides import search, search_naive
 from .annotation import annotate_guides
 from .scoring import scoring_guides
 from .search_offtargets import offtargets_search
@@ -97,6 +97,39 @@ def encode_haplotypes(
     return haplotypes_bits
 
 
+def guides_search_naive(
+    pam: PAM,
+    haplotypes: Dict[Region, List[Haplotype]],
+    variants_present: bool,
+    phased: bool,
+    args: CrisprHawkSearchInputArgs,
+) -> Dict[Region, List[Guide]]:
+    # search guide candidates on encoded haplotypes
+    print_verbosity("Searching guides on haplotypes", args.verbosity, VERBOSITYLVL[1])
+    start = time()  # search start time
+    guides = {
+        region: search_naive(
+            pam,
+            region,
+            haplotype,
+            args.guidelen,
+            args.right,
+            variants_present,
+            phased,
+            args.verbosity,
+            args.debug,
+        )
+        for region, haplotype in haplotypes.items()
+    }
+    print_verbosity(
+        f"Guides search completed in {time() - start:.2f}s",
+        args.verbosity,
+        VERBOSITYLVL[2],
+    )
+    return guides
+
+
+
 def guides_search(
     pam: PAM,
     haplotypes: Dict[Region, List[Haplotype]],
@@ -162,12 +195,15 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
     haplotypes, variants_present, phased = reconstruct_haplotypes(regions, args)
     # encode pam and haplotype sequences in bit for efficient guides search
     pam = encode_pam(args.pam, args.right, args.verbosity, args.debug)
-    haplotypes_bits = encode_haplotypes(haplotypes, args)
-    guides = guides_search(
-        pam, haplotypes, haplotypes_bits, variants_present, phased, args
-    )  # search guide candidates within input regions
+    # haplotypes_bits = encode_haplotypes(haplotypes, args)
+    # search guide candidates within input regions (binary encoding)
+    # guides = guides_search(
+    #     pam, haplotypes, haplotypes_bits, variants_present, phased, args
+    # ) 
+    # search guide candidates within input regions (naive matching)
+    guides = guides_search_naive(pam, haplotypes, variants_present, phased, args)  
     guides = annotate_guides(guides, args)  # annotate guide candidates
-    guides = scoring_guides(guides, pam, args)  # score guide candidates
+    # guides = scoring_guides(guides, pam, args)  # score guide candidates
     if args.estimate_offtargets:  # search off-targets for each guide candidate
         guides = offtargets_search(guides, pam, args)
     reports = report_guides(guides, pam, args)  # construct reports

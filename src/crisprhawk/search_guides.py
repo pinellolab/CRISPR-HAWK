@@ -31,6 +31,16 @@ from time import time
 import os
 
 
+def naive_match(pam_pattern: str, hapseq_window: str) -> bool:
+    if len(pam_pattern) != len(hapseq_window):
+        return False
+    for pam_nt, hap_nt in zip(pam_pattern, hapseq_window):
+        allowed = IUPACTABLE.get(pam_nt.upper(), "")
+        if hap_nt.upper() not in allowed:
+            return False
+    return True
+
+
 def match(
     bitset1: List[Bitset], bitset2: List[Bitset], position: int, debug: bool
 ) -> bool:
@@ -103,6 +113,22 @@ def compute_scan_start_stop(
     return scan_start, scan_stop
 
 
+def scan_haplotype_naive(
+    pam: PAM, haplotype: Haplotype, start: int, stop: int, debug: bool
+) -> Tuple[List[int], List[int]]:
+    seq = haplotype.sequence.sequence  # plain str
+    pamlen = len(pam)
+    # lists storing hits for input pam on forward and reverse strands
+    matches_fwd, matches_rev = [], [] 
+    for pos in range(start, stop):
+        window = seq[pos: pos + pamlen]
+        if naive_match(pam.pam, window):
+            matches_fwd.append(pos)
+        if naive_match(pam.pamrc, window):
+            matches_rev.append(pos)
+    return matches_fwd, matches_rev
+
+
 def scan_haplotype(
     pam: PAM, haplotype: List[Bitset], start: int, stop: int, debug: bool
 ) -> Tuple[List[int], List[int]]:
@@ -130,6 +156,39 @@ def scan_haplotype(
         if match(pam.bitsrc, haplotype[pos : (pos + len(pam))], pos, debug):
             matches_rev.append(pos)  # hit on negative strand
     return matches_fwd, matches_rev
+
+
+def pam_search_naive(
+    pam: PAM,
+    region: Region,
+    haplotypes: List[Haplotype],
+    verbosity: int,
+    debug: bool,
+) -> List[Tuple[List[int], List[int]]]:
+    pam_hits = []  # list of pam hits
+    for hap in haplotypes:
+        print_verbosity(
+            f"Searching PAM occurrences in haplotype {hap.samples}",
+            verbosity,
+            VERBOSITYLVL[3],
+        )
+        # define scan stop position for each haplotype
+        scan_start, scan_stop = compute_scan_start_stop(
+            hap, region.start, region.stop, len(pam)
+        )
+        # scan haplotype for pam occurrences
+        matches_fwd, matches_rev = scan_haplotype_naive(
+            pam, hap, scan_start, scan_stop, debug
+        )
+        print_verbosity(
+            f"Found {len(matches_fwd) + len(matches_rev)} PAM occurrences ({len(matches_fwd)} on 5'-3'; {len(matches_rev)} on 3'-5')",
+            verbosity,
+            VERBOSITYLVL[3],
+        )
+        pam_hits.append((matches_fwd, matches_rev))  # store pam hits for each haplotype
+    return pam_hits
+
+
 
 
 def pam_search(
@@ -572,6 +631,46 @@ def retrieve_guides(
         f"Guides retrieved in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
     )
     return guides
+
+def search_naive(
+    pam: PAM,
+    region: Region,
+    haplotypes: List[Haplotype],
+    guidelen: int,
+    right: bool,
+    variants_present: bool,
+    phased: bool,
+    verbosity: int,
+    debug: bool,
+) -> List[Guide]:
+    print_verbosity(
+        f"Searching guide candidates in {region.coordinates}",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
+    # search pam occurrences on forward and reverse strand of the input sequence
+    pam_hits = pam_search_naive(pam, region, haplotypes, verbosity, debug)
+    # retrieve guide candidates sequence for each haplotype
+    guides = flatten_list(
+        [
+            retrieve_guides(
+                pam_hits[i][strand],
+                haplotype,
+                guidelen,
+                pam,
+                strand,
+                (not right if strand == 1 else right),
+                variants_present,
+                phased,
+                verbosity,
+                debug,
+            )
+            for i, haplotype in enumerate(haplotypes)
+            for strand in [0, 1]
+        ]
+    )
+    return remove_redundant_guides(guides, debug)  # remove redundant guides
+
 
 
 def search(

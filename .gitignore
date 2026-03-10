@@ -171,3 +171,4 @@ src/crisprhawk/scores/cfdscore/models
 src/crisprhawk/scores/deepCpf1/weights
 src/crisprhawk/scores/elevation/models
 src/crisprhawk/scores/elevation/CRISPR
+crisprhawk-data
