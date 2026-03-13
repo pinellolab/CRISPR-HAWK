@@ -37,12 +37,13 @@ _IUPAC_BITS: Dict[str, int] = {
 def _encoder(nt: str, position: int, debug: bool) -> int:
     if nt not in _IUPAC_BITS:
         exception_handler(
-            CrisprHawkIupacTableError, 
+            CrisprHawkIupacTableError,
             f"The nucleotide {nt} at position {position} is not a IUPAC character",
             os.EX_DATAERR,
             debug,
         )
     return _IUPAC_BITS[nt]
+
 
 def encode(sequence: str, verbosity: int, debug: bool) -> List[int]:
     # encode sequence in bits for efficient matching

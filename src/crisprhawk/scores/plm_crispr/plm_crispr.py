@@ -7,7 +7,7 @@ embeddings.
 
 The module is intentionally stateless: the model and protein embeddings are
 loaded fresh on each call to ``compute_plm_crispr_score``, keeping the
-function safe for use in multiprocessing contexts 
+function safe for use in multiprocessing contexts
 """
 
 from torch import device, Tensor
@@ -21,7 +21,7 @@ import sys
 import os
 
 
-# define fixed spcas9 scaffold sequence (first 36 nt), used to extend the 23-nt 
+# define fixed spcas9 scaffold sequence (first 36 nt), used to extend the 23-nt
 # spcer+PAM to the 59-nt input expected by the PLM-CRISPR model
 _SCAFFOLD = (
     "gtttCagagctaTGCTGgaaaCAGCAtagcaagttGaaataaggctagtcc"
@@ -40,8 +40,12 @@ _TRANSDIR = {nt: i for i, nt in enumerate(["A", "T", "C", "G", "N"])}
 # typ index follows the dataset ordering used during PLM-CRISPR training:
 #   6 -> WT_kim / WT_Wang (SpCas9 WT), 10 -> XCas9
 _CAS_CONFIG = {
-    3: {"protein_file": "SpCas9.esm.pt", },   # SPCAS9
-    4: {"protein_file": "xCas9.esm.pt",  },  # XCAS9
+    3: {
+        "protein_file": "SpCas9.esm.pt",
+    },  # SPCAS9
+    4: {
+        "protein_file": "xCas9.esm.pt",
+    },  # XCAS9
 }
 
 # define PLM-CRISPR models folder
@@ -83,7 +87,7 @@ def _load_model(device: device) -> nn.Module:
     _pkg = "crisprhawk.scores.plm_crispr"
     _shims = {
         "train_general": importlib.import_module(f"{_pkg}.train_general"),
-        "Protein":       importlib.import_module(f"{_pkg}.Protein"),
+        "Protein": importlib.import_module(f"{_pkg}.Protein"),
     }
     # Snapshot the current state of sys.modules for the two keys so we can
     # restore it exactly after loading (None means the key was absent)
@@ -102,17 +106,12 @@ def _load_model(device: device) -> nn.Module:
     net.eval()
     return net
 
+
 def _load_esm_embedding(protein_file: str, device: device) -> Tensor:
     """Load the ESM per-residue protein embedding for a given Cas9 variant.
 
-    ESM embeddings are stored as PyTorch checkpoint files containing a
-    ``representations`` key with the per-residue embedding tensor of shape
-    ``(L, 1280)``, where L is the protein sequence length and 1280 is the
-    ESM-1b embedding dimension.
-
     Args:
-        protein_file (str): Filename of the protein embedding (e.g.
-            ``SpCas9.esm.pt``), looked up inside ``_MODELSDIR``.
+        protein_file (str): Filename of the protein embedding.
         device (torch.device): Device to load the tensor onto.
 
     Returns:
@@ -121,15 +120,32 @@ def _load_esm_embedding(protein_file: str, device: device) -> Tensor:
             protein branch.
 
     Raises:
-        FileNotFoundError: If the protein embedding file does not exist.
         KeyError: If the loaded checkpoint does not contain a
             ``representations`` key.
     """
     protein_file_path = os.path.join(_MODELSDIR, protein_file)
-    protein_data = torch.load(protein_file_path, map_location=device, weights_only=False)
+    protein_data = torch.load(
+        protein_file_path, map_location=device, weights_only=False
+    )
     return protein_data["representations"].to(torch.float16)
 
+
 def _concat_scaffold(grna: str) -> str:
+    """Append the fixed SpCas9 scaffold to a spacer+PAM string.
+
+    Concatenates the guide's spacer+PAM with the 36-nt scaffold and
+    uppercases the result. Raises if the resulting length is not exactly
+    59 nt, which would indicate an unexpected guide length.
+
+    Args:
+        grna (str): Spacer+PAM sequence (expected 23 nt for SpCas9).
+
+    Returns:
+        str: Uppercase 59-nt sequence ready for encoding.
+
+    Raises:
+        ValueError: If the concatenated sequence length differs from 59.
+    """
     s = (grna + _SCAFFOLD).upper()
     if len(s) != _SEQLEN:
         raise ValueError(
@@ -137,7 +153,8 @@ def _concat_scaffold(grna: str) -> str:
             f"{_SEQLEN}. Guide='{grna}' (len={len(grna)})"
         )
     return s
-    
+
+
 def _build_input_sequences(guides: List[str]) -> List[str]:
     """Builds 59-nt PLM-CRISPR input sequences from Guide objects.
 
@@ -146,103 +163,82 @@ def _build_input_sequences(guides: List[str]) -> List[str]:
     Sequences are uppercased before encoding.
 
     Args:
-        guides (List[str]): List of guides. Each guide contains (PAM+spacer or 
+        guides (List[str]): List of guides. Each guide contains (PAM+spacer or
             spacer+PAM depending on orientation).
 
     Returns:
         List[str]: List of 59-nt uppercase strings ready for encoding.
+
+    Raises:
+        ValueError: If any resulting sequence is not exactly 59 nt.
     """
     return [_concat_scaffold(g) for g in guides]
 
-def _encode_sequences(sequences: List[str]) -> Tensor:
-    """Encodes a list of 59-nt sequences into a LongTensor for PLM-CRISPR.
 
-    Each nucleotide is mapped to an integer index using the PLM-CRISPR base
-    encoding (A=0, T=1, C=2, G=3, N=4). The output tensor has shape
-    (N, 59) where N is the number of sequences.
+def _encode_sequences(sequences: List[str]) -> Tensor:
+    """Encode a list of 59-nt nucleotide strings into a LongTensor.
+
+    Maps each nucleotide to its integer index using the PLM-CRISPR encoding:
+    A=0, T=1, C=2, G=3, N=4. The resulting tensor has shape ``(N, 59)``
+    where N is the number of sequences.
 
     Args:
-        sequences (List[str]): List of 59-nt uppercase sequences.
+        sequences (List[str]): Uppercase 59-nt strings to encode.
 
     Returns:
-        torch.Tensor: LongTensor of shape (N, 59) with encoded sequences.
+        torch.Tensor: LongTensor of shape ``(N, 59)`` containing integer-
+            encoded nucleotide sequences.
 
     Raises:
-        KeyError: If any nucleotide is not in the encoding dictionary.
+        KeyError: If any character in a sequence is not present in
+            ``_TRANSDIR`` (i.e. not one of A, T, C, G, N).
     """
-    
-    for s in sequences:
-        print(s)
-
     encoded = [[_TRANSDIR[nt] for nt in seq] for seq in sequences]
     return torch.LongTensor(encoded)
 
 
 def compute_plm_crispr_score(guides: List[str], cas_system: int) -> List[float]:
-    """Run PLM-CRISPR inference for a list of guides of the same Cas system.
-
-    Loads the serialized PLM-CRISPR model and the corresponding ESM protein
-    embedding for the given Cas system, builds the 59-nt input sequences,
-    encodes them, and returns predicted on-target efficiency scores.
-
-    The model and protein embedding are loaded fresh each call (no global
-    state), which keeps the function stateless and safe for multiprocessing.
-    GPU is used automatically if available, otherwise CPU.
+    """Compute PLM-CRISPR on-target efficiency scores for a list of guides.
 
     Args:
-        guides (List[Guide]): List of Guide objects to score. All guides must
-            belong to the same Cas system.
+        guides (List[str]): Spacer+PAM sequences to score (one per guide,
+            23 nt each for SpCas9/xCas9).
         cas_system (int): CRISPR-HAWK Cas system identifier (SPCAS9=3,
-            XCAS9=4), used to look up the correct protein file and typ index.
+            XCAS9=4). Used to select the protein embedding file and the
+            dataset-type index passed to the model.
 
     Returns:
         List[float]: Predicted PLM-CRISPR efficiency scores, one per guide,
             in the same order as the input list.
 
     Raises:
-        KeyError: If ``cas_system`` is not in ``_PLMCRISPR_CAS_CONFIG``.
-        FileNotFoundError: If the model or protein embedding file is missing.
-        ValueError: If any input sequence cannot be constructed at 59 nt.
+        KeyError: If ``cas_system`` is not in ``_CAS_CONFIG`` (i.e. not a
+            supported system).
+        ValueError: If any guide produces an input sequence of unexpected
+            length after scaffold concatenation.
+        KeyError: If any nucleotide in an input sequence is not encodable
+            (not in A, T, C, G, N).
     """
     # retrieve cas-system-specific config
     config = _CAS_CONFIG[cas_system]
-    
-    typ_idx = 0
     # resolve device (GPU or CPU)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    net = _load_model(device)
-
+    net = _load_model(device)  # load plm model
     # load esm protein embedding for the input cas variant
     protein_emb = _load_esm_embedding(config["protein_file"], device)
-
-   
-
-    # # build and encode input guides
+    # build and encode input guides
     sequences = _build_input_sequences(guides)
     sgrna_tensor = _encode_sequences(sequences).to(device)
-
-    print(f"shape: {sgrna_tensor.shape}")
-    print(f"{sgrna_tensor[0]}")
-
-    batch_size = sgrna_tensor.shape[0]
-    # batch_size = sgrna_tensor.shape[0]  # batch size
-
+    batch_size = sgrna_tensor.shape[0]  # retrieve batch size
     # expand protein embedding to match batch size
     protein_batch = protein_emb.unsqueeze(0).repeat(batch_size, 1, 1).to(device)
-
-    typ_tensor = typ_idx  # the model accepts a plain int for typ
-    
-    # inference
+    # perform inference
     sgrna_tensor = sgrna_tensor.long().to(device)
     with torch.no_grad():
-        predictions = net(sgrna_tensor, typ_idx, protein_batch, train=False)
-    
-    # retrieve scores
+        predictions = net(sgrna_tensor, 0, protein_batch, train=False)
+    # retrieve scores for each input grna
     scores = predictions.squeeze().cpu().tolist()
     # ensure output is always a list even for a single guide
     if isinstance(scores, float):
         scores = [scores]
     return scores
-
-

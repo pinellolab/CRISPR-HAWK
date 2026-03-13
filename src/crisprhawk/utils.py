@@ -429,7 +429,7 @@ def _uncompress_elevation_models(elevationdir: str) -> None:
 
 
 def _uncompress_elevation_model(
-    elevationdir, file_zipped: str, errmsg1: str, errmsg2: str
+    elevationdir: str, file_zipped: str, errmsg1: str, errmsg2: str
 ) -> None:
     """Uncompress a specific Elevation ZIP archive in the given directory.
 
@@ -456,6 +456,35 @@ def _uncompress_elevation_model(
     except (zipfile.BadZipFile, RuntimeError) as e:
         raise zipfile.BadZipFile(f"{errmsg2}{elevation_models_zip}") from e
     remove_file(elevation_models_zip)
+
+
+def _uncompress_plmcrispr_model(plmcrisprdir: str) -> None:
+    """Uncompress the PLM-CRISPR model ZIP archive in the specified directory.
+
+    Extracts the PLM-CRISPR models ZIP file into the given directory and removes
+    the archive after extraction. Raises an error if the file is missing or
+    extraction fails.
+
+    Args:
+        plmcrisprdir (str): The directory containing the PLM-CRISPR models ZIP archive.
+
+    Raises:
+        FileNotFoundError: If the PLM-CRISPR models ZIP file does not exist.
+        zipfile.BadZipFile: If the ZIP file is invalid or extraction fails.
+    """
+    # plm-crispr models
+    plmcrispr_model_zip = os.path.join(plmcrisprdir, "models.zip")  
+    if not os.path.isfile(plmcrispr_model_zip):  # always trace these errors
+        raise FileNotFoundError(f"Cannot find PLM-CRISPR models: {plmcrispr_model_zip}")
+    try:
+        with zipfile.ZipFile(plmcrispr_model_zip, mode="r") as zipref:
+            # extract in plm-crispr directory
+            zipref.extractall(path=plmcrispr_model_zip)  
+    except (zipfile.BadZipFile, RuntimeError) as e:
+        raise zipfile.BadZipFile(
+            f"An error occurred while unzipping PLM-CRISPR models: {plmcrispr_model_zip}"
+        ) from e
+    remove_file(plmcrispr_model_zip)
 
 
 def prepare_package() -> None:
@@ -494,6 +523,10 @@ def prepare_package() -> None:
     ):
         warning("Extracting Elevation models and data. This may take some time", 1)
         _uncompress_elevation_models(elevationdir)  # uncompress elevation models
+    plmcrispr_dir = os.path.join(scoresdir, "plm_crispr")  # PLM-CRISPR
+    if not os.path.isdir(os.path.join(plmcrispr_dir, "models")):
+        warning("Extracting PLM-CRISPR models. This may take some time", 1)
+        _uncompress_plmcrispr_model(plmcrispr_dir)  # uncompress PLM-CRISPR models
 
 
 def command_exists(command: str) -> bool:
@@ -527,6 +560,19 @@ def is_lowercase(sequence: str) -> bool:
 
 
 def calculate_chunks(lst: List[Any], threads: int) -> List[Tuple[int, List[Any]]]:
+    """Split a list into indexed chunks for parallel processing.
+
+    Returns a list of (start_index, chunk) tuples that partition the input list
+    into approximately equal-sized segments based on the number of threads.
+
+    Args:
+        lst (List[Any]): The list to be divided into chunks.
+        threads (int): The desired number of chunks, typically matching thread count.
+
+    Returns:
+        List[Tuple[int, List[Any]]]: A list of tuples where each tuple contains
+            the starting index in the original list and the corresponding chunk.
+    """
     size = len(lst)  # compute list size
     chunk_size = max(1, size // threads)  # compute chunk sizes
     chunks = []  # create chunks

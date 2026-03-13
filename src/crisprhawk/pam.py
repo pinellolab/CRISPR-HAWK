@@ -156,7 +156,7 @@ class PAM:
     @property
     def bitsrc(self) -> int:
         return self._packed_bitsrc
-    
+
     @property
     def bits_list(self) -> List[int]:
         return self._sequence_bits

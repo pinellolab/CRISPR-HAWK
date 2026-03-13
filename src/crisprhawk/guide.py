@@ -538,7 +538,7 @@ class Guide:
     @property
     def plmcrispr_score(self) -> str:
         return self._plmcrispr_score
-    
+
     @plmcrispr_score.setter
     def plmcrispr_score(self, value: float) -> None:
         """Sets the PLM-CRISPR score for the Guide object.

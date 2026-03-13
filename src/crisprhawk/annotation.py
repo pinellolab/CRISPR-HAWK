@@ -318,10 +318,11 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
     )
     return guides_lst
 
+
 def _format_af(af: float) -> str:
     """Formats an allele frequency value for annotation output.
 
-    This function returns the allele frequency as a string, using scientific 
+    This function returns the allele frequency as a string, using scientific
     notation if it has more than four decimal digits.
 
     Args:

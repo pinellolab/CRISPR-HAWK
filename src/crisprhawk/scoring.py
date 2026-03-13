@@ -536,19 +536,115 @@ def outofframe_score(
     return guides
 
 
-def plmcrispr_score(guides: List[Guide], cas_system: int, verbosity: int, debug: bool) -> List[Guide]:
+def _plmcrispr(
+    guides_chunk: Tuple[int, List[str]], cas_system: int
+) -> Tuple[int, List[float]]:
+    """Calculates PLM-CRISPR scores for a chunk of guide RNAs.
+
+    This function computes PLM-CRISPR efficiency scores for a given chunk of
+    guide sequences and returns the starting index along with the list of scores.
+
+    Args:
+        guides_chunk (Tuple[int, List[str]]): A tuple containing the start index
+            and a list of guide sequences.
+        cas_system (int): Identifier of the Cas system used for scoring.
+
+    Returns:
+        Tuple[int, List[float]]: The start index and the list of PLM-CRISPR
+            scores for the guides.
+    """
+    start_idx, guides = guides_chunk
+    scores = plmcrispr(guides, cas_system)
+    return start_idx, scores
+
+
+def _execute_plmcrispr(
+    guide_chunks: List[Tuple[int, List[str]]],
+    cas_system: int,
+    size: int,
+    threads: int,
+    debug: bool,
+) -> List[float]:
+    """Executes PLM-CRISPR scoring in parallel for guide RNA chunks.
+
+    This function distributes guide RNA chunks across multiple processes to
+    compute PLM-CRISPR efficiency scores, collecting and returning the scores
+    in the original guide order.
+
+    Args:
+        guide_chunks (List[Tuple[int, List[str]]]): List of tuples containing
+            the start index and guide sequence chunk.
+        cas_system (int): Identifier of the Cas system used for scoring.
+        size (int): Total number of guides.
+        threads (int): Number of threads for parallel execution.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[float]: List of PLM-CRISPR scores for each guide.
+
+    Raises:
+        CrisprHawkPlmCrisprScoreError: If PLM-CRISPR score calculation fails
+            for any chunk.
+    """
+    plmcrispr_scores = [np.nan] * size  # plm-crispr scores
+    with ProcessPoolExecutor(max_workers=threads) as executor:
+        future_to_chunk = {
+            executor.submit(_plmcrispr, chunk, cas_system): chunk[0]
+            for chunk in guide_chunks
+        }
+        for future in as_completed(future_to_chunk):
+            start_idx = future_to_chunk[future]
+            try:
+                chunk_start_idx, chunk_scores = future.result()
+                for offset, score in enumerate(chunk_scores):
+                    plmcrispr_scores[chunk_start_idx + offset] = score
+            except Exception as e:
+                exception_handler(
+                    CrisprHawkPlmCrisprScoreError,
+                    f"PLM-CRISPR score calculation failed for chunk at index {start_idx}",
+                    os.EX_DATAERR,
+                    debug,
+                    e,
+                )
+    assert all(not np.isnan(s) for s in plmcrispr_scores)
+    assert len(plmcrispr_scores) == size  # should match
+    return plmcrispr_scores
+
+
+def plmcrispr_score(
+    guides: List[Guide], cas_system: int, threads: int, verbosity: int, debug: bool
+) -> List[Guide]:
+    """Computes PLM-CRISPR scores for a list of guide RNAs.
+
+    This function calculates the PLM-CRISPR efficiency score for each guide in
+    parallel and updates the guide objects with the computed values.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to score.
+        cas_system (int): Identifier of the Cas system used for scoring.
+        threads (int): Number of threads to use for parallel computation.
+        verbosity (int): Verbosity level for logging.
+        debug (bool): Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with PLM-CRISPR scores assigned.
+    """
     if not guides:
-        return guides
+        return guides  # no guide?
     print_verbosity("Computing PLM-CRISPR score", verbosity, VERBOSITYLVL[3])
-    start = time()
+    start = time()  # plm-crispr start time
     # retrieve spacer + pam sequence for each input guide
     guides_seqs = [g.guidepam for g in guides]
+    # split guides in chunks
+    guides_seqs_chunks = calculate_chunks(guides_seqs, threads)
     try:  # compute plm-crispr scores
-        plmcrispr_scores = plmcrispr(guides_seqs, cas_system)
+        plmcrispr_scores = _execute_plmcrispr(
+            guides_seqs_chunks, cas_system, len(guides), threads, debug
+        )
     except Exception as e:
         exception_handler(
             CrisprHawkPlmCrisprScoreError,
-            "PLM-CRISPR score calculation failed",
+            "PLM-CRISPR score parallel execution failed",
             os.EX_DATAERR,
             debug,
             e,
@@ -556,9 +652,11 @@ def plmcrispr_score(guides: List[Guide], cas_system: int, verbosity: int, debug:
     for i, score in enumerate(plmcrispr_scores):
         guides[i].plmcrispr_score = score  # assign score to each guide
     print_verbosity(
-        f"PLM-CRISPR scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+        f"PLM-CRISPR scores computed in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
     )
-    return guides  
+    return guides
 
 
 def scoring_guides(
@@ -592,7 +690,7 @@ def scoring_guides(
             )
             # score each guide with PLM-CRISPR
             guides_list = plmcrispr_score(
-                guides_list, pam.cas_system, args.verbosity, args.debug
+                guides_list, pam.cas_system, args.threads, args.verbosity, args.debug
             )
             # score each guide with CFDon
             guides_list = cfdon_score(guides_list, args.verbosity, args.debug)

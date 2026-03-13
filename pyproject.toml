@@ -77,6 +77,7 @@ where = ["src"]
 "crisprhawk.scores.cfdscore" = ["*.zip"]
 "crisprhawk.scores.deepCpf1" = ["*.zip"]
 "crisprhawk.scores.elevation" = ["*.zip"]
+"crisprhawk.scores.plm_crispr" = ["*.zip"]
 "crisprhawk.config" = ["*.json"]
 
 [tool.setuptools.dynamic]
