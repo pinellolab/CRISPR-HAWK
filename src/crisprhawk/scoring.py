@@ -15,10 +15,11 @@ from .crisprhawk_error import (
     CrisprHawkCfdScoreError,
     CrisprHawkDeepCpf1ScoreError,
     CrisprHawkOOFrameScoreError,
+    CrisprHawkPlmCrisprScoreError,
 )
 from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .exception_handlers import exception_handler
-from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, ooframe_score
+from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, ooframe_score, plmcrispr
 from .utils import calculate_chunks, flatten_list, print_verbosity, VERBOSITYLVL
 from .region import Region
 from .guide import Guide, GUIDESEQPAD
@@ -535,6 +536,31 @@ def outofframe_score(
     return guides
 
 
+def plmcrispr_score(guides: List[Guide], cas_system: int, verbosity: int, debug: bool) -> List[Guide]:
+    if not guides:
+        return guides
+    print_verbosity("Computing PLM-CRISPR score", verbosity, VERBOSITYLVL[3])
+    start = time()
+    # retrieve spacer + pam sequence for each input guide
+    guides_seqs = [g.guidepam for g in guides]
+    try:  # compute plm-crispr scores
+        plmcrispr_scores = plmcrispr(guides_seqs, cas_system)
+    except Exception as e:
+        exception_handler(
+            CrisprHawkPlmCrisprScoreError,
+            "PLM-CRISPR score calculation failed",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
+    for i, score in enumerate(plmcrispr_scores):
+        guides[i].plmcrispr_score = score  # assign score to each guide
+    print_verbosity(
+        f"PLM-CRISPR scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+    )
+    return guides  
+
+
 def scoring_guides(
     guides: Dict[Region, List[Guide]], pam: PAM, args: CrisprHawkSearchInputArgs
 ) -> Dict[Region, List[Guide]]:
@@ -563,6 +589,10 @@ def scoring_guides(
             # score each guide with rs3
             guides_list = rs3_score(
                 guides_list, args.threads, args.verbosity, args.debug
+            )
+            # score each guide with PLM-CRISPR
+            guides_list = plmcrispr_score(
+                guides_list, pam.cas_system, args.verbosity, args.debug
             )
             # score each guide with CFDon
             guides_list = cfdon_score(guides_list, args.verbosity, args.debug)

@@ -18,6 +18,7 @@ from .deepCpf1.seqdeepcpf1 import (
 )
 from .mhscore.microhomology import calculate_microhomology_score
 from .elevation.cmds.predict import Predict
+from .plm_crispr.plm_crispr import compute_plm_crispr_score
 from ..guide import Guide
 from ..utils import suppress_stdout, suppress_stderr
 
@@ -178,3 +179,19 @@ def ooframe_score(guides: List[Guide], idx: int) -> List[int]:
         calculate_microhomology_score(gs.upper(), len(gs) // 2) for gs in guides_seqs
     ]
     return [mhscore.ooframe_score for mhscore in mhscores]
+
+
+def plmcrispr(guides: List[str], cas_system: int) -> List[float]:
+    """Compute PLM-CRISPR scores for a list of input gRNAs.
+
+    Returns a list of PLM-CRISPR scores for the provided gRNAs using the appropriat
+    Cas protein model.
+
+    Args:
+        guides (List[str]): A list of guide sequences.
+        cas_system (int):Cas system identifier.
+
+    Returns:
+        List[float]: The predicted PLM-CRISPR scores for each input gRNA.
+    """
+    return compute_plm_crispr_score(guides, cas_system)

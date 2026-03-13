@@ -223,6 +223,7 @@ class Guide:
         self._deepcpf1_score = "NA"
         self._ooframe_score = "NA"
         self._cfd = "NA"
+        self._plmcrispr_score = "NA"
 
     def _initialize_annotations(self) -> None:
         """Initializes all annotation attributes for the Guide object to default
@@ -533,6 +534,32 @@ class Guide:
                 True,
             )
         self._ooframe_score = str(value)
+
+    @property
+    def plmcrispr_score(self) -> str:
+        return self._plmcrispr_score
+    
+    @plmcrispr_score.setter
+    def plmcrispr_score(self, value: float) -> None:
+        """Sets the PLM-CRISPR score for the Guide object.
+
+        This method validates and updates the guide's PLM-CRISPR score, converting
+        it to a string or 'NA' if not available.
+
+        Args:
+            value: The PLM-CRISPR score as a float.
+
+        Raises:
+            CrisprHawkGuideError: If the value is not a float or is not valid.
+        """
+        if not isinstance(value, float):
+            exception_handler(
+                CrisprHawkGuideError,
+                f"Elevation-on score must be a float, got {type(value).__name__} instead",
+                os.EX_DATAERR,
+                True,
+            )
+        self._plmcrispr_score = "NA" if np.isnan(value) else str(round_score(value))
 
     @property
     def gc(self) -> str:
