@@ -2,5 +2,13 @@
   "crispritz": {
     "env_name": "crispritz-crisprhawk",
     "outdir": ".crispritz_targets"
+  },
+  "crispron": {
+    "env_name": "crispron-crisprhawk",
+    "outdir": ".crispron_outdir"
+  },
+  "sgdesigner": {
+    "env_name": "sgdesigner-crisprhawk",
+    "outdir": ".sgdesigner_outdir"
   }
 }

@@ -79,6 +79,8 @@ REPORTCOLS = [
     "haplotype_id",  # 19
     "offtargets",  # 20
     "cfd",  # 21
+    "score_crispron", # 22
+    "score_sgdesigner" # 23
 ]
 
 
@@ -175,6 +177,8 @@ def _update_report_fields_spcas9(
     report[REPORTCOLS[17]].append(guide.afs_str)  # variants allele frequencies
     report[REPORTCOLS[18]].append(region_coordinates)  # region
     report[REPORTCOLS[19]].append(guide.hapid)  # haplotype id
+    report[REPORTCOLS[22]].append(guide.crispron_score) # crispron score
+    report[REPORTCOLS[23]].append(guide.sgdesigner_score) # sgdesigner score
     return report
 
 
@@ -461,6 +465,8 @@ def select_reportcols(
     if pam.cas_system in [SPCAS9, XCAS9]:  # spcas9 system pam report columns
         return (
             REPORTCOLS[:10]
+            + [REPORTCOLS[22]]
+            + [REPORTCOLS[23]]
             + REPORTCOLS[11:12]
             + insert_elevationon_reportcols(guidelen + len(pam), right)
             + REPORTCOLS[13:20]
@@ -673,7 +679,7 @@ def format_reportcols(
         else REPORTCOLS[:7]
     )
     if pam.cas_system in [SPCAS9, XCAS9]:
-        reportcols_sorted += REPORTCOLS[7:10] + REPORTCOLS[11:12]
+        reportcols_sorted += REPORTCOLS[7:10] + [REPORTCOLS[22]] + [REPORTCOLS[23]] + REPORTCOLS[11:12]
     elif pam.cas_system == CPF1:
         reportcols_sorted += REPORTCOLS[10:11]
     reportcols_sorted += _format_elevationon(reportcols)
@@ -1013,7 +1019,7 @@ def collapse_report_entries(
     reportcols = report.columns.tolist()
     group_cols = REPORTCOLS[:5]
     if pam.cas_system in [SPCAS9, XCAS9]:
-        group_cols += REPORTCOLS[6:10] + REPORTCOLS[11:12] + REPORTCOLS[13:15]
+        group_cols += REPORTCOLS[6:10] + [REPORTCOLS[22]] + [REPORTCOLS[23]] + REPORTCOLS[11:12] + REPORTCOLS[13:15]
     elif pam.cas_system == CPF1:
         group_cols += REPORTCOLS[6:7] + REPORTCOLS[10:11] + REPORTCOLS[13:15]
     else:
