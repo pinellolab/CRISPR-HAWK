@@ -21,6 +21,8 @@ CRISPR-HAWK is a comprehensive and scalable tool for designing guide RNAs (gRNAs
 <br>&nbsp;&nbsp;1.4 [Install CRISPR-HAWK from Source Code](#14-install-crispr-hawk-from-source-code)
 <br>&nbsp;&nbsp;1.5 [Install External Software Dependencies](#15-install-external-software-dependencies)
 <br>&nbsp;&nbsp;&nbsp;&nbsp;1.5.1 [Install CRISPRitz (for Off-target Estimation)](#151-install-crispritz-for-off-target-estimation)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;1.5.2 [Install CRISPRon (Optional On-target Scoring)](#152-install-crispron-optional-on-target-scoring)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;1.5.3 [Install sgDesigner (Optional On-target Scoring)](#153-install-sgdesigner-optional-on-target-scoring)
 <br>2 [Usage](#2-usage)
 <br>&nbsp;&nbsp;2.1 [General Syntax](#21-general-syntax)
 <br>&nbsp;&nbsp;2.2 [Search](#22-search)
@@ -207,17 +209,19 @@ If the help message is displayed correctly, CRISPR-HAWK is successfully installe
 
 ### 1.5 Install External Software Dependencies
 
-CRISPR-HAWK relies on a few external tools for certain optional features, such as genome-wide **off-target nomination**. These dependencies are **not bundled** with the core CRISPR-HAWK installation and must be installed separately if you wish to enable advanced features.
+CRISPR-HAWK relies on a few external tools for certain optional features, such as additional **on-target scoring** and genome-wide **off-target nomination**. These dependencies are **not bundled** with the core CRISPR-HAWK installation and must be installed separately if you wish to enable the corresponding features.
 
-> 📝 **Note**: External tools are currently only supported on Linux-based systems. Windows and macOS users can still run the core pipeline (variant-aware gRNA search, scoring, annotation), but **off-target estimation** will not be available.
+> 📝 **Note**: External tools are used only for optional modules. If they are not installed, CRISPR-HAWK will still run the core pipeline (variant-aware gRNA search, scoring, annotation), but the corresponding scoring or off-target functionalities will be skipped.
 
-> 💡 **Tip**: Installing these tools requires Mamba or Conda to be available on your system. If you haven't installed Mamba yet, refer to the instructions in [Section 1.1.1](#111-install-conda-or-mamba).
+> 💡 **Tip**: Installing these tools requires Mamba or Conda to be available on your system. If you haven't installed Conda or Mamba yet, refer to the instructions in [Section 1.1.1](#111-install-conda-or-mamba).
 
 #### 1.5.1 Install CRISPRitz (for Off-target Estimation)
 
 [CRISPRitz](https://github.com/pinellolab/CRISPRitz) is an efficient tool for nominating CRISPR-Cas off-target sites across large genomes accounting for mismatches and DNA/RNA bulges. CRISPR-HAWK uses it to enable **fast, high-throughput off-target estimation** in the reference genome for the identified candidate gRNAs.
 
 > 📝 **Note**: CRISPRitz is required only if you plan to use the `--estimate-offtargets` feature in the `crisprhawk search` command.
+
+> 🐧 **Linux note**: Off-target estimation through CRISPRitz is currently supported only on Linux-based operating systems.
 
 **Installation Steps**:
 
@@ -243,6 +247,62 @@ mamba run -n crispritz-crisprhawk crispritz.py
 ```
 
 If everything is working, the CRISPRitz help menu should appear, displaying available options and usage instructions.
+
+#### 1.5.2 Install CRISPRon (Optional On-target Scoring)
+
+[CRISPRon](https://github.com/RTH-tools/crispron) is a deep learning-based model for predicting SpCas9 guide RNA on-target efficiency. In CRISPR-HAWK, it can be used as an additional scoring module during `crisprhawk search`.
+
+> 📝 **Note**: CRISPRon scoring is optional. If the dedicated environment is not installed, CRISPR-HAWK will skip CRISPRon scoring and continue running the rest of the pipeline.
+
+**Installation Steps**:
+
+From the root of the cloned CRISPR-HAWK repository, create the dedicated environment using the provided YAML file:
+
+```bash
+conda create -y -c bioconda -c conda-forge --name crispron-crisprhawk --file crispron-crisprhawk.yml
+```
+
+> 💬 **Why use a separate environment?**
+<br>This avoids dependencies conflicts with the main CRISPR-HAWK installation and ensures better reproducibility of the CRISPRon scoring module. 
+
+> 📝 **Note**: Environment creation may take several minutes depending on your system and package solver.
+
+**Test your installation**
+
+You can verify that the environment was created successfully by running:
+
+```bash
+conda run -n crispron-crisprhawk python -c "print('CRISPRon environment correctly installed')"
+```
+
+If the command completes successfully, CRISPR-HAWK will be able to use the CRISPRon scoring module during guide search.
+
+#### 1.5.3 Install sgDesigner (Optional On-target Scoring)
+
+[sgDesigner](https://github.com/wang-lab/sgDesigner) is a machine learning-based tool for predicting SpCas9 guide RNAs efficiency. In CRISPR-HAWK, it can be used as an optional scoring module during `crisprhawk search` to complement the built-in guide prioritization framework.
+
+> 📝 **Note**: sgDesigner scoring is optional. If the dedicated environment is not installed, CRISPR-HAWK will skip sgDesigner scoring and continue running the rest of the pipeline.
+
+**Installation Steps**:
+
+Create a dedicated environment for sgDesigner:
+
+```bash
+conda create -y --name sgdesigner-crisprhawk python=3.7.0 numpy=1.15.2 scipy=1.1.0 scikit-learn=0.20.0 xgboost=0.80 joblib=0.13.2
+```
+
+> 💬 **Why use a separate environment?**
+<br>This prevents potential dependency conflicts with the main CRISPR-HAWK environment and preserves compatibility with the sgDesigner software requirements. 
+
+**Test your installation**
+
+You can confirm that the environment is available by running:
+
+```bash
+conda run -n sgdesigner-crisprhawk python -c "print('sgDesigner environment correctly installed')"
+```
+
+If the command completes successfully, CRISPR-HAWK will be able to include sgDesigner scoring during guide search.
 
 ## 2 Usage
 
@@ -273,7 +333,7 @@ The search includes:
 * Support for any Cas system (Cas9, Cpf1, SaCas9, etc.)
 * Compatibility with custom PAM sequences and guide lengths
 * Variant-aware design from individual or population-level VCF files (SNVs and indels)
-* Scoring using **Azimuth**, **RS3**, **CFDon**, **Elevation-on**, and **DeepCpf1**
+* Scoring using **Azimuth**, **RS3**, **CFDon**, **Elevation-on**, **DeepCpf1**, **PLM-CRISPR**, and optionally **CRISPRon** and **sgDesigner** when their dedicated environments are available
 * Functional and gene annotation using user-specified BED files 
 * Optional estimation and reporting of **off-targets**
 * Output in detailed and structured reports (TSV, haplotype tables, off-target tables)
@@ -284,6 +344,8 @@ crisprhawk search -f <fasta-dir> -r <bedfile> -v <vcf-dir> -p <pam> -g <guide-le
 ```
 
 > 📝 **Note**: All FASTA files in `<fasta-dir>` must be one per chromosome (e.g., chr1.fa, chr2.fa, etc.).
+
+> 💡 **Tip**: Optional scoring modules such as CRISPRon and sgDesigner are automatically detected by CRISPR-HAWK through their dedicated environments. If these environments are not present, the corresponding scores are skipped without interrupting the analysis.
 
 ---
 
