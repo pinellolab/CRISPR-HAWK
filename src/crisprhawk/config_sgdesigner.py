@@ -327,23 +327,24 @@ def check_sgdesigner_env(env_name: str, conda: str) -> bool:
     sgdesigner_bin = os.path.join(sgdesigner_dir, "sgDesigner.pl")
 
     if not os.path.isfile(sgdesigner_bin):
-        warning(f"Cannot find sgdesigner executable: {sgdesigner_bin}", 1)
+        warning(f"Cannot find sgDesigner executable: {sgdesigner_bin}", 1)
         return False
 
     try:
         with suppress_stdout(), suppress_stderr():
             subprocess.check_call(
-                [conda, "run", "-n", env_name], #], "bash", sgdesigner_bin],
+                [conda, "run", "-n", env_name, "python", "-c", "pass"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 cwd=sgdesigner_dir,
             )
     except (FileNotFoundError, subprocess.CalledProcessError):
         warning(
-            f"sgdesigner not runnable in environment {env_name}, skipping sgdesigner scoring",
+            f"sgDesigner environment '{env_name}' not found or not runnable, skipping sgDesigner scoring",
             1,
         )
         return False
+
     return True
 
 

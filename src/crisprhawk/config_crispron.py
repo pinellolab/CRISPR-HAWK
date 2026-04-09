@@ -102,7 +102,7 @@ class CRISPRonConfig:
                 }
                 self._save_config(config)
             return config
-        except (json.JSONDecodeError, IOError) as e:  # always traced
+        except (json.JSONDecodeError, IOError) as e:  
             exception_handler(
                 CrisprHawkCRISPRonConfigError,
                 f"Error loading config file {self._config_file}",
@@ -333,17 +333,18 @@ def check_crispron_env(env_name: str, conda: str) -> bool:
     try:
         with suppress_stdout(), suppress_stderr():
             subprocess.check_call(
-                [conda, "run", "-n", env_name], #], "bash", crispron_bin],
+                [conda, "run", "-n", env_name, "python", "-c", "pass"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 cwd=crispron_dir,
             )
     except (FileNotFoundError, subprocess.CalledProcessError):
         warning(
-            f"CRISPRon not runnable in environment {env_name}, skipping CRISPRon scoring",
+            f"CRISPRon environment '{env_name}' not found or not runnable, skipping CRISPRon scoring",
             1,
         )
         return False
+
     return True
 
 

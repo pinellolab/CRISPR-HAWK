@@ -33,7 +33,7 @@ from collections import defaultdict
 from time import time
 
 import numpy as np
-
+import subprocess
 import os
 
 
@@ -877,6 +877,21 @@ def sgdesigner_score(
     return guides
 
 
+def _env_exists(env_name: str) -> bool:
+    """ Return True if the given conda/mamba environment is runnable. """
+    for launcher in ("mamba", "conda"):
+        try:
+            subprocess.check_call(
+                [launcher, "run", "-n", env_name, "python", "-c", "pass"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return True
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            continue
+    return False
+
+
 def scoring_guides(
     guides: Dict[Region, List[Guide]], pam: PAM, args: CrisprHawkSearchInputArgs
 ) -> Dict[Region, List[Guide]]:
@@ -910,26 +925,41 @@ def scoring_guides(
             guides_list = plmcrispr_score(
                 guides_list, pam.cas_system, args.threads, args.verbosity, args.debug
             )
-            # CRISPRon only if enabled and config valid
-            if args.compute_crispron and args.crispron_config is not None:    
-                guides_list = crispron_score(
-                    guides_list,
-                    args.crispron_config.env_name,
-                    args.crispron_config.outdir,
-                    args.threads,
-                    args.verbosity,
-                    args.debug,
-                )
-            # sgDesigner only if enabled and config valid
-            if args.compute_sgdesigner and args.sgdesigner_config is not None:    
-                guides_list = sgdesigner_score(
-                    guides_list,
-                    args.sgdesigner_config.env_name,
-                    args.sgdesigner_config.outdir,
-                    args.threads,
-                    args.verbosity,
-                    args.debug,
-                )
+            # CRISPRon only if enabled, config valid, and environment exists
+            if args.compute_crispron and args.crispron_config is not None:
+                if _env_exists(args.crispron_config.env_name):
+                    guides_list = crispron_score(
+                        guides_list,
+                        args.crispron_config.env_name,
+                        args.crispron_config.outdir,
+                        args.threads,
+                        args.verbosity,
+                        args.debug,
+                    )
+                else:
+                    print_verbosity(
+                        f"Skipping CRISPRon scoring: environment '{args.crispron_config.env_name}' not found",
+                        args.verbosity,
+                        VERBOSITYLVL[2],
+                    )
+
+            # sgDesigner only if enabled, config valid, and environment exists
+            if args.compute_sgdesigner and args.sgdesigner_config is not None:
+                if _env_exists(args.sgdesigner_config.env_name):
+                    guides_list = sgdesigner_score(
+                        guides_list,
+                        args.sgdesigner_config.env_name,
+                        args.sgdesigner_config.outdir,
+                        args.threads,
+                        args.verbosity,
+                        args.debug,
+                    )
+                else:
+                    print_verbosity(
+                        f"Skipping sgDesigner scoring: environment '{args.sgdesigner_config.env_name}' not found",
+                        args.verbosity,
+                        VERBOSITYLVL[2],
+                    )
             # score each guide with CFDon
             guides_list = cfdon_score(guides_list, args.verbosity, args.debug)
         if pam.cas_system == CPF1:  # cpf1 system pam
