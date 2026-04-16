@@ -24,6 +24,8 @@ use Cwd;
 use format_features_25;
 
 ###################################### SETTINGS ############################################################
+my $PYTHON_BIN = `python -c "import sys; print(sys.executable)"`;
+chomp($PYTHON_BIN);
 
 my $version =         "V2.0";
 my $file_dir =        "./";
@@ -265,7 +267,7 @@ sub predict {
     my @annotation = @{$annotation_ref};
     my $line_count = 0;
 
-    my $exit_code = system("python3 $classifier_dir/Stacking_classification.py");
+    my $exit_code = system("$PYTHON_BIN $classifier_dir/Stacking_classification.py");
 
     if ($exit_code != 0) {
         die "ERROR: Python script failed with exit code $exit_code. Check if model files exist in $classifier_dir\n";
