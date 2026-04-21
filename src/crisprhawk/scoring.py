@@ -9,6 +9,7 @@ The module is designed to annotate and enrich guide RNA data with these scores f
 downstream genome editing analysis.
 """
 
+from .config_utils import ScoringEnvs
 from .crisprhawk_error import (
     CrisprHawkAzimuthScoreError,
     CrisprHawkRs3ScoreError,
@@ -877,37 +878,9 @@ def sgdesigner_score(
     return guides
 
 
-def _env_exists(env_name: str) -> bool:
-    """ Return True if the given conda/mamba environment is runnable. """
-    for launcher in ("mamba", "conda"):
-        try:
-            subprocess.check_call(
-                [launcher, "run", "-n", env_name, "python", "-c", "pass"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            return True
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            continue
-    return False
-
-
 def scoring_guides(
-    guides: Dict[Region, List[Guide]], pam: PAM, args: CrisprHawkSearchInputArgs
+    guides: Dict[Region, List[Guide]], pam: PAM, scoring_envs: ScoringEnvs, args: CrisprHawkSearchInputArgs
 ) -> Dict[Region, List[Guide]]:
-    """Scores CRISPR guides using efficiency and specificity metrics.
-
-    This function computes Azimuth, RS3, DeepCpf1, Elevation, CFDon, and out-of-frame
-    scores for each guide, updating the guide objects with the computed values.
-
-    Args:
-        guides: Dictionary mapping Region objects to lists of Guide objects.
-        pam: PAM object specifying the protospacer adjacent motif and Cas system.
-        args: CrisprHawkSearchInputArgs object containing scoring parameters.
-
-    Returns:
-        Dictionary mapping Region objects to lists of scored Guide objects.
-    """
     # score guides using azimuth, rs3, deepcpf1, elevation, and out-of-frame scores
     print_verbosity("Scoring guides", args.verbosity, VERBOSITYLVL[1])
     start = time()  # scoring start time
@@ -925,41 +898,26 @@ def scoring_guides(
             guides_list = plmcrispr_score(
                 guides_list, pam.cas_system, args.threads, args.verbosity, args.debug
             )
-            # CRISPRon only if enabled, config valid, and environment exists
-            if args.compute_crispron and args.crispron_config is not None:
-                if _env_exists(args.crispron_config.env_name):
-                    guides_list = crispron_score(
-                        guides_list,
-                        args.crispron_config.env_name,
-                        args.crispron_config.outdir,
-                        args.threads,
-                        args.verbosity,
-                        args.debug,
-                    )
-                else:
-                    print_verbosity(
-                        f"Skipping CRISPRon scoring: environment '{args.crispron_config.env_name}' not found",
-                        args.verbosity,
-                        VERBOSITYLVL[2],
-                    )
-
-            # sgDesigner only if enabled, config valid, and environment exists
-            if args.compute_sgdesigner and args.sgdesigner_config is not None:
-                if _env_exists(args.sgdesigner_config.env_name):
-                    guides_list = sgdesigner_score(
-                        guides_list,
-                        args.sgdesigner_config.env_name,
-                        args.sgdesigner_config.outdir,
-                        args.threads,
-                        args.verbosity,
-                        args.debug,
-                    )
-                else:
-                    print_verbosity(
-                        f"Skipping sgDesigner scoring: environment '{args.sgdesigner_config.env_name}' not found",
-                        args.verbosity,
-                        VERBOSITYLVL[2],
-                    )
+            # score each guide with CRISPRon if environment exists
+            if scoring_envs.crispron_env:
+                guides_list = crispron_score(
+                    guides_list,
+                    scoring_envs.crispron_env.env_name,
+                    scoring_envs.crispron_env.outdir,
+                    args.threads,
+                    args.verbosity,
+                    args.debug,
+                )
+            # score each guide with sgDesigner if environment exists
+            if scoring_envs.sgdesigner_env:
+                guides_list = sgdesigner_score(
+                    guides_list,
+                    scoring_envs.sgdesigner_env.env_name,
+                    scoring_envs.sgdesigner_env.outdir,
+                    args.threads,
+                    args.verbosity,
+                    args.debug,
+                )
             # score each guide with CFDon
             guides_list = cfdon_score(guides_list, args.verbosity, args.debug)
         if pam.cas_system == CPF1:  # cpf1 system pam

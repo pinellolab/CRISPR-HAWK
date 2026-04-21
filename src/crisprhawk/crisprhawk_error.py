@@ -247,18 +247,16 @@ class CrisprHawkPrepareDataError(CrisprHawkError):
 
     def __str__(self):
         return super().__str__()  # string representation for the exception
-
-
-class CrisprHawkCrispritzConfigError(CrisprHawkError):
+    
+class CrisprHawkConfigError(CrisprHawkError):
     def __init__(self, value):
         # initialize exception object when raised
         super().__init__(value)  # error message or error related info
 
     def __str__(self):
         return super().__str__()  # string representation for the exception
-
-
-class CrisprHawkCRISPRonConfigError(CrisprHawkError):
+    
+class CrisprHawkCrisprOnConfigError(CrisprHawkConfigError):
     def __init__(self, value):
         # initialize exception object when raised
         super().__init__(value)  # error message or error related info
@@ -267,7 +265,7 @@ class CrisprHawkCRISPRonConfigError(CrisprHawkError):
         return super().__str__()  # string representation for the exception
     
 
-class CrisprHawksgdesignerConfigError(CrisprHawkError):
+class CrisprHawkCrispritzConfigError(CrisprHawkConfigError):
     def __init__(self, value):
         # initialize exception object when raised
         super().__init__(value)  # error message or error related info
@@ -292,3 +290,4 @@ class CrisprHawkCandidateGuideError(CrisprHawkError):
 
     def __str__(self):
         return super().__str__()  # string representation for the exception
+    

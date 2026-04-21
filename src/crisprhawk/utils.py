@@ -20,6 +20,7 @@ import sys
 import io
 import os
 
+
 # define static variables shared across software modules
 TOOLNAME = "CRISPR-HAWK"  # tool name
 COMMAND = "crisprhawk"  # command line call
@@ -527,21 +528,6 @@ def prepare_package() -> None:
     if not os.path.isdir(os.path.join(plmcrispr_dir, "models")):
         warning("Extracting PLM-CRISPR models. This may take some time", 1)
         _uncompress_plmcrispr_model(plmcrispr_dir)  # uncompress PLM-CRISPR models
-
-
-def command_exists(command: str) -> bool:
-    """Check if a command exists in the system's PATH.
-
-    Returns True if the specified command is found in the system's executable
-    search path, otherwise False.
-
-    Args:
-        command (str): The command to check for existence.
-
-    Returns:
-        bool: True if the command exists, False otherwise.
-    """
-    return bool(shutil.which(command))
 
 
 def is_lowercase(sequence: str) -> bool:

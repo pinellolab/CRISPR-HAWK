@@ -18,18 +18,17 @@ Usage:
 Run 'crisprhawk -h/--help' to display the complete help
 """
 
+from .config_utils import prepare_scoring_envs
 from .crisprhawk_argparse import (
     CrisprHawkArgumentParser,
     CrisprHawkSearchInputArgs,
     CrisprHawkConverterInputArgs,
     CrisprHawkPrepareDataInputArgs,
-    CrisprHawkCrispritzConfigInputArgs,
 )
 from .crisprhawk import (
     crisprhawk_search,
     crisprhawk_converter,
     crisprhawk_prepare_data_crisprme,
-    crisprhawk_crispritz_config,
 )
 from .exception_handlers import sigint_handler
 from .crisprhawk_version import __version__
@@ -80,13 +79,13 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
         description=None,
     )
     # crisprhawk search command
-    parser_search = create_search_parser(subparsers)
+    create_search_parser(subparsers)
     # crisprhawk convert-gnomad-vcf command
-    parser_converter = create_converter_parser(subparsers)
+    create_converter_parser(subparsers)
     # crisprhawk prepare-data-crisprme command
-    parser_prepare = create_parser_prepare_data(subparsers)
+    create_parser_prepare_data(subparsers)
     # crisprhawk crispritz-config command
-    parser_crispritz_config = create_crispritz_config_parser(subparsers)
+    create_crispritz_config_parser(subparsers)
     return parser
 
 
@@ -668,17 +667,14 @@ def main():
             parser.error_noargs()
         args = parser.parse_args(sys.argv[1:])  # parse input args
         prepare_package()  # check if models and data are available and uncompressed
+        scoring_envs = prepare_scoring_envs()  # create scoring environments
         if args.command == SEARCH:  # search command
-            crisprhawk_search(CrisprHawkSearchInputArgs(args, parser))
+            crisprhawk_search(CrisprHawkSearchInputArgs(args, parser), scoring_envs)
         elif args.command == CONVERTGNOMADVCF:  # convert-gnoamd-vcf command
             crisprhawk_converter(CrisprHawkConverterInputArgs(args, parser))
         elif args.command == PREPAREDATACRISPRME:  # prepare-data-crisprme command
             crisprhawk_prepare_data_crisprme(
                 CrisprHawkPrepareDataInputArgs(args, parser)
-            )
-        elif args.command == CRISPRPITZCONFIG:  # crispritz-configure command
-            crisprhawk_crispritz_config(
-                CrisprHawkCrispritzConfigInputArgs(args, parser)
             )
     except KeyboardInterrupt:
         sigint_handler()  # catch SIGINT and exit gracefully
