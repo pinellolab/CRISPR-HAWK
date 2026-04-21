@@ -16,7 +16,6 @@ from .deepCpf1.seqdeepcpf1 import (
     compute_deepcpf1,
     SeqDeepCpf1,
 )
-from .mhscore.microhomology import calculate_microhomology_score
 from .elevation.cmds.predict import Predict
 from .plm_crispr.plm_crispr import compute_plm_crispr_score
 from .crispron.crispron import compute_crispron_score
@@ -161,26 +160,6 @@ def elevationon(
     for g in guides:  # set NA for guides without reference alternative
         g.elevationon_score = np.nan
     return guides + list(offtarget)
-
-
-def ooframe_score(guides: List[Guide], idx: int) -> List[int]:
-    """Compute out-of-frame scores for a list of guides at a given index.
-
-    Returns a list of out-of-frame (ooframe) scores for each guide, calculated
-    using the microhomology score at the specified index.
-
-    Args:
-        guides (List[Guide]): A list of Guide objects.
-        idx (int): The index around which to extract the sequence for scoring.
-
-    Returns:
-        List[int]: The out-of-frame scores for each guide.
-    """
-    guides_seqs = [g.sequence[idx - 30 : idx + 30] for g in guides]
-    mhscores = [
-        calculate_microhomology_score(gs.upper(), len(gs) // 2) for gs in guides_seqs
-    ]
-    return [mhscore.ooframe_score for mhscore in mhscores]
 
 
 def plmcrispr(guides: List[str], cas_system: int) -> List[float]:

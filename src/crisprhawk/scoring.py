@@ -22,7 +22,7 @@ from .crisprhawk_error import (
 )
 from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .exception_handlers import exception_handler
-from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, ooframe_score, plmcrispr, crispron, sgdesigner
+from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, plmcrispr, crispron, sgdesigner
 from .utils import calculate_chunks, flatten_list, print_verbosity, VERBOSITYLVL
 from .region import Region
 from .guide import Guide, GUIDESEQPAD
@@ -514,47 +514,6 @@ def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[
     )
     return guides
 
-
-def outofframe_score(
-    guides: List[Guide], guidelen: int, right: bool, verbosity: int, debug: bool
-) -> List[Guide]:
-    """Computes the out-of-frame score for each guide RNA sequence.
-
-    This function calculates the likelihood that a guide induces an out-of-frame
-    mutation and updates the guide objects with the computed values.
-
-    Args:
-        guides (List[Guide]): List of Guide objects to process.
-        guidelen (int): Length of the guide sequence.
-        right (bool): Whether the guide is extracted downstream (right side) of
-            the PAM.
-        verbosity (int): Verbosity level for logging.
-        debug (bool): Flag to enable debug mode for error handling.
-
-    Returns:
-        List[Guide]: The list of guides with out-of-frame scores assigned.
-    """
-    print_verbosity("Computing out-of-frame score", verbosity, VERBOSITYLVL[3])
-    start = time()  # out-of-frame score calculation start time
-    try:  # compute out-of-frame score
-        idx = GUIDESEQPAD if right else GUIDESEQPAD + guidelen
-        scores = ooframe_score(guides, idx)
-    except Exception as e:
-        exception_handler(
-            CrisprHawkOOFrameScoreError,
-            "Out-of-frame score calculation failed",
-            os.EX_DATAERR,
-            debug,
-            e,
-        )
-    for i, score in enumerate(scores):  # set out-of-frame score for each guide
-        guides[i].ooframe_score = score
-    print_verbosity(
-        f"Out-of-frame score computed in {time() - start:.2f}s",
-        verbosity,
-        VERBOSITYLVL[3],
-    )
-    return guides
 
 
 def _plmcrispr(
