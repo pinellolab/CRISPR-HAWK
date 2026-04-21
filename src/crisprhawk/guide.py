@@ -224,6 +224,8 @@ class Guide:
         self._ooframe_score = "NA"
         self._cfd = "NA"
         self._plmcrispr_score = "NA"
+        self._crispron_score = "NA"
+        self._sgdesigner_score = "NA"
 
     def _initialize_annotations(self) -> None:
         """Initializes all annotation attributes for the Guide object to default
@@ -555,11 +557,64 @@ class Guide:
         if not isinstance(value, float):
             exception_handler(
                 CrisprHawkGuideError,
-                f"Elevation-on score must be a float, got {type(value).__name__} instead",
+                f"PLM-CRISPR score must be a float, got {type(value).__name__} instead",
                 os.EX_DATAERR,
                 True,
             )
         self._plmcrispr_score = "NA" if np.isnan(value) else str(round_score(value))
+
+    @property
+    def crispron_score(self) -> str:
+        return self._crispron_score
+    
+    @crispron_score.setter
+    def crispron_score(self, value: float) -> None:
+        """Sets the CRISPRon score for the Guide object.
+
+        This method validates and updates the guide's CRISPRon score, converting
+        it to a string or 'NA' if not available.
+
+        Args:
+            value: The CRISPRon score as a float.
+
+        Raises:
+            CrisprHawkGuideError: If the value is not a float or is not valid.
+        """
+        if not isinstance(value, float):
+            exception_handler(
+                CrisprHawkGuideError,
+                f"CRISPRon score must be a float, got {type(value).__name__} instead",
+                os.EX_DATAERR,
+                True,
+            )
+        self._crispron_score = "NA" if np.isnan(value) else str(round_score(value))
+
+
+    @property
+    def sgdesigner_score(self) -> str:
+        return self._sgdesigner_score
+    
+    @sgdesigner_score.setter
+    def sgdesigner_score(self, value: float) -> None:
+        """Sets the sgDesigner score for the Guide object.
+
+        This method validates and updates the guide's sgDesigner score, converting
+        it to a string or 'NA' if not available.
+
+        Args:
+            value: The sgDesigner score as a float.
+
+        Raises:
+            CrisprHawkGuideError: If the value is not a float or is not valid.
+        """
+        if not isinstance(value, float):
+            exception_handler(
+                CrisprHawkGuideError,
+                f"sgDesigner score must be a float, got {type(value).__name__} instead",
+                os.EX_DATAERR,
+                True,
+            )
+        self._sgdesigner_score = "NA" if np.isnan(value) else str(round_score(value))
 
     @property
     def gc(self) -> str:

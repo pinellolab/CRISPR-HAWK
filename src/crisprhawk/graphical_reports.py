@@ -43,11 +43,14 @@ GUIDETYPES = {
 
 # supported scores (dotplot)
 SCORES = [
-    "score_azimuth",
-    "score_rs3",
-    "score_deepcpf1",
-    "score_cfdon",
-    "score_elevationon",
+    "score_azimuth", # 0
+    "score_rs3", # 1
+    "score_deepcpf1", # 2
+    "score_cfdon", # 3
+    "score_elevationon", # 4
+    "score_plmcrispr", # 5
+    "score_crispron", # 6
+    "score_sgdesigner" # 7
 ]
 
 # figures size
@@ -405,7 +408,7 @@ def _assign_nsamples(report: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: The input DataFrame with an added 'n_samples' column.
     """
     report["n_samples"] = report.apply(
-        lambda x: _compute_nsamples(x[REPORTCOLS[14]]), axis=1
+        lambda x: _compute_nsamples(x[REPORTCOLS[15]]), axis=1
     )
     return report
 
@@ -449,7 +452,7 @@ def _compute_group_delta(group: Any, score: str) -> pd.Series:
     Returns:
         pd.Series: The group DataFrame with an updated delta column.
     """
-    refrow = group[group[REPORTCOLS[13]] == "ref"]  # reference grna
+    refrow = group[group[REPORTCOLS[14]] == "ref"]  # reference grna
     if refrow.empty:  # only alternative grna
         return group
     refscore = refrow[score].values[0]
@@ -491,7 +494,7 @@ def _compute_group_delta_abs(group: Any, score: str) -> pd.Series:
     Returns:
         pd.Series: The group DataFrame with updated delta and absolute delta columns.
     """
-    refrow = group[group[REPORTCOLS[13]] == "ref"]  # reference grna
+    refrow = group[group[REPORTCOLS[14]] == "ref"]  # reference grna
     if refrow.empty:  # only alternative grna
         return group
     refscore = refrow[score].values[0]
@@ -603,8 +606,8 @@ def _build_guide_rows(report: pd.DataFrame, score: str) -> Dict[str, Any]:
     grouped = report.groupby("guide_id", sort=False)
     guide_rows = {}
     for guide_id, group in grouped:
-        ref = group[group[REPORTCOLS[13]] == "ref"]
-        alts = group[group[REPORTCOLS[13]] == "alt"]
+        ref = group[group[REPORTCOLS[14]] == "ref"]
+        alts = group[group[REPORTCOLS[14]] == "alt"]
         if ref.empty:
             continue
         refscore = ref[score].values[0]
@@ -1266,6 +1269,10 @@ def _configure_y_axis(ax: Axes, score: str) -> None:
     if score == SCORES[1]:  # rs3
         ax.set_ylim(-2.05, 2.05)
     elif score == SCORES[2]:  # deepcpf1
+        ax.set_ylim(-10, 110)
+    elif score == SCORES[6]:  # crispron
+        ax.set_ylim(-10, 110)
+    elif score == SCORES[7]:  # sgdesigner
         ax.set_ylim(-10, 110)
     else:
         ax.set_ylim(-0.05, 1.05)

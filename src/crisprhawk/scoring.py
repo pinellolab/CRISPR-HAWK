@@ -16,10 +16,12 @@ from .crisprhawk_error import (
     CrisprHawkDeepCpf1ScoreError,
     CrisprHawkOOFrameScoreError,
     CrisprHawkPlmCrisprScoreError,
+    CrisprHawkCRISPRonScoreError,
+    CrisprHawksgdesignerScoreError
 )
 from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .exception_handlers import exception_handler
-from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, ooframe_score, plmcrispr
+from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, ooframe_score, plmcrispr, crispron, sgdesigner
 from .utils import calculate_chunks, flatten_list, print_verbosity, VERBOSITYLVL
 from .region import Region
 from .guide import Guide, GUIDESEQPAD
@@ -31,7 +33,7 @@ from collections import defaultdict
 from time import time
 
 import numpy as np
-
+import subprocess
 import os
 
 
@@ -53,6 +55,24 @@ def _extract_guide_sequences(guides: List[Guide]) -> List[str]:
         guide.sequence[(GUIDESEQPAD - 4) : (-GUIDESEQPAD + 3)].upper()
         for guide in guides
     ]
+
+def _extract_guide_sequences_sgdesigner(guides: List[Guide]) -> List[str]:
+    """Extracts guide RNA sequences with required flanking nucleotides.
+
+    This function returns a list of guide sequences, each including 
+    3 nucleotides downstream of the PAM, formatted in uppercase.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to extract sequences from.
+
+    Returns:
+        List[str]: List of formatted guide sequences with flanking nucleotides.
+    """
+    return  [
+        guide.sequence[(GUIDESEQPAD) : (-GUIDESEQPAD + 3)].upper()
+        for guide in guides
+    ]
+
 
 
 def _azimuth(guides_chunk: Tuple[int, List[str]]) -> Tuple[int, List[float]]:
@@ -587,7 +607,7 @@ def _execute_plmcrispr(
             for any chunk.
     """
     plmcrispr_scores = [np.nan] * size  # plm-crispr scores
-    with ProcessPoolExecutor(max_workers=threads) as executor:
+    with ProcessPoolExecutor(max_workers=1) as executor:
         future_to_chunk = {
             executor.submit(_plmcrispr, chunk, cas_system): chunk[0]
             for chunk in guide_chunks
@@ -659,6 +679,219 @@ def plmcrispr_score(
     return guides
 
 
+def _crispron(
+    guides_chunk: Tuple[int, List[str]],
+    env_name: str,
+    tmp_parent: str,
+) -> Tuple[int, List[float]]:
+    """Compute CRISPRon scores for a chunk of 30mers."""
+    start_idx, guides = guides_chunk
+    scores = crispron(guides, env_name, tmp_parent)
+    return start_idx, scores
+
+
+def _execute_crispron(
+    guide_chunks: List[Tuple[int, List[str]]],
+    env_name: str,
+    tmp_parent: str,
+    size: int,
+    threads: int,
+    debug: bool,
+) -> List[float]:
+    crispron_scores = [np.nan] * size
+    with ProcessPoolExecutor(max_workers=1) as executor: # set threads = 1 for CRISPRon to avoid oom errors
+        future_to_chunk = {
+            executor.submit(_crispron, chunk, env_name, tmp_parent): chunk[0]
+            for chunk in guide_chunks
+        }
+        for future in as_completed(future_to_chunk):
+            start_idx = future_to_chunk[future]
+            try:
+                chunk_start_idx, chunk_scores = future.result()
+                for offset, score in enumerate(chunk_scores):
+                    crispron_scores[chunk_start_idx + offset] = score
+            except Exception as e:
+                exception_handler(
+                    CrisprHawkCRISPRonScoreError,
+                    f"CRISPRon score calculation failed for chunk at index {start_idx}",
+                    os.EX_DATAERR,
+                    debug,
+                    e,
+                )
+    assert all(not np.isnan(s) for s in crispron_scores)
+    assert len(crispron_scores) == size
+    return crispron_scores
+
+
+def crispron_score(
+    guides: List[Guide],
+    env_name: str,
+    tmp_parent: str,
+    threads: int,
+    verbosity: int,
+    debug: bool,
+) -> List[Guide]:
+    """Compute CRISPRon scores for standard 30mer Cas9 guides."""
+    if not guides:
+        return guides
+    print_verbosity("Computing CRISPRon score", verbosity, VERBOSITYLVL[3])
+    start = time()
+
+    guides_seqs = _extract_guide_sequences(guides)
+
+    # CRISPRon needs 30mers: 4 nt upstream + 20 nt guide + 3 nt PAM + 3 nt downstream
+    if not all(len(seq) == 30 for seq in guides_seqs):
+        exception_handler(
+            CrisprHawkCRISPRonScoreError,
+            "CRISPRon requires 30mer sequences; current guide/PAM configuration does not produce 30mers",
+            os.EX_DATAERR,
+            debug,
+        )
+    guides_seqs_chunks = calculate_chunks(guides_seqs, threads)
+
+    try:
+        crispron_scores = _execute_crispron(
+            guides_seqs_chunks,
+            env_name,
+            tmp_parent,
+            len(guides),
+            threads,
+            debug,
+        )
+    except Exception as e:
+        exception_handler(
+            CrisprHawkCRISPRonScoreError,
+            "CRISPRon score parallel execution failed",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
+
+    for i, score in enumerate(crispron_scores):
+        guides[i].crispron_score = score
+
+    print_verbosity(
+        f"CRISPRon scores computed in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
+    return guides
+
+
+def _sgdesigner(
+    guides_chunk: Tuple[int, List[str]],
+    env_name: str,
+    tmp_parent: str,
+) -> Tuple[int, List[float]]:
+    """Compute sgDesigner scores for a chunk of 26mers."""
+    start_idx, guides = guides_chunk
+    scores = sgdesigner(guides, env_name, tmp_parent)
+    return start_idx, scores
+
+
+def _execute_sgdesigner(
+    guide_chunks: List[Tuple[int, List[str]]],
+    env_name: str,
+    tmp_parent: str,
+    size: int,
+    threads: int,
+    debug: bool,
+) -> List[float]:
+    sgdesigner_scores = [np.nan] * size
+    with ProcessPoolExecutor(max_workers=threads) as executor:
+        future_to_chunk = {
+            executor.submit(_sgdesigner, chunk, env_name, tmp_parent): chunk[0]
+            for chunk in guide_chunks
+        }
+        for future in as_completed(future_to_chunk):
+            start_idx = future_to_chunk[future]
+            try:
+                chunk_start_idx, chunk_scores = future.result()
+                for offset, score in enumerate(chunk_scores):
+                    sgdesigner_scores[chunk_start_idx + offset] = score
+            except Exception as e:
+                exception_handler(
+                    CrisprHawksgdesignerScoreError,
+                    f"sgDesigner score calculation failed for chunk at index {start_idx}",
+                    os.EX_DATAERR,
+                    debug,
+                    e,
+                )
+    assert all(not np.isnan(s) for s in sgdesigner_scores)
+    assert len(sgdesigner_scores) == size
+    return sgdesigner_scores
+
+
+def sgdesigner_score(
+    guides: List[Guide],
+    env_name: str,
+    tmp_parent: str,
+    threads: int,
+    verbosity: int,
+    debug: bool,
+) -> List[Guide]:
+    """Compute sgDesigner scores for standard 30mer Cas9 guides."""
+    if not guides:
+        return guides
+    print_verbosity("Computing sgDesigner score", verbosity, VERBOSITYLVL[3])
+    start = time()
+
+    guides_seqs = _extract_guide_sequences_sgdesigner(guides)
+
+    # sgDesigner needs 26mers: 20 nt guide + 3 nt PAM + 3 nt downstream
+    if not all(len(seq) == 26 for seq in guides_seqs):
+        exception_handler(
+            CrisprHawksgdesignerScoreError,
+            "sgDesigner requires 30mer sequences; current guide/PAM configuration does not produce 26mers",
+            os.EX_DATAERR,
+            debug,
+        )
+    guides_seqs_chunks = calculate_chunks(guides_seqs, threads)
+
+    try:
+        sgdesigner_scores = _execute_sgdesigner(
+            guides_seqs_chunks,
+            env_name,
+            tmp_parent,
+            len(guides),
+            threads,
+            debug,
+        )
+    except Exception as e:
+        exception_handler(
+            CrisprHawksgdesignerScoreError,
+            "sgDesigner score parallel execution failed",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
+
+    for i, score in enumerate(sgdesigner_scores):
+        guides[i].sgdesigner_score = score
+
+    print_verbosity(
+        f"sgDesigner scores computed in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
+    return guides
+
+
+def _env_exists(env_name: str) -> bool:
+    """ Return True if the given conda/mamba environment is runnable. """
+    for launcher in ("mamba", "conda"):
+        try:
+            subprocess.check_call(
+                [launcher, "run", "-n", env_name, "python", "-c", "pass"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return True
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            continue
+    return False
+
+
 def scoring_guides(
     guides: Dict[Region, List[Guide]], pam: PAM, args: CrisprHawkSearchInputArgs
 ) -> Dict[Region, List[Guide]]:
@@ -692,6 +925,41 @@ def scoring_guides(
             guides_list = plmcrispr_score(
                 guides_list, pam.cas_system, args.threads, args.verbosity, args.debug
             )
+            # CRISPRon only if enabled, config valid, and environment exists
+            if args.compute_crispron and args.crispron_config is not None:
+                if _env_exists(args.crispron_config.env_name):
+                    guides_list = crispron_score(
+                        guides_list,
+                        args.crispron_config.env_name,
+                        args.crispron_config.outdir,
+                        args.threads,
+                        args.verbosity,
+                        args.debug,
+                    )
+                else:
+                    print_verbosity(
+                        f"Skipping CRISPRon scoring: environment '{args.crispron_config.env_name}' not found",
+                        args.verbosity,
+                        VERBOSITYLVL[2],
+                    )
+
+            # sgDesigner only if enabled, config valid, and environment exists
+            if args.compute_sgdesigner and args.sgdesigner_config is not None:
+                if _env_exists(args.sgdesigner_config.env_name):
+                    guides_list = sgdesigner_score(
+                        guides_list,
+                        args.sgdesigner_config.env_name,
+                        args.sgdesigner_config.outdir,
+                        args.threads,
+                        args.verbosity,
+                        args.debug,
+                    )
+                else:
+                    print_verbosity(
+                        f"Skipping sgDesigner scoring: environment '{args.sgdesigner_config.env_name}' not found",
+                        args.verbosity,
+                        VERBOSITYLVL[2],
+                    )
             # score each guide with CFDon
             guides_list = cfdon_score(guides_list, args.verbosity, args.debug)
         if pam.cas_system == CPF1:  # cpf1 system pam

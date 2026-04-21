@@ -16,6 +16,8 @@ from .utils import (
 )
 from .crisprhawk_version import __version__
 from .config_crispritz import CrispritzConfig, check_crispritz_env
+from .config_crispron import CRISPRonConfig, check_crispron_env
+from .config_sgdesigner import sgdesignerConfig, check_sgdesigner_env
 
 from argparse import (
     SUPPRESS,
@@ -484,6 +486,41 @@ class CrisprHawkSearchInputArgs:
         self._validate_candidate_guides()  # check candidate guides
         self._validate_threads()  # check threads number
         self._validate_verbosity()  # check verbosity
+        self._validate_crispron_score() # check crispron score
+        self._validate_sgdesigner_score() # check sgdesigner score
+
+    def _validate_crispron_score(self) -> None:
+        self._compute_crispron = True
+        self._crispron_config = CRISPRonConfig()
+
+        if not self._crispron_config.set_command():
+            self._compute_crispron = False
+            self._crispron_config = None
+            return
+
+        if not check_crispron_env(
+            self._crispron_config.env_name,
+            self._crispron_config.conda,
+        ):
+            self._compute_crispron = False
+            self._crispron_config = None
+
+    
+    def _validate_sgdesigner_score(self) -> None:
+        self._compute_sgdesigner = True
+        self._sgdesigner_config = sgdesignerConfig()
+
+        if not self._sgdesigner_config.set_command():
+            self._compute_sgdesigner = False
+            self._sgdesigner_config = None
+            return
+
+        if not check_sgdesigner_env(
+            self._sgdesigner_config.env_name,
+            self._sgdesigner_config.conda,
+        ):
+            self._compute_sgdesigner = False
+            self._sgdesigner_config = None
 
     @property
     def fastas(self) -> List[str]:
@@ -597,6 +634,21 @@ class CrisprHawkSearchInputArgs:
     def debug(self) -> bool:
         return self._args.debug
 
+    @property
+    def compute_crispron(self) -> bool:
+        return self._compute_crispron
+
+    @property
+    def crispron_config(self) -> Optional[CRISPRonConfig]:
+        return self._crispron_config
+    
+    @property
+    def compute_sgdesigner(self) -> bool:
+        return self._compute_sgdesigner
+
+    @property
+    def sgdesigner_config(self) -> Optional[sgdesignerConfig]:
+        return self._sgdesigner_config
 
 class CrisprHawkConverterInputArgs:
     """Handles and validates parsed command-line arguments for CRISPR-HAWK VCF

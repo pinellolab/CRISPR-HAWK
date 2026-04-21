@@ -19,6 +19,8 @@ from .deepCpf1.seqdeepcpf1 import (
 from .mhscore.microhomology import calculate_microhomology_score
 from .elevation.cmds.predict import Predict
 from .plm_crispr.plm_crispr import compute_plm_crispr_score
+from .crispron.crispron import compute_crispron_score
+from .sgdesigner.sgdesigner import compute_sgdesigner_score
 from ..guide import Guide
 from ..utils import suppress_stdout, suppress_stderr
 
@@ -195,3 +197,21 @@ def plmcrispr(guides: List[str], cas_system: int) -> List[float]:
         List[float]: The predicted PLM-CRISPR scores for each input gRNA.
     """
     return compute_plm_crispr_score(guides, cas_system)
+
+
+def crispron(
+    guides: List[str], env_name: str, tmp_parent: str
+) -> List[float]:
+    """Compute CRISPRon scores for a list of input gRNAs.
+    Returns a list of CRISPRon scores for the provided gRNAs using the appropriat
+    Cas protein model."""
+    return compute_crispron_score(guides, env_name, tmp_parent)
+
+
+def sgdesigner(
+        guides: List[str], env_name: str, tmp_parent: str
+) -> List[float]:
+    """Compute sgdesigner scores for a list of input gRNAs.
+    Returns a list of sgdesigner scores for the provided gRNAs using the appropriat
+    Cas protein model."""
+    return compute_sgdesigner_score(guides, env_name, tmp_parent)
