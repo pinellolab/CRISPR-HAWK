@@ -9,13 +9,12 @@ The module is designed to annotate and enrich guide RNA data with these scores f
 downstream genome editing analysis.
 """
 
-from .config_utils import ScoringEnvs
+from .config_utils import ScoringEnvs, CrisprOnConfig
 from .crisprhawk_error import (
     CrisprHawkAzimuthScoreError,
     CrisprHawkRs3ScoreError,
     CrisprHawkCfdScoreError,
     CrisprHawkDeepCpf1ScoreError,
-    CrisprHawkOOFrameScoreError,
     CrisprHawkPlmCrisprScoreError,
     CrisprHawkCRISPRonScoreError,
     CrisprHawksgdesignerScoreError
@@ -639,102 +638,26 @@ def plmcrispr_score(
     return guides
 
 
-def _crispron(
-    guides_chunk: Tuple[int, List[str]],
-    env_name: str,
-    tmp_parent: str,
-) -> Tuple[int, List[float]]:
-    """Compute CRISPRon scores for a chunk of 30mers."""
-    start_idx, guides = guides_chunk
-    scores = crispron(guides, env_name, tmp_parent)
-    return start_idx, scores
-
-
-def _execute_crispron(
-    guide_chunks: List[Tuple[int, List[str]]],
-    env_name: str,
-    tmp_parent: str,
-    size: int,
-    threads: int,
-    debug: bool,
-) -> List[float]:
-    crispron_scores = [np.nan] * size
-    with ProcessPoolExecutor(max_workers=1) as executor: # set threads = 1 for CRISPRon to avoid oom errors
-        future_to_chunk = {
-            executor.submit(_crispron, chunk, env_name, tmp_parent): chunk[0]
-            for chunk in guide_chunks
-        }
-        for future in as_completed(future_to_chunk):
-            start_idx = future_to_chunk[future]
-            try:
-                chunk_start_idx, chunk_scores = future.result()
-                for offset, score in enumerate(chunk_scores):
-                    crispron_scores[chunk_start_idx + offset] = score
-            except Exception as e:
-                exception_handler(
-                    CrisprHawkCRISPRonScoreError,
-                    f"CRISPRon score calculation failed for chunk at index {start_idx}",
-                    os.EX_DATAERR,
-                    debug,
-                    e,
-                )
-    assert all(not np.isnan(s) for s in crispron_scores)
-    assert len(crispron_scores) == size
-    return crispron_scores
-
-
-def crispron_score(
-    guides: List[Guide],
-    env_name: str,
-    tmp_parent: str,
-    threads: int,
-    verbosity: int,
-    debug: bool,
-) -> List[Guide]:
-    """Compute CRISPRon scores for standard 30mer Cas9 guides."""
+def _crispron_score(guides: List[Guide], config: CrisprOnConfig, verbosity: int, debug: bool):
     if not guides:
         return guides
     print_verbosity("Computing CRISPRon score", verbosity, VERBOSITYLVL[3])
-    start = time()
-
+    start = time()  # crispron score start time
+    # crispron requires 4 nt upstream + 20 nt guide + 3 nt PAM + 3 nt downstream
     guides_seqs = _extract_guide_sequences(guides)
-
-    # CRISPRon needs 30mers: 4 nt upstream + 20 nt guide + 3 nt PAM + 3 nt downstream
-    if not all(len(seq) == 30 for seq in guides_seqs):
-        exception_handler(
-            CrisprHawkCRISPRonScoreError,
-            "CRISPRon requires 30mer sequences; current guide/PAM configuration does not produce 30mers",
-            os.EX_DATAERR,
-            debug,
-        )
-    guides_seqs_chunks = calculate_chunks(guides_seqs, threads)
-
-    try:
-        crispron_scores = _execute_crispron(
-            guides_seqs_chunks,
-            env_name,
-            tmp_parent,
-            len(guides),
-            threads,
-            debug,
-        )
+    try:  # single threads-only to avoid out of memory execptions
+        crispron_scores = crispron(guides_seqs, config.conda, config.env_name)
     except Exception as e:
         exception_handler(
             CrisprHawkCRISPRonScoreError,
-            "CRISPRon score parallel execution failed",
+            "CRISPRon score calculation failed",
             os.EX_DATAERR,
             debug,
             e,
         )
-
     for i, score in enumerate(crispron_scores):
         guides[i].crispron_score = score
-
-    print_verbosity(
-        f"CRISPRon scores computed in {time() - start:.2f}s",
-        verbosity,
-        VERBOSITYLVL[3],
-    )
+    print_verbosity(f"CRISPRon scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
     return guides
 
 
@@ -837,6 +760,30 @@ def sgdesigner_score(
     return guides
 
 
+def _scoring_guides_cas9(guides_list: List[Guide], cas_system: int, scoring_envs: ScoringEnvs, threads: int, verbosity: int, debug: bool) -> List[Guide]:
+    # score each guide with azimuth score
+    guides_list = azimuth_score(guides_list, threads, verbosity, debug)
+    # score each guide with rs3 score
+    guides_list = rs3_score(guides_list, threads, verbosity, debug)
+    # score each guide with PLM-CRISPR score
+    guides_list = plmcrispr_score(guides_list, cas_system, threads, verbosity, debug)
+    # score each guide with CFDon score
+    guides_list = cfdon_score(guides_list, verbosity, debug)
+    # score each guide with CRISPRon score
+    if scoring_envs.crispron_env:  
+        guides_list = _crispron_score(guides_list, scoring_envs.crispron_env, verbosity, debug)
+    # score each guide with sgDesigner score
+    # if scoring_envs.sgdesigner_env:
+    #     pass
+    return guides_list
+
+
+def _scoring_guides_cpf1(guides_list: List[Guide], threads: int, verbosity: int, debug: bool):
+    # score each guide with deepCpf1 score
+    return deepcpf1_score(guides_list, threads, verbosity, debug)
+
+
+
 def scoring_guides(
     guides: Dict[Region, List[Guide]], pam: PAM, scoring_envs: ScoringEnvs, args: CrisprHawkSearchInputArgs
 ) -> Dict[Region, List[Guide]]:
@@ -845,28 +792,7 @@ def scoring_guides(
     start = time()  # scoring start time
     for region, guides_list in guides.items():
         if pam.cas_system in [SPCAS9, XCAS9]:  # cas9 system pam
-            # score each guide with azimuth
-            guides_list = azimuth_score(
-                guides_list, args.threads, args.verbosity, args.debug
-            )
-            # score each guide with rs3
-            guides_list = rs3_score(
-                guides_list, args.threads, args.verbosity, args.debug
-            )
-            # score each guide with PLM-CRISPR
-            guides_list = plmcrispr_score(
-                guides_list, pam.cas_system, args.threads, args.verbosity, args.debug
-            )
-            # score each guide with CRISPRon if environment exists
-            if scoring_envs.crispron_env:
-                guides_list = crispron_score(
-                    guides_list,
-                    scoring_envs.crispron_env.env_name,
-                    scoring_envs.crispron_env.outdir,
-                    args.threads,
-                    args.verbosity,
-                    args.debug,
-                )
+            guides_list = _scoring_guides_cas9(guides_list, pam.cas_system, scoring_envs, args.threads, args.verbosity, args.debug)
             # score each guide with sgDesigner if environment exists
             if scoring_envs.sgdesigner_env:
                 guides_list = sgdesigner_score(
@@ -877,21 +803,13 @@ def scoring_guides(
                     args.verbosity,
                     args.debug,
                 )
-            # score each guide with CFDon
-            guides_list = cfdon_score(guides_list, args.verbosity, args.debug)
-        if pam.cas_system == CPF1:  # cpf1 system pam
-            guides_list = deepcpf1_score(
-                guides_list, args.threads, args.verbosity, args.debug
-            )
+        elif pam.cas_system == CPF1:  # cpf1 system pam
+            guides_list = _scoring_guides_cpf1(guides_list, args.threads, args.verbosity, args.debug)
         if args.compute_elevation and (
             args.guidelen + len(pam) == 23 and not args.right
         ):
             # elevation requires 23 bp long sequences, where last 3 bp are pam
             guides_list = elevationon_score(guides_list, args.verbosity, args.debug)
-        # compute out-of-frame score (skipped)
-        # guides_list = outofframe_score(
-        #     guides_list, args.guidelen, args.right, args.verbosity, args.debug
-        # )
         guides[region] = guides_list  # store scored guides
     print_verbosity(
         f"Scoring completed in {time() - start:.2f}s", args.verbosity, VERBOSITYLVL[2]

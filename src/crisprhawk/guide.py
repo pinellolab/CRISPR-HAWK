@@ -48,6 +48,8 @@ class Guide:
         _azimuth_score (str): Azimuth score for guide.
         _rs3_score (str): RS3 score for guide.
         _cfdon_score (str): CFDOn score for guide.
+        _crispron_score (str): CRISPRon score for guide.
+        _plmcrispr_score (str): PLM-CRISPR score for guide.
         _elevationon_score (str): ElevationOn score for guide.
         _deepcpf1_score (str): DeepCpf1 score for guide.
         _ooframe_score (str): Out-of-frame score for guide.
@@ -511,31 +513,6 @@ class Guide:
             )
         self._elevationon_score = "NA" if np.isnan(value) else str(round_score(value))
 
-    @property
-    def ooframe_score(self) -> str:
-        return self._ooframe_score
-
-    @ooframe_score.setter
-    def ooframe_score(self, value: int) -> None:
-        """Sets the out-of-frame score for the Guide object.
-
-        This method validates and updates the guide's out-of-frame score, converting
-        it to a string.
-
-        Args:
-            value: The out-of-frame score as an integer.
-
-        Raises:
-            CrisprHawkGuideError: If the value is not an int or is not valid.
-        """
-        if not isinstance(value, int):
-            exception_handler(
-                CrisprHawkGuideError,
-                f"Out-of-frame score must be an int, got {type(value).__name__} instead",
-                os.EX_DATAERR,
-                True,
-            )
-        self._ooframe_score = str(value)
 
     @property
     def plmcrispr_score(self) -> str:

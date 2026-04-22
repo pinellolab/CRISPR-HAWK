@@ -178,13 +178,8 @@ def plmcrispr(guides: List[str], cas_system: int) -> List[float]:
     return compute_plm_crispr_score(guides, cas_system)
 
 
-def crispron(
-    guides: List[str], env_name: str, tmp_parent: str
-) -> List[float]:
-    """Compute CRISPRon scores for a list of input gRNAs.
-    Returns a list of CRISPRon scores for the provided gRNAs using the appropriat
-    Cas protein model."""
-    return compute_crispron_score(guides, env_name, tmp_parent)
+def crispron(guides: List[str], conda: str, env_name: str) -> List[float]:
+    return compute_crispron_score(guides, conda, env_name)
 
 
 def sgdesigner(
