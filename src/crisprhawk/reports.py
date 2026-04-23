@@ -141,8 +141,8 @@ def _update_report_fields_spcas9(
     report[REPORTCOLS[7]].append(guide.azimuth_score)  # azimuth score
     report[REPORTCOLS[8]].append(guide.rs3_score)  # rs3 score
     report[REPORTCOLS[9]].append(guide.plmcrispr_score)  # plm-crispr score
-    report[REPORTCOLS[11]].append(guide.cfdon_score)  # cfdon score
-    report[REPORTCOLS[12]].append(guide.crispron_score)  # crispron score
+    report[REPORTCOLS[10]].append(guide.crispron_score)  # crispron score
+    report[REPORTCOLS[12]].append(guide.cfdon_score)  # cfdon score
     if compute_elevation and (
         guide.guidelen + pamlen == 23 and not guide.right
     ):  # elevationon score
