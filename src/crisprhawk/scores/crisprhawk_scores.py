@@ -182,5 +182,5 @@ def crispron(guides: List[str], conda: str, env_name: str) -> List[float]:
     return compute_crispron_score(guides, conda, env_name)
 
 
-def sgdesigner(guides: List[str], env_name: str) -> List[float]:
-    return compute_sgdesigner_score(guides, env_name)
+def sgdesigner(guides: List[str], conda: str, env_name: str) -> List[float]:
+    return compute_sgdesigner_score(guides, conda, env_name)

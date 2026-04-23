@@ -58,11 +58,11 @@ _MODEL_CATALOGUE = [
         "plm_crispr",
         "models",
     ),
-    # (
-    #     "https://zenodo.org/records/19680449/files/sgdesigner.zip",
-    #     "sgdesigner",
-    #     "sgdesigner",
-    # ),
+    (
+        "https://zenodo.org/records/19680449/files/sgdesigner.zip",
+        "sgdesigner",
+        "models",
+    ),
 ]
 
 # define download tuning constants

@@ -594,17 +594,17 @@ def _crispron_score(
     return guides
 
 
-def _sgdesigner(guides_chunk: Tuple[int, List[str]], env_name: str) -> Tuple[int, List[float]]:
+def _sgdesigner(guides_chunk: Tuple[int, List[str]], conda: str, env_name: str) -> Tuple[int, List[float]]:
     start_idx, guides = guides_chunk
-    scores = sgdesigner(guides, env_name)
+    scores = sgdesigner(guides, conda, env_name)
     return start_idx, scores
 
 
-def _execute_sgdesigner(guide_chunks: List[Tuple[int, List[str]]], env_name: str, size: int, threads: int, debug: bool) -> List[float]:
+def _execute_sgdesigner(guide_chunks: List[Tuple[int, List[str]]], conda: str, env_name: str, size: int, threads: int, debug: bool) -> List[float]:
     sgdesigner_scores = [np.nan] * size
     with ProcessPoolExecutor(max_workers=threads) as executor:
         future_to_chunk = {
-            executor.submit(_sgdesigner, chunk, env_name): chunk[0]
+            executor.submit(_sgdesigner, chunk, conda, env_name): chunk[0]
             for chunk in guide_chunks
         }
         for future in as_completed(future_to_chunk):
@@ -636,7 +636,7 @@ def _sgdesigner_score(guides: List[Guide], config: sgDesignerConfig, threads: in
     # split guides in chunks
     guides_seqs_chunks = calculate_chunks(guides_seqs, threads)
     try:
-        sgdesigner_scores = _execute_sgdesigner(guides_seqs_chunks, config.env_name, len(guides), threads, debug)
+        sgdesigner_scores = _execute_sgdesigner(guides_seqs_chunks, config.conda, config.env_name, len(guides), threads, debug)
     except Exception as e:
         exception_handler(
             CrisprHawkSgDesignerScoreError,

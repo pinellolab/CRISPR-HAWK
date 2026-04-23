@@ -125,9 +125,9 @@ def prepare_sgdesigner_env() -> Optional[sgDesignerConfig]:
             "sgDesigner environment not available, creating environment...", 1
         )
         if not create_mamba_env(
-            config.conda, config.env_name, SGDESIGNER_PACKAGES, python_version="3.10"
+            config.conda, config.env_name, SGDESIGNER_PACKAGES, python_version="3.7"
         ):
-            warning("CRISPRon environment creation failed, skipping CRISPRon scoring", 1)
+            warning("sgDesigner environment creation failed, skipping CRISPRon scoring", 1)
             return None
     return config
 

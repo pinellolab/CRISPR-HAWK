@@ -32,7 +32,6 @@ CRISPRON_PACKAGES = [
     "mysql-connector-python=8.3.0",
     "pandas=2.2.2",
     "pyfaidx=0.8.1.1",
-    "repeatmasker=4.1.5",
     "samtools=1.20",
     "scikit-learn=1.4.2",
     "tensorboard=2.14",
