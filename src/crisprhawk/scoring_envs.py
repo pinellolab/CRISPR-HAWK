@@ -32,5 +32,6 @@ class ScoringEnvs:
 def prepare_scoring_envs() -> ScoringEnvs:
     # prepare scoring environments
     scoring_envs = ScoringEnvs()
-    scoring_envs.crispron_env = prepare_crispron_env()  # crispron
+    if (crispron_env := prepare_crispron_env()):  # crispron
+        scoring_envs.crispron_env = crispron_env
     return scoring_envs

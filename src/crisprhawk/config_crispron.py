@@ -6,6 +6,8 @@ from .crisprhawk_error import CrisprHawkCrisprOnConfigError
 from .exception_handlers import exception_handler
 from .utils import OSSYSTEMS, warning, suppress_stdout, suppress_stderr
 
+from typing import Optional
+
 import platform
 import subprocess
 import os
@@ -147,7 +149,7 @@ def check_crispron_env(env_name: str, conda: str) -> bool:
     return True
 
 
-def prepare_crispron_env() -> CrisprOnConfig:
+def prepare_crispron_env() -> Optional[CrisprOnConfig]:
     if platform.system() != OSSYSTEMS[0]:  # if system is not Linux
         warning(
             f"CRISPRon scoring is only supported on {OSSYSTEMS[0]} "
@@ -164,5 +166,6 @@ def prepare_crispron_env() -> CrisprOnConfig:
         config.conda, config.env_name, CRISPRON_PACKAGES, python_version="3.10"
     ):
         warning("CRISPRon environment creation failed, skipping CRISPRon scoring", 1)
+        return None
     return config
 
