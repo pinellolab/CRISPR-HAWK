@@ -14,8 +14,6 @@ from colorama import Fore
 
 import subprocess
 import contextlib
-import zipfile
-import shutil
 import sys
 import io
 import os

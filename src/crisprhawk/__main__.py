@@ -18,7 +18,7 @@ Usage:
 Run 'crisprhawk -h/--help' to display the complete help
 """
 
-from .config_utils import prepare_scoring_envs, prepare_scoring_models
+from .config_utils import prepare_scoring_models
 from .crisprhawk_argparse import (
     CrisprHawkArgumentParser,
     CrisprHawkSearchInputArgs,
@@ -30,8 +30,9 @@ from .crisprhawk import (
     crisprhawk_converter,
     crisprhawk_prepare_data_crisprme,
 )
-from .exception_handlers import sigint_handler
 from .crisprhawk_version import __version__
+from .exception_handlers import sigint_handler
+from .scoring_envs import prepare_scoring_envs
 from .utils import TOOLNAME
 
 from argparse import _SubParsersAction

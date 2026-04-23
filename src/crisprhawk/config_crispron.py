@@ -1,11 +1,12 @@
 """ """
 
 from .config import Config
-from .config_utils import CONFIG, set_command
+from .config_utils import CONFIG, set_command, create_mamba_env
 from .crisprhawk_error import CrisprHawkCrisprOnConfigError
 from .exception_handlers import exception_handler
-from .utils import warning, suppress_stdout, suppress_stderr
+from .utils import OSSYSTEMS, warning, suppress_stdout, suppress_stderr
 
+import platform
 import subprocess
 import os
 
@@ -144,3 +145,24 @@ def check_crispron_env(env_name: str, conda: str) -> bool:
         )
         return False
     return True
+
+
+def prepare_crispron_env() -> CrisprOnConfig:
+    if platform.system() != OSSYSTEMS[0]:  # if system is not Linux
+        warning(
+            f"CRISPRon scoring is only supported on {OSSYSTEMS[0]} "
+            "systems. Off-target estimation automatically disabled",
+            1,
+        )  # always disply this warning
+    config = CrisprOnConfig()  # loads config.json
+    # look for crispron environment, if not available create it
+    if not check_crispron_env(config.env_name, config.conda):
+        warning(
+            "Impossible to create CRISPRon environment, skipping CRISPRon scoring", 1
+        )
+    if not create_mamba_env(
+        config.conda, config.env_name, CRISPRON_PACKAGES, python_version="3.10"
+    ):
+        warning("CRISPRon environment creation failed, skipping CRISPRon scoring", 1)
+    return config
+
