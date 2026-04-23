@@ -42,7 +42,7 @@ _MODEL_CATALOGUE = [
     (
         "https://zenodo.org/records/19680449/files/crispron.zip",
         "crispron",
-        "models",
+        "crispron",
     ),
     (
         "https://zenodo.org/records/19680449/files/deepCpf1.zip",
@@ -57,12 +57,12 @@ _MODEL_CATALOGUE = [
     (
         "https://zenodo.org/records/19680449/files/plm_crispr.zip",
         "plm_crispr",
-        "models",
+        "plm_crispr",
     ),
     (
         "https://zenodo.org/records/19680449/files/sgdesigner.zip",
         "sgdesigner",
-        "models",
+        "sgdesigner",
     ),
 ]
 
