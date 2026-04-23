@@ -201,27 +201,6 @@ def _encode_sequences(sequences: List[str]) -> Tensor:
 
 
 def compute_plm_crispr_score(guides: List[str], cas_system: int) -> List[float]:
-    """Compute PLM-CRISPR on-target efficiency scores for a list of guides.
-
-    Args:
-        guides (List[str]): Spacer+PAM sequences to score (one per guide,
-            23 nt each for SpCas9/xCas9).
-        cas_system (int): CRISPR-HAWK Cas system identifier (SPCAS9=3,
-            XCAS9=4). Used to select the protein embedding file and the
-            dataset-type index passed to the model.
-
-    Returns:
-        List[float]: Predicted PLM-CRISPR efficiency scores, one per guide,
-            in the same order as the input list.
-
-    Raises:
-        KeyError: If ``cas_system`` is not in ``_CAS_CONFIG`` (i.e. not a
-            supported system).
-        ValueError: If any guide produces an input sequence of unexpected
-            length after scaffold concatenation.
-        KeyError: If any nucleotide in an input sequence is not encodable
-            (not in A, T, C, G, N).
-    """
     # retrieve cas-system-specific config
     config = _CAS_CONFIG[cas_system]
     # resolve device (GPU or CPU)
@@ -237,60 +216,41 @@ def compute_plm_crispr_score(guides: List[str], cas_system: int) -> List[float]:
     # protein_batch = protein_emb.unsqueeze(0).repeat(B, 1, 1).to(device)
     # perform inference
     sgrna_tensor = sgrna_tensor.long().to(device)
-
-    # Dynamic batch inference
+    # use dynamic batch inference
     batch_size = BATCH_SIZE
-    scores = []
-
-    # Initialize batch size to constant
-    while batch_size >= 1:
-        # Clear scores on retry to prevent appending duplicates if OOM detected
-        scores.clear() 
-        
+    scores: List[float] = []  # plm-crispr scores
+    while batch_size >= 1:  # initialize batch size to constant
+        scores.clear()  # clear scores on retry to prevent appending duplicates
         try:
             for start_idx in range(0, B, batch_size):
                 end_idx = min(B, start_idx + batch_size)
                 current_batch_size = end_idx - start_idx
-
-                # Slice the current batch of guides
+                # slice the current batch of guides
                 sgrna_batch = sgrna_tensor[start_idx:end_idx, :]
-
-                # Expand protein embeddings to match the current batch size
+                # expand protein embeddings to match the current batch size
                 protein_batch = protein_emb.unsqueeze(0).repeat(current_batch_size, 1, 1).to(device)
-
                 with torch.no_grad():
                     predictions = net(sgrna_batch, 0, protein_batch, train=False)
-
-                # Flatten predictions and append to scores
+                # flatten predictions and append to scores
                 scores_batch = predictions.view(-1).cpu().tolist()
                 scores.extend(scores_batch)
-            
-            # If the loop completes without throwing an error, exit
+            # if the loop completes without throwing an error, exit
             break
-
         except RuntimeError as e:
-            # Catch CUDA OOM error and retry with halved batch size
-            if "out of memory" in str(e).lower():
-                # Free up VRAM before attempting the smaller batch size
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-
-                new_batch_size = batch_size // 2
-                
-                # If we OOM on batch size 1, we can't go any lower
-                if new_batch_size == 0:
-                    raise RuntimeError(
-                        "CUDA Out of Memory even with batch size 1."
-                        "Retry by setting CUDA_VISIBLE_DEVICES=-1 to run on CPU."
-                    ) from e
-
-                warnings.warn(f"OOM Detected: Retrying with batch size = {new_batch_size}")
-                batch_size = new_batch_size
-            else:
-                # Re-raise if the RuntimeError is not related to memory
+            if "out of memory" not in str(e).lower():
+                # raise if the RuntimeError is not related to memory
                 raise
-
+            # free up VRAM before attempting the smaller batch size
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            new_batch_size = batch_size // 2
+            # if we OOM on batch size 1, we can't go any lower
+            if new_batch_size == 0:
+                raise RuntimeError(
+                    "CUDA Out of Memory even with batch size 1."
+                    "Retry by setting CUDA_VISIBLE_DEVICES=-1 to run on CPU."
+                ) from e
+            warnings.warn(f"OOM Detected: Retrying with batch size = {new_batch_size}")
+            batch_size = new_batch_size
     # ensure output is always a list even for a single guide
-    if isinstance(scores, float):
-        scores = [scores]
-    return scores
+    return [scores] if isinstance(scores, float) else scores

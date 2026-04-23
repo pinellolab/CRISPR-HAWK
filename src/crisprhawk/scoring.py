@@ -590,7 +590,7 @@ def _execute_plmcrispr(
     return plmcrispr_scores
 
 
-def plmcrispr_score(
+def _plmcrispr_score(
     guides: List[Guide], cas_system: int, threads: int, verbosity: int, debug: bool
 ) -> List[Guide]:
     """Computes PLM-CRISPR scores for a list of guide RNAs.
@@ -614,16 +614,12 @@ def plmcrispr_score(
     start = time()  # plm-crispr start time
     # retrieve spacer + pam sequence for each input guide
     guides_seqs = [g.guidepam for g in guides]
-    # split guides in chunks
-    guides_seqs_chunks = calculate_chunks(guides_seqs, threads)
     try:  # compute plm-crispr scores
-        plmcrispr_scores = _execute_plmcrispr(
-            guides_seqs_chunks, cas_system, len(guides), threads, debug
-        )
+        plmcrispr_scores = plmcrispr(guides_seqs, cas_system)
     except Exception as e:
         exception_handler(
             CrisprHawkPlmCrisprScoreError,
-            "PLM-CRISPR score parallel execution failed",
+            "PLM-CRISPR score calculation failed",
             os.EX_DATAERR,
             debug,
             e,
@@ -656,7 +652,7 @@ def _crispron_score(guides: List[Guide], config: CrisprOnConfig, verbosity: int,
             e,
         )
     for i, score in enumerate(crispron_scores):
-        guides[i].crispron_score = score
+        guides[i].crispron_score = score  # assign score to each guide
     print_verbosity(f"CRISPRon scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
     return guides
 
@@ -766,7 +762,7 @@ def _scoring_guides_cas9(guides_list: List[Guide], cas_system: int, scoring_envs
     # score each guide with rs3 score
     guides_list = rs3_score(guides_list, threads, verbosity, debug)
     # score each guide with PLM-CRISPR score
-    guides_list = plmcrispr_score(guides_list, cas_system, threads, verbosity, debug)
+    guides_list = _plmcrispr_score(guides_list, cas_system, threads, verbosity, debug)
     # score each guide with CFDon score
     guides_list = cfdon_score(guides_list, verbosity, debug)
     # score each guide with CRISPRon score
