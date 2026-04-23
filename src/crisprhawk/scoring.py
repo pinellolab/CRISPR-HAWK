@@ -9,7 +9,6 @@ The module is designed to annotate and enrich guide RNA data with these scores f
 downstream genome editing analysis.
 """
 
-from .config_utils import ScoringEnvs, CrisprOnConfig
 from .crisprhawk_error import (
     CrisprHawkAzimuthScoreError,
     CrisprHawkRs3ScoreError,
@@ -20,7 +19,11 @@ from .crisprhawk_error import (
     CrisprHawksgdesignerScoreError,
 )
 from .crisprhawk_argparse import CrisprHawkSearchInputArgs
+from .config_crispron import CrisprOnConfig
 from .exception_handlers import exception_handler
+from .guide import Guide, GUIDESEQPAD
+from .pam import PAM, SPCAS9, XCAS9, CPF1
+from .region import Region
 from .scores import (
     azimuth,
     rs3,
@@ -31,10 +34,8 @@ from .scores import (
     crispron,
     sgdesigner,
 )
+from .scoring_envs import ScoringEnvs
 from .utils import calculate_chunks, flatten_list, print_verbosity, VERBOSITYLVL
-from .region import Region
-from .guide import Guide, GUIDESEQPAD
-from .pam import PAM, SPCAS9, XCAS9, CPF1
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Dict, List, Tuple, Union
@@ -42,7 +43,6 @@ from collections import defaultdict
 from time import time
 
 import numpy as np
-import subprocess
 import os
 
 
@@ -821,15 +821,15 @@ def scoring_guides(
                 args.debug,
             )
             # score each guide with sgDesigner if environment exists
-            if scoring_envs.sgdesigner_env:
-                guides_list = sgdesigner_score(
-                    guides_list,
-                    scoring_envs.sgdesigner_env.env_name,
-                    scoring_envs.sgdesigner_env.outdir,
-                    args.threads,
-                    args.verbosity,
-                    args.debug,
-                )
+            # if scoring_envs.sgdesigner_env:
+            #     guides_list = sgdesigner_score(
+            #         guides_list,
+            #         scoring_envs.sgdesigner_env.env_name,
+            #         scoring_envs.sgdesigner_env.outdir,
+            #         args.threads,
+            #         args.verbosity,
+            #         args.debug,
+            #     )
         elif pam.cas_system == CPF1:  # cpf1 system pam
             guides_list = _scoring_guides_cpf1(
                 guides_list, args.threads, args.verbosity, args.debug

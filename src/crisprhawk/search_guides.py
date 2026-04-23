@@ -10,17 +10,15 @@ editing applications.
 
 from .exception_handlers import exception_handler
 from .crisprhawk_error import (
-    CrisprHawkBitsetError,
     CrisprHawkIupacTableError,
     CrisprHawkCfdScoreError,
 )
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL, IUPACTABLE
 from .guide import Guide, GUIDESEQPAD
-from .bitset import Bitset
 from .pam import PAM
 from .region_constructor import PADDING
 from .region import Region
-from .haplotype import Haplotype, HaplotypeIndel
+from .haplotype import Haplotype
 
 from collections import defaultdict
 
