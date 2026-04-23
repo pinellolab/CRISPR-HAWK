@@ -71,29 +71,32 @@ def compute_crispron_score(guides: List[str], conda: str, env_name: str) -> List
     # get path to crispron script
     crispron_root = os.path.abspath(os.path.dirname(__file__))
     crispron_bin = os.path.join(crispron_root, "bin", "CRISPRon.sh")
+    
     # score guides with crispron
-    with tempfile.TemporaryDirectory(prefix="crispron_", dir=crispron_root) as tmpdir:
-        # generate guides fasta and output folder required by crispron's script
-        crispron_fasta, crispron_tmpdir = _generate_crispron_tmp_data(
-            os.path.abspath(tmpdir)
-        )
-        # write guides to crispron fasta
-        _write_guides_fasta(guides, crispron_fasta)
-        subprocess.run(
-            [
-                conda,
-                "run",
-                "-n",
-                env_name,
-                "bash",
-                crispron_bin,
-                crispron_fasta,
-                crispron_tmpdir,
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=True,
-            cwd=crispron_root,
-        )
-        csv_path = _find_output_csv(crispron_tmpdir)
-        return _load_crispron_scores(csv_path, guides)
+    # with tempfile.TemporaryDirectory(prefix="crispron_", dir=crispron_root) as tmpdir:
+    tmpdir = tempfile.mkdtemp(prefix="crispron_", dir=crispron_root)
+        
+    # generate guides fasta and output folder required by crispron's script
+    crispron_fasta, crispron_tmpdir = _generate_crispron_tmp_data(
+        os.path.abspath(tmpdir)
+    )
+    # write guides to crispron fasta
+    _write_guides_fasta(guides, crispron_fasta)
+    subprocess.run(
+        [
+            conda,
+            "run",
+            "-n",
+            env_name,
+            "bash",
+            crispron_bin,
+            crispron_fasta,
+            crispron_tmpdir,
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=True,
+        cwd=crispron_root,
+    )
+    csv_path = _find_output_csv(crispron_tmpdir)
+    return _load_crispron_scores(csv_path, guides)

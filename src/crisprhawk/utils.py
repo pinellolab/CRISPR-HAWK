@@ -14,6 +14,7 @@ from colorama import Fore
 
 import subprocess
 import contextlib
+import shutil
 import sys
 import io
 import os
@@ -305,24 +306,6 @@ def create_folder(dirname: str) -> str:
     return dirname
 
 
-def remove_folder(dirname: str) -> None:
-    """Remove a directory and its contents.
-
-    Attempts to delete the specified directory and all its contents. Raises an
-    error if the operation fails.
-
-    Args:
-        dirname (str): The path to the directory to remove.
-
-    Raises:
-        OSError: If the directory cannot be removed.
-    """
-    try:
-        subprocess.run(["rm", "-rf", dirname], check=True, capture_output=True)
-    except subprocess.CalledProcessError as e:  # always trace this error
-        raise OSError(f"Failed to clean up folder {dirname}") from e
-
-
 def is_lowercase(sequence: str) -> bool:
     """Check if a sequence contains any lowercase characters.
 
@@ -391,3 +374,18 @@ def remove_file_silent(fname: str) -> None:
     """
     with contextlib.suppress(OSError):
         os.remove(fname)
+
+def rename_file(orig: str, dest: str) -> None:
+    try:
+        os.rename(orig, dest)
+    except OSError as e:
+        exception_handler(OSError, f"Failed to rename file {orig}", os.EX_OSERR, True, e)
+
+
+def remove_folder(folder: str) -> None:
+    try:
+        shutil.rmtree(folder)
+    except OSError as e:  # always trace this error
+        exception_handler(
+            OSError, f"Failed to remove directory {folder}", os.EX_OSERR, True, e
+        )

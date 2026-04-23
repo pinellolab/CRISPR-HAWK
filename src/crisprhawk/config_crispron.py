@@ -27,10 +27,9 @@ CRISPRON_PACKAGES = [
     "bowtie=1.3.1",
     "gff3sort=0.1.*",
     "gffread=0.12.7",
-    "igv=2.19.*",
-    "igvtools=2.17.3",
     "matplotlib=3.8.4",
-    "matplotlib-base=3.8.4" "mysql-connector-python=8.3.0",
+    "matplotlib-base=3.8.4",
+    "mysql-connector-python=8.3.0",
     "pandas=2.2.2",
     "pyfaidx=0.8.1.1",
     "repeatmasker=4.1.5",
@@ -160,12 +159,12 @@ def prepare_crispron_env() -> Optional[CrisprOnConfig]:
     # look for crispron environment, if not available create it
     if not check_crispron_env(config.env_name, config.conda):
         warning(
-            "Impossible to create CRISPRon environment, skipping CRISPRon scoring", 1
+            "CRISPRon environment not available, creating environment...", 1
         )
-    if not create_mamba_env(
-        config.conda, config.env_name, CRISPRON_PACKAGES, python_version="3.10"
-    ):
-        warning("CRISPRon environment creation failed, skipping CRISPRon scoring", 1)
-        return None
+        if not create_mamba_env(
+            config.conda, config.env_name, CRISPRON_PACKAGES, python_version="3.10"
+        ):
+            warning("CRISPRon environment creation failed, skipping CRISPRon scoring", 1)
+            return None
     return config
 

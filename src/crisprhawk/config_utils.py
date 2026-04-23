@@ -1,11 +1,10 @@
 """ """
 
 from .exception_handlers import exception_handler
-from .utils import OSSYSTEMS, TOOLNAME, remove_file_silent, warning
+from .utils import OSSYSTEMS, TOOLNAME, remove_file_silent, warning, rename_file
 
 from typing import List, Optional
 
-import platform
 import shutil
 import subprocess
 import sys
@@ -42,7 +41,7 @@ _MODEL_CATALOGUE = [
     (
         "https://zenodo.org/records/19680449/files/crispron.zip",
         "crispron",
-        "crispron",
+        "data",
     ),
     (
         "https://zenodo.org/records/19680449/files/deepCpf1.zip",
@@ -57,13 +56,13 @@ _MODEL_CATALOGUE = [
     (
         "https://zenodo.org/records/19680449/files/plm_crispr.zip",
         "plm_crispr",
-        "plm_crispr",
+        "models",
     ),
-    (
-        "https://zenodo.org/records/19680449/files/sgdesigner.zip",
-        "sgdesigner",
-        "sgdesigner",
-    ),
+    # (
+    #     "https://zenodo.org/records/19680449/files/sgdesigner.zip",
+    #     "sgdesigner",
+    #     "sgdesigner",
+    # ),
 ]
 
 # define download tuning constants
@@ -222,6 +221,9 @@ def _ensure_model(scoresdir: str, url: str, subdir: str, sentinel: str) -> None:
     )
     _download_with_retry(url, zip_path, subdir)
     _extract_zip(zip_path, destdir, subdir)
+    orig = os.path.join(destdir, subdir, sentinel)
+    dest = os.path.join(destdir, sentinel)
+    rename_file(orig, dest)
     # final sanity-check
     if not _sentinel_present(destdir, sentinel):
         exception_handler(

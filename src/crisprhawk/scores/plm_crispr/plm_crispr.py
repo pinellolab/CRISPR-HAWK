@@ -52,7 +52,7 @@ _CAS_CONFIG = {
 }
 
 # define PLM-CRISPR models folder
-_MODELSDIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "plm_crispr/models")
+_MODELSDIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "models")
 
 
 def _load_model(device: device) -> nn.Module:
