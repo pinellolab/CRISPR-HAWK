@@ -290,19 +290,11 @@ def suppress_stderr():
         sys.stderr = stderr_channel
 
 
-def create_folder(dirname: str) -> str:
-    """Create a new directory with the specified name.
-
-    Ensures the directory exists by creating it if necessary and returns its path.
-
-    Args:
-        dirname (str): The name of the directory to create.
-
-    Returns:
-        str: The path to the created directory.
-    """
-    os.makedirs(dirname)
-    assert os.path.isdir(dirname)
+def create_folder(dirname: str, exist_ok: bool = False) -> str:
+    try:
+        os.makedirs(dirname, exist_ok=exist_ok)
+    except OSError as e:
+        exception_handler(OSError, f"Failed creating folder {dirname}", os.EX_OSERR, True)
     return dirname
 
 

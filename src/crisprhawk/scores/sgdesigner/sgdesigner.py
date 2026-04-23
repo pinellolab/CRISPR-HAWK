@@ -1,119 +1,87 @@
-"""sgDesigner scoring wrapper for CRISPR-HAWK."""
+""" """
 
-from typing import List
-import csv
+from ...utils import create_folder
+
+from typing import List, Tuple, Dict
+
 import os
 import subprocess
 import tempfile
 
 
-def _find_output_txt(outdir: str) -> str:
+def _find_output_txt(sgdesigner_outdir: str) -> str:
     candidates = []
-    for root, _, files in os.walk(outdir):
-        for fname in files:
-            if fname == "sgDesigner_V2.0_prediction_result.txt":
-                candidates.append(os.path.join(root, fname))
-
-    if not candidates:
-        raise FileNotFoundError(
-            f"No sgDesigner output file found in output folder: {outdir}"
+    for root, _, files in os.walk(sgdesigner_outdir):
+        candidates.extend(
+            os.path.join(root, fname)
+            for fname in files
+            if fname == "sgDesigner_V2.0_prediction_result.txt"
         )
-
+    assert bool(candidates)  # sgdesigner failed?
     return candidates[0]
 
 
 def _load_sgdesigner_scores(txt_path: str, expected_26mers: List[str]) -> List[float]:
-    """
-    Parse sgDesigner output and return one score per input sequence in input order.
-
-    Expected output format:
-        seqId    Score    Sequence    Orientation    Position
-
-    We keep only rows where:
-    - seqId corresponds to one of our submitted FASTA headers (guide_i)
-    - Sequence matches the first 20 nt of the submitted 26mer
-      because sgDesigner reports only the spacer sequence in the output file
-    """
     scores: List[float] = [float("nan")] * len(expected_26mers)
     expected_map = {f"guide_{i}": seq[:20].upper() for i, seq in enumerate(expected_26mers)}
-    with open(txt_path, newline="\n") as f:
-        all_lines = f.readlines()
-        for row in all_lines[1:]:
-            gid, score_raw, spacer, _, _ = row.split("\t")
-            # gid = row.get("seqId", "")
-            # spacer = row.get("Sequence", "").upper()
-            # score_raw = row.get("Score", "")
-            id = gid.split("_")[1]
-
+    with open(txt_path, mode="r") as fin:
+        fin.readline()  # skip header
+        for line in fin:
+            gid, score_raw, spacer, _, _ = line.split("\t")
+            guide_id = gid.split("_")[1]
             if f"guide_{id}" not in expected_map:
                 continue
-
             # keep only the row matching the submitted 20-nt spacer
-            if spacer.upper() != expected_map[f"guide_{id}"]:
+            if spacer.upper() != expected_map[f"guide_{guide_id}"]:
                 continue
-
-            scores[int(id)] = float(score_raw)
-    missing = [i for i, s in enumerate(scores) if s != s]
+            scores[int(guide_id)] = float(score_raw)
+    missing = [i for i, s in enumerate(scores) if s != s]  # NaN check
     if missing:
         raise RuntimeError(
             f"Missing sgDesigner scores for {len(missing)} guides. "
             f"First missing indices: {missing[:10]}"
         )
-
     return scores
 
+def _generate_sgdesigner_tmp_data(tmpdir: str) -> Tuple[str, str, str]:
+    # generate guides fasta required and out folder by crispron script
+    return os.path.join(tmpdir, "guides.fa"), os.path.join(tmpdir, "sgdesigner_results"), os.path.join(tmpdir, "temp")
 
-def compute_sgdesigner_score(
-    guides: List[str],
-    env_name: str,
-    tmp_parent: str,
-) -> List[float]:
-    """
-    Run sgDesigner on a batch of 26mers and return scores in input order.
+def _write_guides_fasta(guides: List[str], sgdesigner_fasta: str) -> None:
+    with open(sgdesigner_fasta, mode="w") as fout:
+        for i, seq in enumerate(guides):
+            fout.write(f">guide_{i}\n{seq.upper()}\n")
+    assert os.stat(sgdesigner_fasta).st_size > 0
 
-    Input expected by sgDesigner wrapper:
-        20 nt spacer + 3 nt PAM + 3 nt downstream 
-    """
-    if not guides:
-        return []
+def _init_environ(sgdesigner_results: str, sgdesigner_tmp: str) -> Dict[str, str]:
+    env = os.environ.copy()
+    env["SGDESIGNER_RESULT_DIR"] = sgdesigner_results
+    env["SGDESIGNER_TEMP_DIR"] = sgdesigner_tmp
+    return env 
 
-    for g in guides:
-        if len(g) != 26:
-            raise ValueError(
-                f"sgDesigner expects 26mer input. Got length {len(g)} for sequence: {g}"
-            )
 
+def compute_sgdesigner_score(guides: List[str], env_name: str) -> List[float]:
+    assert bool(guides)  # otherwise we shouldn't be here
+    # get path to sgdesigner script
     sgdesigner_root = os.path.abspath(os.path.dirname(__file__))
     sgdesigner_pl = os.path.join(sgdesigner_root, "sgDesigner.pl")
-
-    if not os.path.isfile(sgdesigner_pl):
-        raise FileNotFoundError(f"Cannot find sgDesigner script: {sgdesigner_pl}")
-
-
+    # score guides with sgdesigner
     with tempfile.TemporaryDirectory(prefix="sgdesigner_", dir=sgdesigner_root) as tmpdir:
-        tmpdir = os.path.abspath(tmpdir)
-        fasta_path = os.path.join(tmpdir, "guides.fa")
-        result_dir = os.path.join(tmpdir, "result")
-        temp_dir = os.path.join(tmpdir, "temp")
-
-        os.makedirs(result_dir, exist_ok=True)
-        os.makedirs(temp_dir, exist_ok=True)
-
-        with open(fasta_path, "w") as f:
-            for i, seq in enumerate(guides):
-                f.write(f">guide_{i}\n{seq.upper()}\n")
-
-        env = os.environ.copy()
-        env["SGDESIGNER_RESULT_DIR"] = result_dir
-        env["SGDESIGNER_TEMP_DIR"] = temp_dir
+        # generate guides fasta, output folder, and tmp folder required 
+        # by sgdesigner's script
+        sgdesigner_fasta, sgdesigner_results, sgdesigner_tmpdir = _generate_sgdesigner_tmp_data(tmpdir)
+        for d in [sgdesigner_results, sgdesigner_tmpdir]:
+            create_folder(d, exist_ok=True)  # create sgdesigner folders
+        # write guides to sgdesigner fasta
+        _write_guides_fasta(guides, sgdesigner_fasta)
 
         subprocess.run(
-            ["conda", "run", "-n", env_name, "perl", sgdesigner_pl, "-f", fasta_path],
+            ["conda", "run", "-n", env_name, "perl", sgdesigner_pl, "-f", sgdesigner_fasta],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=True,
             cwd=sgdesigner_root,
-            env=env
+            env=_init_environ(sgdesigner_results, sgdesigner_tmpdir)
         )
-        txt_path = _find_output_txt(result_dir)
+        txt_path = _find_output_txt(sgdesigner_results)
         return _load_sgdesigner_scores(txt_path, guides)
