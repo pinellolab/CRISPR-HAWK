@@ -16,7 +16,7 @@ import urllib.error
 import zipfile
 
 # ==============================================================================
-# 
+#
 # Define constant variables (config files)
 #
 # ==============================================================================
@@ -68,11 +68,11 @@ _MODEL_CATALOGUE = [
 ]
 
 # define download tuning constants
-_CONNECT_TIMEOUT = 30    # seconds to wait for the TCP connection
-_READ_TIMEOUT = 120   # seconds to wait between data chunks
-_MAX_RETRIES = 3     # total attempts per file
-_RETRY_BACKOFF = 5     # seconds to wait before first retry (doubles each time)
-_CHUNK_SIZE = 1024 * 256   # 256 KiB read chunks
+_CONNECT_TIMEOUT = 30  # seconds to wait for the TCP connection
+_READ_TIMEOUT = 120  # seconds to wait between data chunks
+_MAX_RETRIES = 3  # total attempts per file
+_RETRY_BACKOFF = 5  # seconds to wait before first retry (doubles each time)
+_CHUNK_SIZE = 1024 * 256  # 256 KiB read chunks
 
 
 # ==============================================================================
@@ -80,6 +80,7 @@ _CHUNK_SIZE = 1024 * 256   # 256 KiB read chunks
 # Define utilities classes (config files)
 #
 # ==============================================================================
+
 
 class ScoringEnvs:
 
@@ -90,7 +91,7 @@ class ScoringEnvs:
     @property
     def crispron_env(self) -> Optional[CrisprOnConfig]:
         return self._crispron
-    
+
     @crispron_env.setter
     def crispron_env(self, value: CrisprOnConfig) -> None:
         if isinstance(value, CrisprOnConfig):
@@ -99,7 +100,7 @@ class ScoringEnvs:
     @property
     def sgdesigner_env(self) -> Optional[CrisprOnConfig]:
         return self._sgdesigner
-    
+
     @sgdesigner_env.setter
     def sgdesigner_env(self, value: CrisprOnConfig) -> None:
         if isinstance(value, CrisprOnConfig):
@@ -107,10 +108,11 @@ class ScoringEnvs:
 
 
 # ==============================================================================
-# 
+#
 # Define utilities functions (config files)
 #
 # ==============================================================================
+
 
 def command_exists(command: str) -> bool:
     """Check if a command exists in the system's PATH.
@@ -126,18 +128,25 @@ def command_exists(command: str) -> bool:
     """
     return bool(shutil.which(command))
 
+
 def set_command() -> str:
     if command_exists(MAMBA):
         return MAMBA
     return CONDA if command_exists(CONDA) else ""
 
-def create_mamba_env(conda: str, env_name: str, packages: Optional[List[str]] = None, python_version: str = "3.8") -> bool:
+
+def create_mamba_env(
+    conda: str,
+    env_name: str,
+    packages: Optional[List[str]] = None,
+    python_version: str = "3.8",
+) -> bool:
     cmd = [conda, "create", "-y", "-n", env_name, f"python={python_version}"]
     if packages:
         cmd.extend(packages)
     result = subprocess.run(cmd, capture_output=True, text=True)
     return result.returncode == 0
-        
+
 
 def prepare_crispron_env() -> CrisprOnConfig:
     if platform.system() != OSSYSTEMS[0]:  # if system is not Linux
@@ -145,12 +154,16 @@ def prepare_crispron_env() -> CrisprOnConfig:
             f"CRISPRon scoring is only supported on {OSSYSTEMS[0]} "
             "systems. Off-target estimation automatically disabled",
             1,
-        )  # always disply this warning 
+        )  # always disply this warning
     config = CrisprOnConfig()  # loads config.json
     # look for crispron environment, if not available create it
     if not check_crispron_env(config.env_name, config.conda):
-        warning("Impossible to create CRISPRon environment, skipping CRISPRon scoring", 1)
-    if not create_mamba_env(config.conda, config.env_name, CRISPRON_PACKAGES, python_version="3.10"):
+        warning(
+            "Impossible to create CRISPRon environment, skipping CRISPRon scoring", 1
+        )
+    if not create_mamba_env(
+        config.conda, config.env_name, CRISPRON_PACKAGES, python_version="3.10"
+    ):
         warning("CRISPRon environment creation failed, skipping CRISPRon scoring", 1)
     return config
 
@@ -165,9 +178,11 @@ def prepare_scoring_envs() -> ScoringEnvs:
 def _scores_dir() -> str:
     return os.path.join(os.path.abspath(os.path.dirname(__file__)), "scores")
 
+
 def _sentinel_present(destdir: str, sentinel: str) -> bool:
     full = os.path.join(destdir, sentinel)
     return os.path.isdir(full) or os.path.isfile(full)
+
 
 def _download_with_progress(url: str, dest_path: str, label: str) -> None:
     req = urllib.request.Request(url, headers={"User-Agent": "crisprhawk/1.0"})
@@ -177,7 +192,7 @@ def _download_with_progress(url: str, dest_path: str, label: str) -> None:
         sys.stderr.write(f"Downloading {label} ({total_mb})...\n")
         downloaded = 0
         with open(dest_path, mode="wb") as fh:
-            while (chunk := response.read(_CHUNK_SIZE)):
+            while chunk := response.read(_CHUNK_SIZE):
                 fh.write(chunk)
                 downloaded += len(chunk)
                 if total:
@@ -187,6 +202,7 @@ def _download_with_progress(url: str, dest_path: str, label: str) -> None:
         if total:
             sys.stderr.write("\n")
 
+
 def _download_with_retry(url: str, dest_path: str, label: str) -> None:
     delay = _RETRY_BACKOFF
     exc: Exception = RuntimeError("No attempts made")
@@ -194,7 +210,13 @@ def _download_with_retry(url: str, dest_path: str, label: str) -> None:
         try:
             _download_with_progress(url, dest_path, label)
             return  # success
-        except (urllib.error.URLError, urllib.error.HTTPError, OSError, TimeoutError, ConnectionError) as e:
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            OSError,
+            TimeoutError,
+            ConnectionError,
+        ) as e:
             exc = e
             if attempt < _MAX_RETRIES:
                 warning(
@@ -211,7 +233,13 @@ def _download_with_retry(url: str, dest_path: str, label: str) -> None:
         # remove partially-written file so a future run starts clean
         if os.path.isfile(dest_path):
             remove_file_silent(dest_path)
-        exception_handler(RuntimeError, f"Failed to download {label} after {_MAX_RETRIES} attempts. Last error: {exc}", os.EX_DATAERR, True)
+        exception_handler(
+            RuntimeError,
+            f"Failed to download {label} after {_MAX_RETRIES} attempts. Last error: {exc}",
+            os.EX_DATAERR,
+            True,
+        )
+
 
 def _extract_zip(zip_path: str, destdir: str, label: str) -> None:
     sys.stderr.write(f"Extracting {label}...\n")
@@ -219,39 +247,60 @@ def _extract_zip(zip_path: str, destdir: str, label: str) -> None:
         with zipfile.ZipFile(zip_path, mode="r") as zf:
             zf.extractall(path=destdir)
     except (zipfile.BadZipFile, RuntimeError) as e:
-        exception_handler(zipfile.BadZipFile, f"Extraction of {zip_path} failed", os.EX_DATAERR, True, e)
+        exception_handler(
+            zipfile.BadZipFile,
+            f"Extraction of {zip_path} failed",
+            os.EX_DATAERR,
+            True,
+            e,
+        )
     finally:
         # always remove the zip, even when extraction fails, so that a re-run
         # does not try to extract an incomplete archive
         if os.path.isfile(zip_path):
             remove_file_silent(zip_path)
 
+
 def _ensure_model(scoresdir: str, url: str, subdir: str, sentinel: str) -> None:
     destdir = os.path.join(scoresdir, subdir)
     # the sub-folder itself must exist it contains __init__.py etc.
     if not os.path.isdir(destdir):
-        exception_handler(FileNotFoundError, f"Cannot find score module directory: {destdir}. Please re-install {TOOLNAME}", os.EX_DATAERR, True)
+        exception_handler(
+            FileNotFoundError,
+            f"Cannot find score module directory: {destdir}. Please re-install {TOOLNAME}",
+            os.EX_DATAERR,
+            True,
+        )
     # nothing to do if the model data are already in place
-    if _sentinel_present(destdir, sentinel): 
+    if _sentinel_present(destdir, sentinel):
         return
     zip_path = os.path.join(destdir, f"{subdir}.zip")
     warning(
         f"Model data for '{subdir}' not found. Downloading model. "
-        "This may take a while", 
+        "This may take a while",
         1,
     )
     _download_with_retry(url, zip_path, subdir)
     _extract_zip(zip_path, destdir, subdir)
     # final sanity-check
     if not _sentinel_present(destdir, sentinel):
-        exception_handler(RuntimeError, f"Model dat for '{destdir}' still missing after extraction. Expected '{sentinel}' inside {destdir}", os.EX_DATAERR, True)
-    sys.stderr.write(f"'{destdir}' model data ready\n")    
+        exception_handler(
+            RuntimeError,
+            f"Model dat for '{destdir}' still missing after extraction. Expected '{sentinel}' inside {destdir}",
+            os.EX_DATAERR,
+            True,
+        )
+    sys.stderr.write(f"'{destdir}' model data ready\n")
 
 
 def prepare_scoring_models() -> None:
     scores_dir = _scores_dir()  # retrieve scores location
     if not os.path.isdir(scores_dir):
-        exception_handler(FileNotFoundError, f"Scores directory not found: {scores_dir}. Please re-install {TOOLNAME}", os.EX_DATAERR, True)
+        exception_handler(
+            FileNotFoundError,
+            f"Scores directory not found: {scores_dir}. Please re-install {TOOLNAME}",
+            os.EX_DATAERR,
+            True,
+        )
     for url, subdir, sentinel in _MODEL_CATALOGUE:
         _ensure_model(scores_dir, url, subdir, sentinel)
-

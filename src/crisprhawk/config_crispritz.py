@@ -46,7 +46,6 @@ class CrispritzConfig:
         self._config = Config(CRISPRITZ)
         self._config.load(CONFIG)  # load config file
 
-
     def __repr__(self) -> str:
         """Returns a detailed string representation of the CrispritzConfig object.
 
@@ -58,10 +57,9 @@ class CrispritzConfig:
         """
         return (
             f"<{self.__class__.__name__} object; "
-            f"config_file='{self._config_file}', env_name='{self.env_name}', " 
+            f"config_file='{self._config_file}', env_name='{self.env_name}', "
             f"outdir='{self.outdir}'>"
         )
-
 
     @property
     def env_name(self) -> str:
@@ -71,16 +69,19 @@ class CrispritzConfig:
     def outdir(self) -> str:
         return self._config.outdir
 
-
     @property
     def conda(self) -> str:
         return self._conda
 
     def validate(self) -> None:
         # ensure environment and outdir are configured
-        if not self._config.validate():  
-            exception_handler(CrisprHawkCrispritzConfigError, "CRISPRon environment configuration missing arguments", os.EX_DATAERR, True)
-
+        if not self._config.validate():
+            exception_handler(
+                CrisprHawkCrispritzConfigError,
+                "CRISPRon environment configuration missing arguments",
+                os.EX_DATAERR,
+                True,
+            )
 
 
 def check_crispritz_env(env_name: str, conda: str) -> bool:

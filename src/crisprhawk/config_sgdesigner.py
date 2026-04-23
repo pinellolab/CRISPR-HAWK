@@ -348,7 +348,9 @@ def check_sgdesigner_env(env_name: str, conda: str) -> bool:
     return True
 
 
-def config_sgdesigner(config: sgdesignerConfig, env_name: str, targets_dir: str) -> None:
+def config_sgdesigner(
+    config: sgdesignerConfig, env_name: str, targets_dir: str
+) -> None:
     """Configures the sgdesigner environment and output directory.
 
     This function updates the sgdesigner configuration with a new environment name

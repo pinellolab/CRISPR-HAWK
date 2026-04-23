@@ -115,10 +115,11 @@ CANDIDATEGUIDESREPORTPREFIX = "crisprhawk_candidate_guides"
 
 
 # ==============================================================================
-# 
+#
 # Define utilities functions (config files)
 #
 # ==============================================================================
+
 
 def reverse_complement(sequence: str, debug: bool) -> str:
     """Return the reverse complement of a nucleotide sequence.
@@ -361,6 +362,7 @@ def calculate_chunks(lst: List[Any], threads: int) -> List[Tuple[int, List[Any]]
         chunks.append((i, lst[i:end_idx]))
     return chunks
 
+
 def remove_file(filename: str) -> None:
     """Remove a file from the filesystem.
 
@@ -375,7 +377,10 @@ def remove_file(filename: str) -> None:
     try:
         os.remove(filename)
     except OSError as e:  # always trace this error
-        exception_handler(OSError, f"Failed to remove file {filename}", os.EX_OSERR, True, e)
+        exception_handler(
+            OSError, f"Failed to remove file {filename}", os.EX_OSERR, True, e
+        )
+
 
 def remove_file_silent(fname: str) -> None:
     """Remove a file without raising errors if it does not exist.

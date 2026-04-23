@@ -17,11 +17,20 @@ from .crisprhawk_error import (
     CrisprHawkDeepCpf1ScoreError,
     CrisprHawkPlmCrisprScoreError,
     CrisprHawkCRISPRonScoreError,
-    CrisprHawksgdesignerScoreError
+    CrisprHawksgdesignerScoreError,
 )
 from .crisprhawk_argparse import CrisprHawkSearchInputArgs
 from .exception_handlers import exception_handler
-from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, plmcrispr, crispron, sgdesigner
+from .scores import (
+    azimuth,
+    rs3,
+    cfdon,
+    deepcpf1,
+    elevationon,
+    plmcrispr,
+    crispron,
+    sgdesigner,
+)
 from .utils import calculate_chunks, flatten_list, print_verbosity, VERBOSITYLVL
 from .region import Region
 from .guide import Guide, GUIDESEQPAD
@@ -56,10 +65,11 @@ def _extract_guide_sequences(guides: List[Guide]) -> List[str]:
         for guide in guides
     ]
 
+
 def _extract_guide_sequences_sgdesigner(guides: List[Guide]) -> List[str]:
     """Extracts guide RNA sequences with required flanking nucleotides.
 
-    This function returns a list of guide sequences, each including 
+    This function returns a list of guide sequences, each including
     3 nucleotides downstream of the PAM, formatted in uppercase.
 
     Args:
@@ -68,11 +78,9 @@ def _extract_guide_sequences_sgdesigner(guides: List[Guide]) -> List[str]:
     Returns:
         List[str]: List of formatted guide sequences with flanking nucleotides.
     """
-    return  [
-        guide.sequence[(GUIDESEQPAD) : (-GUIDESEQPAD + 3)].upper()
-        for guide in guides
+    return [
+        guide.sequence[(GUIDESEQPAD) : (-GUIDESEQPAD + 3)].upper() for guide in guides
     ]
-
 
 
 def _azimuth(guides_chunk: Tuple[int, List[str]]) -> Tuple[int, List[float]]:
@@ -514,7 +522,6 @@ def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[
     return guides
 
 
-
 def _plmcrispr(
     guides_chunk: Tuple[int, List[str]], cas_system: int
 ) -> Tuple[int, List[float]]:
@@ -634,7 +641,9 @@ def _plmcrispr_score(
     return guides
 
 
-def _crispron_score(guides: List[Guide], config: CrisprOnConfig, verbosity: int, debug: bool):
+def _crispron_score(
+    guides: List[Guide], config: CrisprOnConfig, verbosity: int, debug: bool
+):
     if not guides:
         return guides
     print_verbosity("Computing CRISPRon score", verbosity, VERBOSITYLVL[3])
@@ -653,7 +662,9 @@ def _crispron_score(guides: List[Guide], config: CrisprOnConfig, verbosity: int,
         )
     for i, score in enumerate(crispron_scores):
         guides[i].crispron_score = score  # assign score to each guide
-    print_verbosity(f"CRISPRon scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3])
+    print_verbosity(
+        f"CRISPRon scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+    )
     return guides
 
 
@@ -756,7 +767,14 @@ def sgdesigner_score(
     return guides
 
 
-def _scoring_guides_cas9(guides_list: List[Guide], cas_system: int, scoring_envs: ScoringEnvs, threads: int, verbosity: int, debug: bool) -> List[Guide]:
+def _scoring_guides_cas9(
+    guides_list: List[Guide],
+    cas_system: int,
+    scoring_envs: ScoringEnvs,
+    threads: int,
+    verbosity: int,
+    debug: bool,
+) -> List[Guide]:
     # score each guide with azimuth score
     guides_list = azimuth_score(guides_list, threads, verbosity, debug)
     # score each guide with rs3 score
@@ -766,29 +784,42 @@ def _scoring_guides_cas9(guides_list: List[Guide], cas_system: int, scoring_envs
     # score each guide with CFDon score
     guides_list = cfdon_score(guides_list, verbosity, debug)
     # score each guide with CRISPRon score
-    if scoring_envs.crispron_env:  
-        guides_list = _crispron_score(guides_list, scoring_envs.crispron_env, verbosity, debug)
+    if scoring_envs.crispron_env:
+        guides_list = _crispron_score(
+            guides_list, scoring_envs.crispron_env, verbosity, debug
+        )
     # score each guide with sgDesigner score
     # if scoring_envs.sgdesigner_env:
     #     pass
     return guides_list
 
 
-def _scoring_guides_cpf1(guides_list: List[Guide], threads: int, verbosity: int, debug: bool):
+def _scoring_guides_cpf1(
+    guides_list: List[Guide], threads: int, verbosity: int, debug: bool
+):
     # score each guide with deepCpf1 score
     return deepcpf1_score(guides_list, threads, verbosity, debug)
 
 
-
 def scoring_guides(
-    guides: Dict[Region, List[Guide]], pam: PAM, scoring_envs: ScoringEnvs, args: CrisprHawkSearchInputArgs
+    guides: Dict[Region, List[Guide]],
+    pam: PAM,
+    scoring_envs: ScoringEnvs,
+    args: CrisprHawkSearchInputArgs,
 ) -> Dict[Region, List[Guide]]:
     # score guides using azimuth, rs3, deepcpf1, elevation, and out-of-frame scores
     print_verbosity("Scoring guides", args.verbosity, VERBOSITYLVL[1])
     start = time()  # scoring start time
     for region, guides_list in guides.items():
         if pam.cas_system in [SPCAS9, XCAS9]:  # cas9 system pam
-            guides_list = _scoring_guides_cas9(guides_list, pam.cas_system, scoring_envs, args.threads, args.verbosity, args.debug)
+            guides_list = _scoring_guides_cas9(
+                guides_list,
+                pam.cas_system,
+                scoring_envs,
+                args.threads,
+                args.verbosity,
+                args.debug,
+            )
             # score each guide with sgDesigner if environment exists
             if scoring_envs.sgdesigner_env:
                 guides_list = sgdesigner_score(
@@ -800,7 +831,9 @@ def scoring_guides(
                     args.debug,
                 )
         elif pam.cas_system == CPF1:  # cpf1 system pam
-            guides_list = _scoring_guides_cpf1(guides_list, args.threads, args.verbosity, args.debug)
+            guides_list = _scoring_guides_cpf1(
+                guides_list, args.threads, args.verbosity, args.debug
+            )
         if args.compute_elevation and (
             args.guidelen + len(pam) == 23 and not args.right
         ):

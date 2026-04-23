@@ -513,7 +513,6 @@ class Guide:
             )
         self._elevationon_score = "NA" if np.isnan(value) else str(round_score(value))
 
-
     @property
     def plmcrispr_score(self) -> str:
         return self._plmcrispr_score
@@ -543,7 +542,7 @@ class Guide:
     @property
     def crispron_score(self) -> str:
         return self._crispron_score
-    
+
     @crispron_score.setter
     def crispron_score(self, value: float) -> None:
         """Sets the CRISPRon score for the Guide object.
@@ -566,11 +565,10 @@ class Guide:
             )
         self._crispron_score = "NA" if np.isnan(value) else str(round_score(value))
 
-
     @property
     def sgdesigner_score(self) -> str:
         return self._sgdesigner_score
-    
+
     @sgdesigner_score.setter
     def sgdesigner_score(self, value: float) -> None:
         """Sets the sgDesigner score for the Guide object.

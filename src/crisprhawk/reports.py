@@ -44,7 +44,7 @@ REPORTCOLS = [
     "score_azimuth",  # 7
     "score_rs3",  # 8
     "score_plmcrispr",  # 9
-    "score_crispron", # 10
+    "score_crispron",  # 10
     "score_deepcpf1",  # 11
     "score_cfdon",  # 12
     "score_elevationon",  # 13
@@ -57,7 +57,6 @@ REPORTCOLS = [
     "haplotype_id",  # 20
     "offtargets",  # 21
     "cfd",  # 22
-    
     # "score_sgdesigner" # 23
 ]
 
@@ -381,7 +380,9 @@ def _insert_annotation_reportcols(
     return reportcols
 
 
-def _insert_offtargets_reportcols(estimate_offtargets: bool, cas_system: int) -> List[str]:
+def _insert_offtargets_reportcols(
+    estimate_offtargets: bool, cas_system: int
+) -> List[str]:
     """Determines which off-target related columns to include in the report.
 
     Returns a list of off-target and CFD score columns based on the Cas system
@@ -518,7 +519,9 @@ def _process_data(
     for guide in guides:  # iterate over guides and add to report
         report[REPORTCOLS[0]].append(region.contig)  # region contig (chrom)
         # update report with current guide data
-        report = _update_report_fields(report, str(region.coordinates), guide, pam, pamclass, compute_elevation)
+        report = _update_report_fields(
+            report, str(region.coordinates), guide, pam, pamclass, compute_elevation
+        )
         report = _update_optional_report_fields(
             report, guide, pam, annotations, gene_annotations, estimate_offtargets
         )

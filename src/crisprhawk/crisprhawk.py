@@ -115,7 +115,9 @@ def guides_search(
     return guides
 
 
-def crisprhawk_search(args: CrisprHawkSearchInputArgs, scoring_envs: ScoringEnvs) -> None:
+def crisprhawk_search(
+    args: CrisprHawkSearchInputArgs, scoring_envs: ScoringEnvs
+) -> None:
     regions = construct_regions(args.fastas, args.bedfile, args.verbosity, args.debug)
     # reconstruct haplotypes for each input region
     haplotypes, variants_present, phased = reconstruct_haplotypes(regions, args)

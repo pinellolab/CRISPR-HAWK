@@ -43,14 +43,14 @@ GUIDETYPES = {
 
 # supported scores (dotplot)
 SCORES = [
-    "score_azimuth", # 0
-    "score_rs3", # 1
-    "score_deepcpf1", # 2
-    "score_cfdon", # 3
-    "score_elevationon", # 4
-    "score_plmcrispr", # 5
-    "score_crispron", # 6
-    "score_sgdesigner" # 7
+    "score_azimuth",  # 0
+    "score_rs3",  # 1
+    "score_deepcpf1",  # 2
+    "score_cfdon",  # 3
+    "score_elevationon",  # 4
+    "score_plmcrispr",  # 5
+    "score_crispron",  # 6
+    "score_sgdesigner",  # 7
 ]
 
 # figures size

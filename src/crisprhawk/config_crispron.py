@@ -18,17 +18,16 @@ CRISPRONSH = "crispron.sh"
 
 # packages required to create crispron environment
 CRISPRON_PACKAGES = [
-    "bedtools=2.31.1", 
-    "biopython=1.83", 
-    "blat=35", 
-    "bowtie=1.3.1", 
-    "gff3sort=0.1.*", 
-    "gffread=0.12.7", 
-    "igv=2.19.*", 
+    "bedtools=2.31.1",
+    "biopython=1.83",
+    "blat=35",
+    "bowtie=1.3.1",
+    "gff3sort=0.1.*",
+    "gffread=0.12.7",
+    "igv=2.19.*",
     "igvtools=2.17.3",
     "matplotlib=3.8.4",
-    "matplotlib-base=3.8.4"
-    "mysql-connector-python=8.3.0",
+    "matplotlib-base=3.8.4" "mysql-connector-python=8.3.0",
     "pandas=2.2.2",
     "pyfaidx=0.8.1.1",
     "repeatmasker=4.1.5",
@@ -41,6 +40,7 @@ CRISPRON_PACKAGES = [
     "gffutils",
     "pysqlite3",
 ]
+
 
 class CrisprOnConfig:
     """Manages configuration for crispron environment and output directory.
@@ -78,15 +78,19 @@ class CrisprOnConfig:
         """
         return (
             f"<{self.__class__.__name__} object; "
-            f"config_file='{self._config_file}', env_name='{self.env_name}', " 
+            f"config_file='{self._config_file}', env_name='{self.env_name}', "
             f"outdir='{self.outdir}'>"
         )
 
     def validate(self) -> None:
         # ensure environment and outdir are configured
-        if not self._config.validate():  
-            exception_handler(CrisprHawkCrisprOnConfigError, "CRISPRon environment configuration missing arguments", os.EX_DATAERR, True)
-
+        if not self._config.validate():
+            exception_handler(
+                CrisprHawkCrisprOnConfigError,
+                "CRISPRon environment configuration missing arguments",
+                os.EX_DATAERR,
+                True,
+            )
 
     @property
     def env_name(self) -> str:
@@ -120,7 +124,12 @@ def check_crispron_env(env_name: str, conda: str) -> bool:
     )
     crispron_bin = os.path.join(crispron_dir, "bin", "CRISPRon.sh")
     if not os.path.isfile(crispron_bin):
-        exception_handler(CrisprHawkCrisprOnConfigError, f"Unable to locate CRISPRon executable: {crispron_bin}", os.EX_DATAERR, True)
+        exception_handler(
+            CrisprHawkCrisprOnConfigError,
+            f"Unable to locate CRISPRon executable: {crispron_bin}",
+            os.EX_DATAERR,
+            True,
+        )
     try:
         with suppress_stdout(), suppress_stderr():
             subprocess.check_call(

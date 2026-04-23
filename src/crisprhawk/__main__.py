@@ -18,7 +18,7 @@ Usage:
 Run 'crisprhawk -h/--help' to display the complete help
 """
 
-from .config_utils import prepare_scoring_envs
+from .config_utils import prepare_scoring_envs, prepare_scoring_models
 from .crisprhawk_argparse import (
     CrisprHawkArgumentParser,
     CrisprHawkSearchInputArgs,
@@ -32,7 +32,7 @@ from .crisprhawk import (
 )
 from .exception_handlers import sigint_handler
 from .crisprhawk_version import __version__
-from .utils import prepare_package, TOOLNAME
+from .utils import TOOLNAME
 
 from argparse import _SubParsersAction
 from time import time
@@ -654,7 +654,7 @@ def create_crispritz_config_parser(subparser: _SubParsersAction) -> _SubParsersA
     return parser_crispritz_config
 
 
-def main():
+def main():  # sourcery skip: extract-method, remove-redundant-pass
     """Entry point for the CRISPR-HAWK command-line interface.
 
     This function parses command-line arguments and dispatches execution to the
@@ -666,7 +666,7 @@ def main():
         if not sys.argv[1:]:  # no input args -> print help and exit
             parser.error_noargs()
         args = parser.parse_args(sys.argv[1:])  # parse input args
-        prepare_package()  # check if models and data are available and uncompressed
+        prepare_scoring_models()  # check if models and data are available and uncompressed
         scoring_envs = prepare_scoring_envs()  # create scoring environments
         if args.command == SEARCH:  # search command
             crisprhawk_search(CrisprHawkSearchInputArgs(args, parser), scoring_envs)

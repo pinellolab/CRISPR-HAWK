@@ -182,9 +182,7 @@ def crispron(guides: List[str], conda: str, env_name: str) -> List[float]:
     return compute_crispron_score(guides, conda, env_name)
 
 
-def sgdesigner(
-        guides: List[str], env_name: str, tmp_parent: str
-) -> List[float]:
+def sgdesigner(guides: List[str], env_name: str, tmp_parent: str) -> List[float]:
     """Compute sgdesigner scores for a list of input gRNAs.
     Returns a list of sgdesigner scores for the provided gRNAs using the appropriat
     Cas protein model."""

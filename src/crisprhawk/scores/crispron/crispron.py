@@ -20,7 +20,11 @@ def _find_output_csv(crispron_tmpdir: str) -> str:
     if len(candidates) == 1:
         return candidates[0]
     # prefer typical names first
-    preferred = [p for p in candidates if os.path.basename(p).lower() in {"crispron.csv", "result.csv", "results.csv"}]
+    preferred = [
+        p
+        for p in candidates
+        if os.path.basename(p).lower() in {"crispron.csv", "result.csv", "results.csv"}
+    ]
     return preferred[0] if preferred else candidates[0]
 
 
@@ -48,9 +52,11 @@ def _load_crispron_scores(csv_path: str, expected_30mers: List[str]) -> List[flo
         )
     return scores
 
+
 def _generate_crispron_tmp_data(tmpdir: str) -> Tuple[str, str]:
     # generate guides fasta required and out folder by crispron script
     return os.path.join(tmpdir, "guides.fa"), os.path.join(tmpdir, "crispron_results")
+
 
 def _write_guides_fasta(guides: List[str], crispron_fasta: str) -> None:
     with open(crispron_fasta, mode="w") as fout:
@@ -68,11 +74,22 @@ def compute_crispron_score(guides: List[str], conda: str, env_name: str) -> List
     # score guides with crispron
     with tempfile.TemporaryDirectory(prefix="crispron_", dir=crispron_root) as tmpdir:
         # generate guides fasta and output folder required by crispron's script
-        crispron_fasta, crispron_tmpdir = _generate_crispron_tmp_data(os.path.abspath(tmpdir))
+        crispron_fasta, crispron_tmpdir = _generate_crispron_tmp_data(
+            os.path.abspath(tmpdir)
+        )
         # write guides to crispron fasta
         _write_guides_fasta(guides, crispron_fasta)
         subprocess.run(
-            [conda, "run", "-n", env_name, "bash", crispron_bin, crispron_fasta, crispron_tmpdir],
+            [
+                conda,
+                "run",
+                "-n",
+                env_name,
+                "bash",
+                crispron_bin,
+                crispron_fasta,
+                crispron_tmpdir,
+            ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=True,

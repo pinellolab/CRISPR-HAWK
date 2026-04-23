@@ -228,7 +228,9 @@ def compute_plm_crispr_score(guides: List[str], cas_system: int) -> List[float]:
                 # slice the current batch of guides
                 sgrna_batch = sgrna_tensor[start_idx:end_idx, :]
                 # expand protein embeddings to match the current batch size
-                protein_batch = protein_emb.unsqueeze(0).repeat(current_batch_size, 1, 1).to(device)
+                protein_batch = (
+                    protein_emb.unsqueeze(0).repeat(current_batch_size, 1, 1).to(device)
+                )
                 with torch.no_grad():
                     predictions = net(sgrna_batch, 0, protein_batch, train=False)
                 # flatten predictions and append to scores

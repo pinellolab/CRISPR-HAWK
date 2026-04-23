@@ -486,7 +486,6 @@ class CrisprHawkSearchInputArgs:
         self._validate_threads()  # check threads number
         self._validate_verbosity()  # check verbosity
 
-
     @property
     def fastas(self) -> List[str]:
         return self._fastas
