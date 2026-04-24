@@ -21,7 +21,7 @@ def test_guide_initialization():
         samples="sample1",
         variants="var1",
         afs={"var1": 0.5},
-        posmap={i:i for i in range(10 + 20 + 3 + 10)},
+        posmap={i: i for i in range(10 + 20 + 3 + 10)},
         debug=False,
         right=True,
         hapid="hap1",
@@ -39,7 +39,6 @@ def test_guide_initialization():
     assert guide.deepcpf1_score == "NA"
     assert guide.cfdon_score == "NA"
     assert guide.elevationon_score == "NA"
-    assert guide.ooframe_score == "NA"
     assert guide.gc == "NA"
     assert guide.funcann == []
     assert guide.geneann == []
@@ -57,7 +56,7 @@ def test_guide_repr_and_len():
         samples="sample1",
         variants="var1",
         afs={},
-        posmap={i:i for i in range(10 + 20 + 3 + 10)},
+        posmap={i: i for i in range(10 + 20 + 3 + 10)},
         debug=False,
         right=True,
         hapid="hap1",
@@ -79,7 +78,7 @@ def test_guide_getitem_and_iter():
         samples="sample1",
         variants="var1",
         afs={},
-        posmap={i:i for i in range(10 + 20 + 3 + 10)},
+        posmap={i: i for i in range(10 + 20 + 3 + 10)},
         debug=False,
         right=True,
         hapid="hap1",
@@ -103,7 +102,7 @@ def test_guide_reverse_complement():
         samples="sample1",
         variants="var1",
         afs={},
-        posmap={i:i for i in range(10 + 20 + 3 + 10)},
+        posmap={i: i for i in range(10 + 20 + 3 + 10)},
         debug=False,
         right=True,
         hapid="hap1",
@@ -125,7 +124,7 @@ def test_guide_setters_and_properties():
         samples="sample1",
         variants="var1",
         afs={},
-        posmap={i:i for i in range(10 + 20 + 3 + 10)},
+        posmap={i: i for i in range(10 + 20 + 3 + 10)},
         debug=False,
         right=True,
         hapid="hap1",
@@ -144,8 +143,6 @@ def test_guide_setters_and_properties():
     assert guide.cfdon_score == "0.9"
     guide.elevationon_score = 1.0
     assert guide.elevationon_score == "1.0"
-    guide.ooframe_score = 2
-    assert guide.ooframe_score == "2"
     guide.gc = 0.45
     assert guide.gc == "0.45"
     guide.funcann = "ann1"
@@ -167,7 +164,7 @@ def test_guide_geneann_type_error():
         samples="sample1",
         variants="var1",
         afs={},
-        posmap={i:i for i in range(10 + 20 + 3 + 10)},
+        posmap={i: i for i in range(10 + 20 + 3 + 10)},
         debug=False,
         right=True,
         hapid="hap1",
@@ -187,7 +184,7 @@ def test_guide_offtargets_type_error():
         samples="sample1",
         variants="var1",
         afs={},
-        posmap={i:i for i in range(10 + 20 + 3 + 10)},
+        posmap={i: i for i in range(10 + 20 + 3 + 10)},
         debug=False,
         right=True,
         hapid="hap1",
@@ -207,7 +204,7 @@ def test_guide_cfd_type_error():
         samples="sample1",
         variants="var1",
         afs={},
-        posmap={i:i for i in range(10 + 20 + 3 + 10)},
+        posmap={i: i for i in range(10 + 20 + 3 + 10)},
         debug=False,
         right=True,
         hapid="hap1",
@@ -227,7 +224,7 @@ def test_guideiterator_next_and_stopiteration():
         samples="sample1",
         variants="var1",
         afs={},
-        posmap={i:i for i in range(10 + 20 + 3 + 10)},
+        posmap={i: i for i in range(10 + 20 + 3 + 10)},
         debug=False,
         right=True,
         hapid="hap1",

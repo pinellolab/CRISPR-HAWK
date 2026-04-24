@@ -19,8 +19,8 @@ SGDESIGNER = "sgdesigner"
 # packages required to create sgdesigner environment
 SGDESIGNER_PACKAGES = [
     "conda-forge::perl",
-    "numpy=1.15.2", 
-    "scipy=1.1.0", 
+    "numpy=1.15.2",
+    "scipy=1.1.0",
     "scikit-learn=0.20.0",
     "xgboost=0.80",
     "joblib=0.13.2",
@@ -70,16 +70,21 @@ class sgDesignerConfig:
     def validate(self) -> None:
         # ensure environment and outdir are configured
         if not self._config.validate():
-            exception_handler(CrisprHawkSgDesignerError, "SgDesigner environment configuration missing arguments", os.EX_DATAERR, True)
+            exception_handler(
+                CrisprHawkSgDesignerError,
+                "SgDesigner environment configuration missing arguments",
+                os.EX_DATAERR,
+                True,
+            )
 
     @property
     def env_name(self) -> str:
         return self._config.env_name
-    
+
     @property
     def outdir(self) -> str:
         return self._config.outdir
-    
+
     @property
     def conda(self) -> str:
         return self._conda
@@ -112,6 +117,7 @@ def check_sgdesigner_env(env_name: str, conda: str) -> bool:
         return False
     return True
 
+
 def prepare_sgdesigner_env() -> Optional[sgDesignerConfig]:
     if platform.system() != OSSYSTEMS[0]:  # if system is not Linux
         warning(
@@ -122,13 +128,12 @@ def prepare_sgdesigner_env() -> Optional[sgDesignerConfig]:
     config = sgDesignerConfig()  # loads config.json
     # look for crispron environment, if not available create it
     if not check_sgdesigner_env(config.env_name, config.conda):
-        warning(
-            "sgDesigner environment not available, creating environment...", 1
-        )
+        warning("sgDesigner environment not available, creating environment...", 1)
         if not create_mamba_env(
             config.conda, config.env_name, SGDESIGNER_PACKAGES, python_version="3.7"
         ):
-            warning("sgDesigner environment creation failed, skipping CRISPRon scoring", 1)
+            warning(
+                "sgDesigner environment creation failed, skipping CRISPRon scoring", 1
+            )
             return None
     return config
-

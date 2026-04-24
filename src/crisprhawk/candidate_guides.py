@@ -118,7 +118,7 @@ def initialize_region_reports(
 
 def _subset_region_report(
     report: pd.DataFrame, cg: CandidateGuide, debug: bool
-) -> pd.DataFrame:
+) -> pd.Series:
     """Extracts the subset of a region report corresponding to a candidate guide.
 
     This function filters the region report to include only entries matching the
@@ -130,7 +130,7 @@ def _subset_region_report(
         debug: Flag to enable debug mode.
 
     Returns:
-        DataFrame containing only the rows relevant to the candidate guide.
+        Series containing only the rows relevant to the candidate guide.
 
     Raises:
         CrisprHawkCandidateGuideError: If the candidate guide is not found in
@@ -151,7 +151,7 @@ def _subset_region_report(
 
 
 def _store_region_report_subset(
-    report_sub: pd.DataFrame, cg: CandidateGuide, pam: PAM, guidelen: int, outdir: str
+    report_sub: pd.Series, cg: CandidateGuide, pam: PAM, guidelen: int, outdir: str
 ) -> str:
     """Stores a subset of a region report for a candidate guide to a file.
 
@@ -159,7 +159,7 @@ def _store_region_report_subset(
     the candidate guide and parameters.
 
     Args:
-        report_sub: DataFrame containing the subset of the region report.
+        report_sub: Series containing the subset of the region report.
         cg: CandidateGuide object for which the report is generated.
         pam: PAM object specifying the protospacer adjacent motif.
         guidelen: Length of the guide.

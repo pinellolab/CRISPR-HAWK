@@ -8,24 +8,20 @@ annotations from BED files, and computing GC content.
 It supports comprehensive annotation of guides for downstream CRISPR analysis workflows.
 """
 
-from .crisprhawk_error import CrisprHawkAnnotationError, CrisprHawkGcContentError
-from .crisprhawk_argparse import CrisprHawkSearchInputArgs
-from .exception_handlers import exception_handler
 from .bedfile import BedAnnotation
+from .crisprhawk_argparse import CrisprHawkSearchInputArgs
+from .crisprhawk_error import CrisprHawkAnnotationError, CrisprHawkGcContentError
+from .exception_handlers import exception_handler
 from .guide import Guide
-from .utils import print_verbosity, VERBOSITYLVL
 from .region import Region
+from typing import List, Dict, Set, Tuple
+from .utils import print_verbosity, VERBOSITYLVL
 from .variant import adjust_multiallelic
 
-from typing import List, Dict, Set, Tuple
 from Bio.SeqUtils import gc_fraction
 from time import time
 
 import os
-
-ANNDIR = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)), "annotations"
-)  # annotation data directory
 
 
 def reverse_guides(guides: List[Guide], verbosity: int) -> List[Guide]:
@@ -94,7 +90,7 @@ def _is_snv(ref: str, alt: str) -> bool:
     return len(ref) == len(alt)
 
 
-def retrieve_guide_variants(guide: Guide) -> Set[str]:
+def _retrieve_guide_variants(guide: Guide) -> Set[str]:
     """Retrieves the set of variant identifiers associated with a guide.
 
     This function splits the guide's variants string into a set of individual
@@ -109,7 +105,7 @@ def retrieve_guide_variants(guide: Guide) -> Set[str]:
     return set(guide.variants.split(","))  # split variants string
 
 
-def is_reference_guide(guide_variants: Set[str], debug: bool) -> bool:
+def _is_reference_guide(guide_variants: Set[str], debug: bool) -> bool:
     """Determines if a guide is a reference guide based on its variant identifiers.
 
     This function checks if the guide's variants set contains only 'NA', indicating
@@ -285,7 +281,7 @@ def polish_guide_variants(guide: Guide, variants: Set[str], debug: bool) -> str:
     return ",".join(sorted(variants_polished))
 
 
-def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
+def _annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[Guide]:
     """Annotates guides with validated variant information based on their sequence
     context.
 
@@ -307,8 +303,8 @@ def annotate_variants(guides: List[Guide], verbosity: int, debug: bool) -> List[
     )
     start = time()  # position calculation start time
     for guide in guides:
-        guide_variants = retrieve_guide_variants(guide)  # retrieve guide's variants
-        if is_reference_guide(guide_variants, debug):  # reference guide
+        guide_variants = _retrieve_guide_variants(guide)  # retrieve guide's variants
+        if _is_reference_guide(guide_variants, debug):  # reference guide
             guide.variants = "NA"
         else:  # alternative guide
             guide.variants = polish_guide_variants(guide, guide_variants, debug)
@@ -569,7 +565,7 @@ def annotate_guides(
     start = time()  # annotation start time
     for region, guides_list in guides.items():
         # set variants for current guide
-        guides_list = annotate_variants(guides_list, args.verbosity, args.debug)
+        guides_list = _annotate_variants(guides_list, args.verbosity, args.debug)
         # add allele frequencies for variants occurring in guides
         guides_list = annotate_variants_afs(guides_list, args.verbosity)
         # compute reverse complement for guides occurring on rev strand

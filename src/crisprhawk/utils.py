@@ -294,7 +294,9 @@ def create_folder(dirname: str, exist_ok: bool = False) -> str:
     try:
         os.makedirs(dirname, exist_ok=exist_ok)
     except OSError as e:
-        exception_handler(OSError, f"Failed creating folder {dirname}", os.EX_OSERR, True)
+        exception_handler(
+            OSError, f"Failed creating folder {dirname}", os.EX_OSERR, True
+        )
     return dirname
 
 
@@ -367,11 +369,14 @@ def remove_file_silent(fname: str) -> None:
     with contextlib.suppress(OSError):
         os.remove(fname)
 
+
 def rename_file(orig: str, dest: str) -> None:
     try:
         os.rename(orig, dest)
     except OSError as e:
-        exception_handler(OSError, f"Failed to rename file {orig}", os.EX_OSERR, True, e)
+        exception_handler(
+            OSError, f"Failed to rename file {orig}", os.EX_OSERR, True, e
+        )
 
 
 def remove_folder(folder: str) -> None:

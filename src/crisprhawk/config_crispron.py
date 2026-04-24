@@ -157,13 +157,12 @@ def prepare_crispron_env() -> Optional[CrisprOnConfig]:
     config = CrisprOnConfig()  # loads config.json
     # look for crispron environment, if not available create it
     if not check_crispron_env(config.env_name, config.conda):
-        warning(
-            "CRISPRon environment not available, creating environment...", 1
-        )
+        warning("CRISPRon environment not available, creating environment...", 1)
         if not create_mamba_env(
             config.conda, config.env_name, CRISPRON_PACKAGES, python_version="3.10"
         ):
-            warning("CRISPRon environment creation failed, skipping CRISPRon scoring", 1)
+            warning(
+                "CRISPRon environment creation failed, skipping CRISPRon scoring", 1
+            )
             return None
     return config
-

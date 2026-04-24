@@ -5,10 +5,9 @@ from crisprhawk.scoring import (
     group_guides_position,
     cfdon_score,
     elevationon_score,
-    outofframe_score,
 )
 from crisprhawk.guide import Guide
-from crisprhawk.utils import prepare_package
+from crisprhawk.config_utils import prepare_scoring_models
 
 import pytest
 
@@ -23,7 +22,7 @@ def make_guide_ngg(**kwargs):
         direction=1,
         samples="sample1",
         variants="var1",
-        posmap={i:i for i in range(10 + 20 + 3 + 10)},
+        posmap={i: i for i in range(10 + 20 + 3 + 10)},
         afs={},
         debug=False,
         right=True,
@@ -43,7 +42,7 @@ def make_guide_cpf1(**kwargs):
         direction=1,
         samples="sample1",
         variants="var1",
-        posmap={i:i for i in range(10 + 23 + 4 + 10)},
+        posmap={i: i for i in range(10 + 23 + 4 + 10)},
         afs={},
         debug=False,
         right=True,
@@ -54,7 +53,7 @@ def make_guide_cpf1(**kwargs):
 
 
 def test_azimuth_score(monkeypatch):
-    prepare_package()
+    prepare_scoring_models()
     guides = [make_guide_ngg()]
     # monkeypatch.setattr("crisprhawk.scoring.azimuth", lambda seqs: [0.5])
     scored = azimuth_score(guides, 1, verbosity=0, debug=False)
@@ -62,7 +61,7 @@ def test_azimuth_score(monkeypatch):
 
 
 def test_rs3_score(monkeypatch):
-    prepare_package()
+    prepare_scoring_models()
     guides = [make_guide_ngg()]
     # monkeypatch.setattr("crisprhawk.scoring.rs3", lambda seqs: [0.7])
     scored = rs3_score(guides, 1, verbosity=0, debug=False)
@@ -70,7 +69,7 @@ def test_rs3_score(monkeypatch):
 
 
 def test_deepcpf1_score(monkeypatch):
-    prepare_package()
+    prepare_scoring_models()
     guides = [make_guide_cpf1()]
     # monkeypatch.setattr("crisprhawk.scoring.deepcpf1", lambda seqs: [0.8])
     scored = deepcpf1_score(guides, 1, verbosity=0, debug=False)
@@ -86,7 +85,7 @@ def test_group_guides_position():
 
 
 def test_cfdon_score(monkeypatch):
-    prepare_package()
+    prepare_scoring_models()
     guides = [make_guide_ngg(samples="REF"), make_guide_ngg(samples="ALT")]
     monkeypatch.setattr("crisprhawk.scoring.cfdon", lambda ref, gs, debug: [0.9, 0.8])
     scored = cfdon_score(guides, verbosity=0, debug=False)
@@ -94,15 +93,8 @@ def test_cfdon_score(monkeypatch):
 
 
 def test_elevationon_score(monkeypatch):
-    prepare_package()
+    prepare_scoring_models()
     guides = [make_guide_ngg(samples="REF"), make_guide_ngg(samples="ALT")]
     monkeypatch.setattr("crisprhawk.scoring.elevationon", lambda groups: guides)
     scored = elevationon_score(guides, verbosity=0, debug=False)
     assert scored == guides
-
-
-def test_outofframe_score(monkeypatch):
-    guides = [make_guide_ngg()]
-    monkeypatch.setattr("crisprhawk.scoring.ooframe_score", lambda guides, idx: [2])
-    scored = outofframe_score(guides, guidelen=23, right=True, verbosity=0, debug=False)
-    assert scored[0].ooframe_score == "2"

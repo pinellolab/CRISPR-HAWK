@@ -5,6 +5,7 @@ from .config_sgdesigner import sgDesignerConfig, prepare_sgdesigner_env
 
 from typing import Optional
 
+
 class ScoringEnvs:
 
     def __init__(self) -> None:
@@ -33,8 +34,8 @@ class ScoringEnvs:
 def prepare_scoring_envs() -> ScoringEnvs:
     # prepare scoring environments
     scoring_envs = ScoringEnvs()
-    if (crispron_env := prepare_crispron_env()):  # crispron
+    if crispron_env := prepare_crispron_env():  # crispron
         scoring_envs.crispron_env = crispron_env
-    if (sgdesigner_env := prepare_sgdesigner_env()):  # sgdesigner
+    if sgdesigner_env := prepare_sgdesigner_env():  # sgdesigner
         scoring_envs.sgdesigner_env = sgdesigner_env
     return scoring_envs
