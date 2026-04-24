@@ -85,8 +85,6 @@ def create_parser_crisprhawk() -> CrisprHawkArgumentParser:
     create_converter_parser(subparsers)
     # crisprhawk prepare-data-crisprme command
     create_parser_prepare_data(subparsers)
-    # crisprhawk crispritz-config command
-    create_crispritz_config_parser(subparsers)
     return parser
 
 
@@ -563,96 +561,6 @@ def create_parser_prepare_data(subparser: _SubParsersAction) -> _SubParsersActio
         help="Enter debug mode and trace the full error stack",
     )
     return parser_prepare
-
-
-def create_crispritz_config_parser(subparser: _SubParsersAction) -> _SubParsersAction:
-    """Creates the argument parser for the CRISPR-HAWK crispritz-config command.
-
-    This function defines and configures all arguments and options for managing
-    CRISPRitz integration settings, including environment and target directory
-    configuration.
-
-    Args:
-        subparser (_SubParsersAction): The subparsers object to which the
-            crispritz-config parser will be added.
-
-    Returns:
-        _SubParsersAction: The configured crispritz-config command parser.
-    """
-    parser_crispritz_config = subparser.add_parser(
-        CRISPRPITZCONFIG,
-        usage="CRISPR-HAWK crispritz-config {version}\n\nUsage:\n"
-        "\tcrisprhawk crispritz-config --env <crispritz-env-name> --targets-dir "
-        "<crispritz-targets-dir>\n\n",
-        description="Configure CRISPRitz integration settings including "
-        "environment name and output directories. This command manages the "
-        "configuration for CRISPRitz integration, allowing the user to specify "
-        "the conda/mamba environment where CRISPRitz is installed and customize "
-        "where target files will be stored. Configuration is automatically saved "
-        "and persists across sessions. The configuration is stored in a JSON "
-        "file and can be modified at any time. Use --show to display current "
-        "settings or --reset to restore defaults.",
-        help="configure CRISPRitz environment and target storage settings",
-        add_help=False,
-    )
-    general_group = parser_crispritz_config.add_argument_group("General options")
-    general_group.add_argument(
-        "-h", "--help", action="help", help="show this help message and exit"
-    )
-    # main configuration arguments
-    config_group = parser_crispritz_config.add_argument_group("Configuration settings")
-    config_group.add_argument(
-        "--env",
-        type=str,
-        metavar="CRISPRITZ-ENV-NAME",
-        dest="env_name",
-        required=False,
-        default=None,
-        help="name of the conda/mamba environment where CRISPRitz is installed. "
-        "This environment will be activated when running CRISPRitz commands. "
-        "Must be a valid environment name accessible via 'conda activate <name>' "
-        "or 'mamba activate <name>'. (default: 'crispritz')",
-    )
-    config_group.add_argument(
-        "--targets-dir",
-        type=str,
-        metavar="CRISPRITZ-TARGETS-DIR",
-        dest="targets_dir",
-        required=False,
-        default=None,
-        help="Directory path where CRISPRitz target files will be stored. "
-        "Can be absolute (/path/to/targets) or relative (./targets). "
-        "Directory will be created if it doesn't exist. (default: "
-        "'.crispritz_targets' - hidden folder in search output directory)",
-    )
-    # action arguments
-    action_group = parser_crispritz_config.add_argument_group("Configuration actions")
-    action_group.add_argument(
-        "--show",
-        dest="show",
-        action="store_true",
-        help="Display current CRISPRitz configuration settings without making "
-        "changes. Shows environment name, targets directory, and configuration "
-        "file location.",
-    )
-    action_group.add_argument(
-        "--reset",
-        dest="reset",
-        action="store_true",
-        help="Reset CRISPRitz configuration to default values. This will restore "
-        "environment name to 'crispritz' and targets directory to "
-        "'.crispritz_targets'. Use with caution as this will overwrite current "
-        "settings",
-    )
-    action_group.add_argument(
-        "--validate",
-        dest="validate",
-        action="store_true",
-        help="Validate current configuration settings. Checks if the specified "
-        "environment exists and if the targets directory is accessible. Reports "
-        "any configuration issues found",
-    )
-    return parser_crispritz_config
 
 
 def main():  # sourcery skip: extract-method, remove-redundant-pass
