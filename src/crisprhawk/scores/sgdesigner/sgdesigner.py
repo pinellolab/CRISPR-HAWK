@@ -29,7 +29,7 @@ def _load_sgdesigner_scores(txt_path: str, expected_26mers: List[str]) -> List[f
         for line in fin:
             gid, score_raw, spacer, _, _ = line.split("\t")
             guide_id = gid.split("_")[1]
-            if f"guide_{id}" not in expected_map:
+            if f"guide_{guide_id}" not in expected_map:
                 continue
             # keep only the row matching the submitted 20-nt spacer
             if spacer.upper() != expected_map[f"guide_{guide_id}"]:
@@ -65,9 +65,10 @@ def compute_sgdesigner_score(guides: List[str], conda: str, env_name: str) -> Li
     # get path to sgdesigner script
     sgdesigner_root = os.path.abspath(os.path.dirname(__file__))
     sgdesigner_pl = os.path.join(sgdesigner_root, "sgDesigner.pl")
+    assert os.path.isfile(sgdesigner_pl)
     # score guides with sgdesigner
     # with tempfile.TemporaryDirectory(prefix="sgdesigner_", dir=sgdesigner_root) as tmpdir:
-    
+
     tmpdir = tempfile.mkdtemp(prefix="sgdesigner_")
     # generate guides fasta, output folder, and tmp folder required 
     # by sgdesigner's script
@@ -76,14 +77,23 @@ def compute_sgdesigner_score(guides: List[str], conda: str, env_name: str) -> Li
         create_folder(d, exist_ok=True)  # create sgdesigner folders
     # write guides to sgdesigner fasta
     _write_guides_fasta(guides, sgdesigner_fasta)
-
-    subprocess.run(
-        [conda, "run", "-n", env_name, "perl", sgdesigner_pl, "-f", sgdesigner_fasta],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=True,
-        cwd=sgdesigner_root,
-        env=_init_environ(sgdesigner_results, sgdesigner_tmpdir)
+    # command to call sgDesigner perl script
+    cmd = (
+        f"export SGDESIGNER_RESULT_DIR='{sgdesigner_results}'; "
+        f"export SGDESIGNER_TEMP_DIR='{sgdesigner_tmpdir}'; "
+        f"perl '{sgdesigner_pl}' -f '{sgdesigner_fasta}'"
     )
+    try:
+        subprocess.run(
+            [conda, "run", "-n", env_name, "bash", "-c", cmd],
+            check=True,  # Raise exception on non-zero exit code
+            capture_output=True, # Capture stderr for better debugging
+            text=True,
+            cwd=sgdesigner_root,
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"sgDesigner script failed with exit code {e.returncode}: {e.stderr}"
+        ) from e
     txt_path = _find_output_txt(sgdesigner_results)
     return _load_sgdesigner_scores(txt_path, guides)

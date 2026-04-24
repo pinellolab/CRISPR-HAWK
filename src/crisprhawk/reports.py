@@ -45,19 +45,19 @@ REPORTCOLS = [
     "score_rs3",  # 8
     "score_plmcrispr",  # 9
     "score_crispron",  # 10
-    "score_deepcpf1",  # 11
-    "score_cfdon",  # 12
-    "score_elevationon",  # 13
-    "gc_content",  # 14
-    "origin",  # 15
-    "samples",  # 16
-    "variant_id",  # 17
-    "af",  # 18
-    "target",  # 19
-    "haplotype_id",  # 20
-    "offtargets",  # 21
-    "cfd",  # 22
-    # "score_sgdesigner" # 23
+    "score_sgdesigner",  # 11
+    "score_deepcpf1",  # 12
+    "score_cfdon",  # 13
+    "score_elevationon",  # 14
+    "gc_content",  # 15
+    "origin",  # 16
+    "samples",  # 17
+    "variant_id",  # 18
+    "af",  # 19
+    "target",  # 20
+    "haplotype_id",  # 21
+    "offtargets",  # 22
+    "cfd",  # 23
 ]
 
 
@@ -142,18 +142,19 @@ def _update_report_fields_spcas9(
     report[REPORTCOLS[8]].append(guide.rs3_score)  # rs3 score
     report[REPORTCOLS[9]].append(guide.plmcrispr_score)  # plm-crispr score
     report[REPORTCOLS[10]].append(guide.crispron_score)  # crispron score
-    report[REPORTCOLS[12]].append(guide.cfdon_score)  # cfdon score
+    report[REPORTCOLS[11]].append(guide.sgdesigner_score)  # crispron score
+    report[REPORTCOLS[13]].append(guide.cfdon_score)  # cfdon score
     if compute_elevation and (
         guide.guidelen + pamlen == 23 and not guide.right
     ):  # elevationon score
-        report[REPORTCOLS[13]].append(guide.elevationon_score)
-    report[REPORTCOLS[14]].append(guide.gc)  # gc content
-    report[REPORTCOLS[15]].append(compute_guide_origin(guide.samples))  # genome
-    report[REPORTCOLS[16]].append(guide.samples)  # samples list
-    report[REPORTCOLS[17]].append(guide.variants)  # variant ids
-    report[REPORTCOLS[18]].append(guide.afs_str)  # variants allele frequencies
-    report[REPORTCOLS[19]].append(region_coordinates)  # region
-    report[REPORTCOLS[20]].append(guide.hapid)  # haplotype id
+        report[REPORTCOLS[14]].append(guide.elevationon_score)
+    report[REPORTCOLS[15]].append(guide.gc)  # gc content
+    report[REPORTCOLS[16]].append(compute_guide_origin(guide.samples))  # genome
+    report[REPORTCOLS[17]].append(guide.samples)  # samples list
+    report[REPORTCOLS[18]].append(guide.variants)  # variant ids
+    report[REPORTCOLS[19]].append(guide.afs_str)  # variants allele frequencies
+    report[REPORTCOLS[20]].append(region_coordinates)  # region
+    report[REPORTCOLS[21]].append(guide.hapid)  # haplotype id
     return report
 
 
@@ -188,18 +189,18 @@ def _update_report_fields_cpf1(
     report[REPORTCOLS[5]].append(pamclass)  # extended pam class
     # strand orientation
     report[REPORTCOLS[6]].append(compute_strand_orientation(guide.strand))
-    report[REPORTCOLS[11]].append(guide.deepcpf1_score)  # deepcpf1 score
+    report[REPORTCOLS[12]].append(guide.deepcpf1_score)  # deepcpf1 score
     if compute_elevation and (
         guide.guidelen + pamlen == 23 and not guide.right
     ):  # elevationon score
-        report[REPORTCOLS[13]].append(guide.elevationon_score)
-    report[REPORTCOLS[14]].append(guide.gc)  # gc content
-    report[REPORTCOLS[15]].append(compute_guide_origin(guide.samples))  # genome
-    report[REPORTCOLS[16]].append(guide.samples)  # samples list
-    report[REPORTCOLS[17]].append(guide.variants)  # variant ids
-    report[REPORTCOLS[18]].append(guide.afs_str)  # variants allele frequencies
-    report[REPORTCOLS[19]].append(region_coordinates)  # region
-    report[REPORTCOLS[20]].append(guide.hapid)  # haplotype id
+        report[REPORTCOLS[14]].append(guide.elevationon_score)
+    report[REPORTCOLS[15]].append(guide.gc)  # gc content
+    report[REPORTCOLS[16]].append(compute_guide_origin(guide.samples))  # genome
+    report[REPORTCOLS[17]].append(guide.samples)  # samples list
+    report[REPORTCOLS[18]].append(guide.variants)  # variant ids
+    report[REPORTCOLS[19]].append(guide.afs_str)  # variants allele frequencies
+    report[REPORTCOLS[20]].append(region_coordinates)  # region
+    report[REPORTCOLS[21]].append(guide.hapid)  # haplotype id
     return report
 
 
@@ -239,14 +240,14 @@ def _update_report_fields_other(
     if compute_elevation and (
         guide.guidelen + pamlen == 23 and not guide.right
     ):  # elevationon score
-        report[REPORTCOLS[13]].append(guide.elevationon_score)
-    report[REPORTCOLS[14]].append(guide.gc)  # gc content
-    report[REPORTCOLS[15]].append(compute_guide_origin(guide.samples))  # genome
-    report[REPORTCOLS[16]].append(guide.samples)  # samples list
-    report[REPORTCOLS[17]].append(guide.variants)  # variant ids
-    report[REPORTCOLS[18]].append(guide.afs_str)  # variants allele frequencies
-    report[REPORTCOLS[19]].append(region_coordinates)  # region
-    report[REPORTCOLS[20]].append(guide.hapid)  # haplotype id
+        report[REPORTCOLS[14]].append(guide.elevationon_score)
+    report[REPORTCOLS[15]].append(guide.gc)  # gc content
+    report[REPORTCOLS[16]].append(compute_guide_origin(guide.samples))  # genome
+    report[REPORTCOLS[17]].append(guide.samples)  # samples list
+    report[REPORTCOLS[18]].append(guide.variants)  # variant ids
+    report[REPORTCOLS[19]].append(guide.afs_str)  # variants allele frequencies
+    report[REPORTCOLS[20]].append(region_coordinates)  # region
+    report[REPORTCOLS[21]].append(guide.hapid)  # haplotype id
     return report
 
 
@@ -315,19 +316,19 @@ def _update_optional_report_fields(
     """
     reportcols = list(report.keys())
     if annotations:
-        idx = reportcols.index(REPORTCOLS[20]) + 1  # haplotype_id is last
+        idx = reportcols.index(REPORTCOLS[21]) + 1  # haplotype_id is last
         for i, annotation in enumerate(guide.funcann):
             report[reportcols[idx + i]].append(annotation)
     if gene_annotations:
         idx = (
-            reportcols.index(REPORTCOLS[20]) + 1 + len(annotations)
+            reportcols.index(REPORTCOLS[21]) + 1 + len(annotations)
         )  # haplotype_id is last
         for i, annotation in enumerate(guide.geneann):
             report[reportcols[idx + i]].append(annotation)
     if estimate_offtargets:
-        report[REPORTCOLS[21]].append(guide.offtargets)
+        report[REPORTCOLS[22]].append(guide.offtargets)
         if pam.cas_system in [SPCAS9, XCAS9]:  # spcas9 system pam
-            report[REPORTCOLS[22]].append(guide.cfd)
+            report[REPORTCOLS[23]].append(guide.cfd)
     return report
 
 
@@ -345,7 +346,7 @@ def _insert_elevationon_reportcols(guidepam_len: int, right: bool) -> List[str]:
         List[str]: A list containing the elevationon score column if applicable,
             otherwise an empty list.
     """
-    return REPORTCOLS[13:14] if guidepam_len == 23 and not right else []
+    return REPORTCOLS[14:15] if guidepam_len == 23 and not right else []
 
 
 def _insert_annotation_reportcols(
@@ -397,9 +398,9 @@ def _insert_offtargets_reportcols(
     """
     reportcols = []
     if estimate_offtargets:
-        reportcols = REPORTCOLS[21:22]
+        reportcols = REPORTCOLS[22:23]
         if cas_system in [SPCAS9, XCAS9]:  # add CFD score
-            reportcols += REPORTCOLS[22:]
+            reportcols += REPORTCOLS[23:]
     return reportcols
 
 
@@ -435,10 +436,10 @@ def _select_reportcols(
     """
     if pam.cas_system in [SPCAS9, XCAS9]:  # spcas9 system pam report columns
         return (
-            REPORTCOLS[:11]
-            + REPORTCOLS[12:13]
+            REPORTCOLS[:12]
+            + REPORTCOLS[13:14]
             + _insert_elevationon_reportcols(guidelen + len(pam), right)
-            + REPORTCOLS[14:21]
+            + REPORTCOLS[15:22]
             + _insert_annotation_reportcols(
                 annotations,
                 gene_annotations,
@@ -450,9 +451,9 @@ def _select_reportcols(
     elif pam.cas_system == CPF1:  # cpf1 system pam report
         return (
             REPORTCOLS[:7]
-            + REPORTCOLS[11:12]
+            + REPORTCOLS[12:13]
             + _insert_elevationon_reportcols(guidelen + len(pam), right)
-            + REPORTCOLS[14:21]
+            + REPORTCOLS[15:22]
             + _insert_annotation_reportcols(
                 annotations,
                 gene_annotations,
@@ -464,7 +465,7 @@ def _select_reportcols(
     return (
         REPORTCOLS[:7]
         + _insert_elevationon_reportcols(guidelen + len(pam), right)
-        + REPORTCOLS[14:21]
+        + REPORTCOLS[15:22]
         + _insert_annotation_reportcols(
             annotations, gene_annotations, annotation_colnames, gene_annotation_colnames
         )
@@ -589,7 +590,7 @@ def _format_elevationon(reportcols: List[str]) -> List[str]:
         List[str]: A list containing the elevationon score column if present,
             otherwise an empty list.
     """
-    return REPORTCOLS[13:14] if REPORTCOLS[13] in reportcols else []
+    return REPORTCOLS[14:15] if REPORTCOLS[14] in reportcols else []
 
 
 def _format_cfd(reportcols: List[str]) -> List[str]:
@@ -605,7 +606,7 @@ def _format_cfd(reportcols: List[str]) -> List[str]:
         List[str]: A list containing the CFD score column if present, otherwise
             an empty list.
     """
-    return REPORTCOLS[22:23] if REPORTCOLS[22] in reportcols else []
+    return REPORTCOLS[23:24] if REPORTCOLS[23] in reportcols else []
 
 
 def _format_reportcols(
@@ -641,21 +642,21 @@ def _format_reportcols(
         else REPORTCOLS[:7]
     )
     if pam.cas_system in [SPCAS9, XCAS9]:
-        reportcols_sorted += REPORTCOLS[7:11] + REPORTCOLS[12:13]
+        reportcols_sorted += REPORTCOLS[7:12] + REPORTCOLS[13:14]
     elif pam.cas_system == CPF1:
-        reportcols_sorted += REPORTCOLS[11:12]
+        reportcols_sorted += REPORTCOLS[12:13]
     reportcols_sorted += _format_elevationon(reportcols)
-    reportcols_sorted += REPORTCOLS[14:19]  # up to target
+    reportcols_sorted += REPORTCOLS[15:20]  # up to target
     if annotations:
-        idx = reportcols.index(REPORTCOLS[20]) + 1
+        idx = reportcols.index(REPORTCOLS[21]) + 1
         reportcols_sorted += reportcols[idx : idx + len(annotations)]
     if gene_annotations:
-        idx = reportcols.index(REPORTCOLS[20]) + 1 + len(annotations)
+        idx = reportcols.index(REPORTCOLS[21]) + 1 + len(annotations)
         reportcols_sorted += reportcols[idx : idx + len(gene_annotations)]
     if estimate_offtargets:
-        reportcols_sorted += REPORTCOLS[21:222]
+        reportcols_sorted += REPORTCOLS[22:23]
         reportcols_sorted += _format_cfd(reportcols)
-    reportcols_sorted += REPORTCOLS[19:21]
+    reportcols_sorted += REPORTCOLS[20:22]
     return reportcols_sorted
 
 
@@ -938,12 +939,12 @@ def _collapsed_fields(
     }
     # add optional report fields
     if annotations:  # guides functional annotation
-        idx = reportcols.index(REPORTCOLS[20]) + 1  # haplotype_id is last
+        idx = reportcols.index(REPORTCOLS[21]) + 1  # haplotype_id is last
         for colname in reportcols[idx : idx + len(annotations)]:
             fields[colname] = _collapse_annotation
     if gene_annotations:
         idx = (
-            reportcols.index(REPORTCOLS[20]) + 1 + len(annotations)
+            reportcols.index(REPORTCOLS[21]) + 1 + len(annotations)
         )  # haplotype_id is last
         for colname in reportcols[idx : idx + len(gene_annotations)]:
             fields[colname] = _collapse_annotation
@@ -981,25 +982,25 @@ def _collapse_report_entries(
     reportcols = report.columns.tolist()
     group_cols = REPORTCOLS[:5]
     if pam.cas_system in [SPCAS9, XCAS9]:
-        group_cols += REPORTCOLS[6:11] + REPORTCOLS[12:13] + REPORTCOLS[14:16]
+        group_cols += REPORTCOLS[6:12] + REPORTCOLS[13:14] + REPORTCOLS[15:17]
     elif pam.cas_system == CPF1:
-        group_cols += REPORTCOLS[6:7] + REPORTCOLS[11:12] + REPORTCOLS[14:16]
+        group_cols += REPORTCOLS[6:7] + REPORTCOLS[12:13] + REPORTCOLS[15:17]
     else:
-        group_cols += REPORTCOLS[6:7] + REPORTCOLS[14:16]
-    if REPORTCOLS[13] in reportcols:  # elevationon computed
-        group_cols += REPORTCOLS[13:14]
+        group_cols += REPORTCOLS[6:7] + REPORTCOLS[15:17]
+    if REPORTCOLS[14] in reportcols:  # elevationon computed
+        group_cols += REPORTCOLS[14:15]
     if annotations:
-        idx = reportcols.index(REPORTCOLS[20]) + 1  # haplotype_id is last
+        idx = reportcols.index(REPORTCOLS[21]) + 1  # haplotype_id is last
         group_cols += [reportcols[idx + i] for i, _ in enumerate(annotations)]
     if gene_annotations:
         idx = (
-            reportcols.index(REPORTCOLS[20]) + 1 + len(annotations)
+            reportcols.index(REPORTCOLS[21]) + 1 + len(annotations)
         )  # haplotype_id is last
         group_cols += [reportcols[idx + i] for i, _ in enumerate(gene_annotations)]
     if estimate_offtargets:
-        group_cols.append(REPORTCOLS[21])
-        if REPORTCOLS[21] in reportcols:
-            group_cols.append(REPORTCOLS[22])
+        group_cols.append(REPORTCOLS[22])
+        if REPORTCOLS[22] in reportcols:
+            group_cols.append(REPORTCOLS[23])
     return report.groupby(group_cols, as_index=False).agg(
         _collapsed_fields(
             pam, annotations, gene_annotations, estimate_offtargets, reportcols

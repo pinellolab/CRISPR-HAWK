@@ -41,8 +41,8 @@ system("mkdir -p $temp_dir") if !-e $temp_dir;
 # print "RESULT DIR PRINT: $result_dir\n";
 # print "TEMP DIR PRINT: $temp_dir\n";
 
-my $classifier_dir =  "$MODEL_DIR";
-my $classifier_dir =  "$MODEL_DIR";
+my $classifier_dir =  "./Stacking_model";
+my $classifier_dir =  "./Stacking_model";
 
 my $inputFile;
 # my $result_file =     "./$temp_dir/gOligo_$version"."_prediction_result.xls";
@@ -64,9 +64,6 @@ my $minLength= 26;
 
 my $leftflank_numbases = 0; 
 my $rightflank_numbases = 3;
-
-my $RNAFOLD_BIN = "RNAfold";  # default: assume in PATH
-my $MODEL_DIR = "./Stacking_model";
 
 ################################### USER INPUTS ############################################################
 
@@ -108,12 +105,6 @@ elsif ($option eq '-s' or $option eq '--sequence'){
         ${$sequences[0]}{'seq'} = $submission;
         my $seqLength = length $submission;
         ${$sequences[0]}{'id'} = "submittedSequence|length_$seqLength";
-}
-elsif ($option eq '--rnafold') {
-        $RNAFOLD_BIN = shift @inputs;
-}
-elsif ($option eq '--model') {
-        $MODEL_DIR = shift @inputs;
 }
 else{
         &helpText;
@@ -276,7 +267,7 @@ sub predict {
     my @annotation = @{$annotation_ref};
     my $line_count = 0;
 
-    my $exit_code = system("cd $MODEL_DIR && $PYTHON_BIN $classifier_dir/Stacking_classification.py");
+    my $exit_code = system("$PYTHON_BIN $classifier_dir/Stacking_classification.py");
 
     if ($exit_code != 0) {
         die "ERROR: Python script failed with exit code $exit_code. Check if model files exist in $classifier_dir\n";
@@ -329,7 +320,7 @@ sub foldingdG {
    close OLIGO;
 
    my $dG;
-   system("$RNAFOLD_BIN < $tempSeq > $tempOUT");
+   system("./RNAfold < $tempSeq > $tempOUT");
    open(RESULT, "$tempOUT") or die "Cannot open $tempOUT for reading $!\n";
    while(my $line = <RESULT>){
       # .((((((((((((((((((((((((((....)))))))))))))))))))))))))) (-17.80)
@@ -363,7 +354,7 @@ sub RNA_fold {
    close OLIGO;
 
    my ($dG, $align);
-   system("$RNAFOLD_BIN < $tempSeq > $tempOUT");
+   system("./RNAfold < $tempSeq > $tempOUT");
    open(RESULT, "$tempOUT") or die "Cannot open $tempOUT for reading $!\n";
    while(my $line = <RESULT>){
 

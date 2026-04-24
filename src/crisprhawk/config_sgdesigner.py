@@ -18,6 +18,7 @@ SGDESIGNER = "sgdesigner"
 
 # packages required to create sgdesigner environment
 SGDESIGNER_PACKAGES = [
+    "conda-forge::perl",
     "numpy=1.15.2", 
     "scipy=1.1.0", 
     "scikit-learn=0.20.0",
