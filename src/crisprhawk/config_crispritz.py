@@ -6,11 +6,7 @@ from .crisprhawk_error import CrisprHawkCrispritzConfigError
 from .exception_handlers import exception_handler
 from .utils import warning, suppress_stdout, suppress_stderr
 
-from typing import Optional, Dict
-
 import subprocess
-import json
-import sys
 import os
 
 
@@ -18,7 +14,7 @@ import os
 CRISPRITZ = "crispritz"
 
 # define crispritz bin
-CRISPRITZ = "crispritz.py"
+CRISPRITZPY = "crispritz.py"
 
 
 class CrispritzConfig:
@@ -102,7 +98,7 @@ def check_crispritz_env(env_name: str, conda: str) -> bool:
     try:
         with suppress_stdout(), suppress_stderr():
             subprocess.check_call(
-                f"{conda} run -n {env_name} {CRISPRITZ}",
+                f"{conda} run -n {env_name} {CRISPRITZPY}",
                 shell=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,

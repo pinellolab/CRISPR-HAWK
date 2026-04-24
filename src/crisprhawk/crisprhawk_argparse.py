@@ -399,28 +399,32 @@ class CrisprHawkSearchInputArgs:
         Returns:
             None
         """
-        # default states
+        # assume off-targets are disabled unless all checks pass
         self._estimate_offtargets = False
         self._crispritz_config = None
+        # exit early if estimation wasn't requested
         if not self._args.estimate_offtargets:
             self._validate_offtargets_annotations()
-        # check os support
-        if platform.system() != OSSYSTEMS[0]:
+            return
+        # OS Validation
+        supported_os = OSSYSTEMS[0]
+        if platform.system() != supported_os:
             warning(
-                f"Off-target estimation is only supported on {OSSYSTEMS[0]} "
-                "systems. Off-target estimation automatically disabled",
+                f"Off-target estimation is only supported on {supported_os} systems. "
+                "Off-target estimation automatically disabled",
                 1,
-            )  # always display this warning
-            self._validate_offtargets_annotations()
-            return  # skip off-targets estimation
-        # try enable estimation
+            )
+            return
+        # environment & Config Validation
         config = CrispritzConfig()
-        if config.conda and check_crispritz_env(config.env_name, config.conda):
+        env_is_valid = config.conda and check_crispritz_env(
+            config.env_name, config.conda
+        )
+        if env_is_valid:
             self._estimate_offtargets = True
             self._crispritz_config = config
-        # always validate annotations
+        # final validation calls
         self._validate_offtargets_annotations()
-        # validate parameters only if enabled
         if self._estimate_offtargets:
             self._validate_offtargets_parameters()
 
