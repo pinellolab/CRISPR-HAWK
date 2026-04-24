@@ -43,11 +43,14 @@ GUIDETYPES = {
 
 # supported scores (dotplot)
 SCORES = [
-    "score_azimuth",
-    "score_rs3",
-    "score_deepcpf1",
-    "score_cfdon",
-    "score_elevationon",
+    "score_azimuth",  # 0
+    "score_rs3",  # 1
+    "score_deepcpf1",  # 2
+    "score_cfdon",  # 3
+    "score_elevationon",  # 4
+    "score_plmcrispr",  # 5
+    "score_crispron",  # 6
+    "score_sgdesigner",  # 7
 ]
 
 # figures size
@@ -405,7 +408,7 @@ def _assign_nsamples(report: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: The input DataFrame with an added 'n_samples' column.
     """
     report["n_samples"] = report.apply(
-        lambda x: _compute_nsamples(x[REPORTCOLS[14]]), axis=1
+        lambda x: _compute_nsamples(x[REPORTCOLS[15]]), axis=1
     )
     return report
 
@@ -449,7 +452,7 @@ def _compute_group_delta(group: Any, score: str) -> pd.Series:
     Returns:
         pd.Series: The group DataFrame with an updated delta column.
     """
-    refrow = group[group[REPORTCOLS[13]] == "ref"]  # reference grna
+    refrow = group[group[REPORTCOLS[14]] == "ref"]  # reference grna
     if refrow.empty:  # only alternative grna
         return group
     refscore = refrow[score].values[0]
@@ -457,7 +460,7 @@ def _compute_group_delta(group: Any, score: str) -> pd.Series:
     return group
 
 
-def _compute_deltas(report: pd.DataFrame, score: str) -> pd.DataFrame:
+def _compute_deltas(report: pd.DataFrame, score: str) -> pd.Series:
     """Calculates delta values for each guide in the report relative to the reference
     guide.
 
@@ -469,7 +472,7 @@ def _compute_deltas(report: pd.DataFrame, score: str) -> pd.DataFrame:
         score: The score column to use for delta calculation.
 
     Returns:
-        pd.DataFrame: The input report DataFrame with an updated delta column.
+        pd.Series: The input report DataFrame with an updated delta column.
     """
     report[DELTACOLS[0]] = 0.0  # initialize deltas
     return report.groupby("guide_id", group_keys=False).apply(
@@ -491,7 +494,7 @@ def _compute_group_delta_abs(group: Any, score: str) -> pd.Series:
     Returns:
         pd.Series: The group DataFrame with updated delta and absolute delta columns.
     """
-    refrow = group[group[REPORTCOLS[13]] == "ref"]  # reference grna
+    refrow = group[group[REPORTCOLS[14]] == "ref"]  # reference grna
     if refrow.empty:  # only alternative grna
         return group
     refscore = refrow[score].values[0]
@@ -500,7 +503,7 @@ def _compute_group_delta_abs(group: Any, score: str) -> pd.Series:
     return group
 
 
-def _compute_deltas_abs(report: pd.DataFrame, score: str) -> pd.DataFrame:
+def _compute_deltas_abs(report: pd.DataFrame, score: str) -> pd.Series:
     """Calculates both delta and absolute delta values for each guide in the
     report relative to the reference guide.
 
@@ -512,7 +515,7 @@ def _compute_deltas_abs(report: pd.DataFrame, score: str) -> pd.DataFrame:
         score: The score column to use for delta calculation.
 
     Returns:
-        pd.DataFrame: The input report DataFrame with updated delta and absolute
+        pd.Series: The input report DataFrame with updated delta and absolute
             delta columns.
     """
     # initialize deltas and absolute deltas
@@ -523,7 +526,7 @@ def _compute_deltas_abs(report: pd.DataFrame, score: str) -> pd.DataFrame:
     )
 
 
-def _compute_scores_delta(report: pd.DataFrame, score: str) -> pd.DataFrame:
+def _compute_scores_delta(report: pd.DataFrame, score: str) -> pd.Series:
     """Computes delta or absolute delta values for each guide in the report based
     on the score type.
 
@@ -535,7 +538,7 @@ def _compute_scores_delta(report: pd.DataFrame, score: str) -> pd.DataFrame:
         score: The score column to use for delta calculation.
 
     Returns:
-        pd.DataFrame: The input report DataFrame with updated delta or absolute
+        pd.Series: The input report DataFrame with updated delta or absolute
             delta columns.
     """
     if score in SCORES[3:]:  # cfdon, elevationon
@@ -543,7 +546,7 @@ def _compute_scores_delta(report: pd.DataFrame, score: str) -> pd.DataFrame:
     return _compute_deltas_abs(report, score)  # azimuth, rs3, deepcpf1
 
 
-def _filter_valid_alts(alts: pd.DataFrame, refscore: float, score: str):
+def _filter_valid_alts(alts: pd.Series, refscore: float, score: str) -> pd.Series:
     """Filters alternative guides based on their score relative to the reference
     score.
 
@@ -551,12 +554,12 @@ def _filter_valid_alts(alts: pd.DataFrame, refscore: float, score: str):
     are included; otherwise, all alternatives are returned.
 
     Args:
-        alts: DataFrame containing alternative guide information.
+        alts: Series containing alternative guide information.
         refscore: The score of the reference guide.
         score: The score column to use for filtering alternatives.
 
     Returns:
-        pd.DataFrame: DataFrame of valid alternative guides.
+        pd.Series: Series of valid alternative guides.
     """
     return alts[alts[score] < refscore] if score in SCORES[3:] else alts.copy()
 
@@ -585,7 +588,7 @@ def _extract_alt_data(alt_row: pd.Series, score: str) -> Dict[str, Any]:
     }
 
 
-def _build_guide_rows(report: pd.DataFrame, score: str) -> Dict[str, Any]:
+def _build_guide_rows(report: pd.Series, score: str) -> Dict[str, Any]:
     """Builds a dictionary of guide data for each guide ID, including reference
     and alternative guides.
 
@@ -593,7 +596,7 @@ def _build_guide_rows(report: pd.DataFrame, score: str) -> Dict[str, Any]:
     extract relevant guide information.
 
     Args:
-        report: DataFrame containing guide information.
+        report: Series containing guide information.
         score: The score column to use for processing guides.
 
     Returns:
@@ -603,8 +606,8 @@ def _build_guide_rows(report: pd.DataFrame, score: str) -> Dict[str, Any]:
     grouped = report.groupby("guide_id", sort=False)
     guide_rows = {}
     for guide_id, group in grouped:
-        ref = group[group[REPORTCOLS[13]] == "ref"]
-        alts = group[group[REPORTCOLS[13]] == "alt"]
+        ref = group[group[REPORTCOLS[14]] == "ref"]
+        alts = group[group[REPORTCOLS[14]] == "alt"]
         if ref.empty:
             continue
         refscore = ref[score].values[0]
@@ -1265,7 +1268,7 @@ def _configure_y_axis(ax: Axes, score: str) -> None:
     ax.tick_params(axis="y", labelsize=15)
     if score == SCORES[1]:  # rs3
         ax.set_ylim(-2.05, 2.05)
-    elif score == SCORES[2]:  # deepcpf1
+    elif score in [SCORES[2], SCORES[6], SCORES[7]]:  # deepcpf1
         ax.set_ylim(-10, 110)
     else:
         ax.set_ylim(-0.05, 1.05)

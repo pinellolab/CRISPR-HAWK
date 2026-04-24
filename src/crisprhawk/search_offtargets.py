@@ -7,14 +7,13 @@ regions, supporting downstream genome editing analysis.
 """
 
 from .crisprhawk_argparse import CrisprHawkSearchInputArgs
-from .config_crispritz import CrispritzConfig
 from .offtargets import estimate_offtargets
 from .utils import print_verbosity, VERBOSITYLVL
 from .region import Region
 from .guide import Guide
 from .pam import PAM
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 from time import time
 
 

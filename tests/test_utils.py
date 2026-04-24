@@ -78,11 +78,6 @@ def test_remove_file():
     shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-def test_command_exists():
-    assert utils.command_exists("python")
-    assert not utils.command_exists("some_nonexistent_command_12345")
-
-
 def test_is_lowercase():
     assert utils.is_lowercase("abc")
     assert not utils.is_lowercase("ABC")

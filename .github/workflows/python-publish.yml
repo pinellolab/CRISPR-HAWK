@@ -49,7 +49,7 @@ jobs:
 
       - name: Patch version for TestPyPI
         run: |
-          DEV_VERSION="0.1.2.dev${GITHUB_RUN_NUMBER}"
+          DEV_VERSION="0.2.0.dev${GITHUB_RUN_NUMBER}"
           echo "Patching pyproject.toml version for TestPyPI: $DEV_VERSION"
           cp pyproject.toml pyproject.toml.bak
           sed -i "s/^version = .*/version = '${DEV_VERSION}'/" pyproject.toml

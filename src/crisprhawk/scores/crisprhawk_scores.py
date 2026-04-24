@@ -16,8 +16,10 @@ from .deepCpf1.seqdeepcpf1 import (
     compute_deepcpf1,
     SeqDeepCpf1,
 )
-from .mhscore.microhomology import calculate_microhomology_score
 from .elevation.cmds.predict import Predict
+from .plm_crispr.plm_crispr import compute_plm_crispr_score
+from .crispron.crispron import compute_crispron_score
+from .sgdesigner.sgdesigner import compute_sgdesigner_score
 from ..guide import Guide
 from ..utils import suppress_stdout, suppress_stderr
 
@@ -160,21 +162,25 @@ def elevationon(
     return guides + list(offtarget)
 
 
-def ooframe_score(guides: List[Guide], idx: int) -> List[int]:
-    """Compute out-of-frame scores for a list of guides at a given index.
+def plmcrispr(guides: List[str], cas_system: int) -> List[float]:
+    """Compute PLM-CRISPR scores for a list of input gRNAs.
 
-    Returns a list of out-of-frame (ooframe) scores for each guide, calculated
-    using the microhomology score at the specified index.
+    Returns a list of PLM-CRISPR scores for the provided gRNAs using the appropriat
+    Cas protein model.
 
     Args:
-        guides (List[Guide]): A list of Guide objects.
-        idx (int): The index around which to extract the sequence for scoring.
+        guides (List[str]): A list of guide sequences.
+        cas_system (int):Cas system identifier.
 
     Returns:
-        List[int]: The out-of-frame scores for each guide.
+        List[float]: The predicted PLM-CRISPR scores for each input gRNA.
     """
-    guides_seqs = [g.sequence[idx - 30 : idx + 30] for g in guides]
-    mhscores = [
-        calculate_microhomology_score(gs.upper(), len(gs) // 2) for gs in guides_seqs
-    ]
-    return [mhscore.ooframe_score for mhscore in mhscores]
+    return compute_plm_crispr_score(guides, cas_system)
+
+
+def crispron(guides: List[str], conda: str, env_name: str) -> List[float]:
+    return compute_crispron_score(guides, conda, env_name)
+
+
+def sgdesigner(guides: List[str], conda: str, env_name: str) -> List[float]:
+    return compute_sgdesigner_score(guides, conda, env_name)

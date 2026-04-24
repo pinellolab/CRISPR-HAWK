@@ -13,7 +13,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="crisprhawk",
-    version="0.1.2",
+    version="0.2.0",
     author="Manuel Tognon",
     author_email="manu.tognon@gmail.com",
     description="CRISPR-HAWK: Haplotype and vAriant-aWare guide design toolKit",
@@ -64,6 +64,9 @@ setup(
             "*.zip"
         ],
         "crisprhawk.scores.elevation": [
+            "*.zip",
+        ],
+        "crisprhawk.scores.plm_crispr": [
             "*.zip",
         ],
         "crisprhawk.config": [

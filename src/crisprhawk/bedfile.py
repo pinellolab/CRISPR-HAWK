@@ -13,14 +13,15 @@ from .exception_handlers import exception_handler
 from .region import Region, RegionList
 from .utils import warning
 
-
 from typing import List, Union, Optional, Dict
 from pysam import TabixFile, tabix_index
 
 import sys
 import os
 
-TBI = "tbi"  # tabix index file format
+
+# define tabix index file format
+TBI = "tbi"
 
 
 class Bed:

@@ -14,15 +14,29 @@ from .crisprhawk_error import (
     CrisprHawkRs3ScoreError,
     CrisprHawkCfdScoreError,
     CrisprHawkDeepCpf1ScoreError,
-    CrisprHawkOOFrameScoreError,
+    CrisprHawkPlmCrisprScoreError,
+    CrisprHawkCRISPRonScoreError,
+    CrisprHawkSgDesignerScoreError,
 )
 from .crisprhawk_argparse import CrisprHawkSearchInputArgs
+from .config_crispron import CrisprOnConfig
+from .config_sgdesigner import sgDesignerConfig
 from .exception_handlers import exception_handler
-from .scores import azimuth, rs3, cfdon, deepcpf1, elevationon, ooframe_score
-from .utils import calculate_chunks, flatten_list, print_verbosity, VERBOSITYLVL
-from .region import Region
 from .guide import Guide, GUIDESEQPAD
 from .pam import PAM, SPCAS9, XCAS9, CPF1
+from .region import Region
+from .scores import (
+    azimuth,
+    rs3,
+    cfdon,
+    deepcpf1,
+    elevationon,
+    plmcrispr,
+    crispron,
+    sgdesigner,
+)
+from .scoring_envs import ScoringEnvs
+from .utils import calculate_chunks, flatten_list, print_verbosity, VERBOSITYLVL
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Dict, List, Tuple, Union
@@ -30,7 +44,6 @@ from collections import defaultdict
 from time import time
 
 import numpy as np
-
 import os
 
 
@@ -51,6 +64,23 @@ def _extract_guide_sequences(guides: List[Guide]) -> List[str]:
     return [
         guide.sequence[(GUIDESEQPAD - 4) : (-GUIDESEQPAD + 3)].upper()
         for guide in guides
+    ]
+
+
+def _extract_guide_sequences_sgdesigner(guides: List[Guide]) -> List[str]:
+    """Extracts guide RNA sequences with required flanking nucleotides.
+
+    This function returns a list of guide sequences, each including
+    3 nucleotides downstream of the PAM, formatted in uppercase.
+
+    Args:
+        guides (List[Guide]): List of Guide objects to extract sequences from.
+
+    Returns:
+        List[str]: List of formatted guide sequences with flanking nucleotides.
+    """
+    return [
+        guide.sequence[(GUIDESEQPAD) : (-GUIDESEQPAD + 3)].upper() for guide in guides
     ]
 
 
@@ -493,81 +523,217 @@ def elevationon_score(guides: List[Guide], verbosity: int, debug: bool) -> List[
     return guides
 
 
-def outofframe_score(
-    guides: List[Guide], guidelen: int, right: bool, verbosity: int, debug: bool
+def _plmcrispr_score(
+    guides: List[Guide], cas_system: int, threads: int, verbosity: int, debug: bool
 ) -> List[Guide]:
-    """Computes the out-of-frame score for each guide RNA sequence.
+    """Computes PLM-CRISPR scores for a list of guide RNAs.
 
-    This function calculates the likelihood that a guide induces an out-of-frame
-    mutation and updates the guide objects with the computed values.
+    This function calculates the PLM-CRISPR efficiency score for each guide in
+    parallel and updates the guide objects with the computed values.
 
     Args:
-        guides (List[Guide]): List of Guide objects to process.
-        guidelen (int): Length of the guide sequence.
-        right (bool): Whether the guide is extracted downstream (right side) of
-            the PAM.
+        guides (List[Guide]): List of Guide objects to score.
+        cas_system (int): Identifier of the Cas system used for scoring.
+        threads (int): Number of threads to use for parallel computation.
         verbosity (int): Verbosity level for logging.
         debug (bool): Flag to enable debug mode for error handling.
 
     Returns:
-        List[Guide]: The list of guides with out-of-frame scores assigned.
+        List[Guide]: The list of guides with PLM-CRISPR scores assigned.
     """
-    print_verbosity("Computing out-of-frame score", verbosity, VERBOSITYLVL[3])
-    start = time()  # out-of-frame score calculation start time
-    try:  # compute out-of-frame score
-        idx = GUIDESEQPAD if right else GUIDESEQPAD + guidelen
-        scores = ooframe_score(guides, idx)
+    if not guides:
+        return guides  # no guide?
+    print_verbosity("Computing PLM-CRISPR score", verbosity, VERBOSITYLVL[3])
+    start = time()  # plm-crispr start time
+    # retrieve spacer + pam sequence for each input guide
+    guides_seqs = [g.guidepam for g in guides]
+    try:  # compute plm-crispr scores
+        plmcrispr_scores = plmcrispr(guides_seqs, cas_system)
     except Exception as e:
         exception_handler(
-            CrisprHawkOOFrameScoreError,
-            "Out-of-frame score calculation failed",
+            CrisprHawkPlmCrisprScoreError,
+            "PLM-CRISPR score calculation failed",
             os.EX_DATAERR,
             debug,
             e,
         )
-    for i, score in enumerate(scores):  # set out-of-frame score for each guide
-        guides[i].ooframe_score = score
+    for i, score in enumerate(plmcrispr_scores):
+        guides[i].plmcrispr_score = score  # assign score to each guide
     print_verbosity(
-        f"Out-of-frame score computed in {time() - start:.2f}s",
+        f"PLM-CRISPR scores computed in {time() - start:.2f}s",
         verbosity,
         VERBOSITYLVL[3],
     )
     return guides
 
 
+def _crispron_score(
+    guides: List[Guide], config: CrisprOnConfig, verbosity: int, debug: bool
+) -> List[Guide]:
+    if not guides:
+        return guides
+    print_verbosity("Computing CRISPRon score", verbosity, VERBOSITYLVL[3])
+    start = time()  # crispron score start time
+    # crispron requires 4 nt upstream + 20 nt guide + 3 nt PAM + 3 nt downstream
+    guides_seqs = _extract_guide_sequences(guides)
+    try:  # single threads-only to avoid out of memory execptions
+        crispron_scores = crispron(guides_seqs, config.conda, config.env_name)
+    except Exception as e:
+        exception_handler(
+            CrisprHawkCRISPRonScoreError,
+            "CRISPRon score calculation failed",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
+    for i, score in enumerate(crispron_scores):
+        guides[i].crispron_score = score  # assign score to each guide
+    print_verbosity(
+        f"CRISPRon scores computed in {time() - start:.2f}s", verbosity, VERBOSITYLVL[3]
+    )
+    return guides
+
+
+def _sgdesigner(
+    guides_chunk: Tuple[int, List[str]], conda: str, env_name: str
+) -> Tuple[int, List[float]]:
+    start_idx, guides = guides_chunk
+    scores = sgdesigner(guides, conda, env_name)
+    return start_idx, scores
+
+
+def _execute_sgdesigner(
+    guide_chunks: List[Tuple[int, List[str]]],
+    conda: str,
+    env_name: str,
+    size: int,
+    threads: int,
+    debug: bool,
+) -> List[float]:
+    sgdesigner_scores = [np.nan] * size
+    with ProcessPoolExecutor(max_workers=threads) as executor:
+        future_to_chunk = {
+            executor.submit(_sgdesigner, chunk, conda, env_name): chunk[0]
+            for chunk in guide_chunks
+        }
+        for future in as_completed(future_to_chunk):
+            start_idx = future_to_chunk[future]
+            try:
+                chunk_start_idx, chunk_scores = future.result()
+                for offset, score in enumerate(chunk_scores):
+                    sgdesigner_scores[chunk_start_idx + offset] = score
+            except Exception as e:
+                exception_handler(
+                    CrisprHawkSgDesignerScoreError,
+                    f"sgDesigner score calculation failed for chunk at index {start_idx}",
+                    os.EX_DATAERR,
+                    debug,
+                    e,
+                )
+    assert all(not np.isnan(s) for s in sgdesigner_scores)
+    assert len(sgdesigner_scores) == size
+    return sgdesigner_scores
+
+
+def _sgdesigner_score(
+    guides: List[Guide],
+    config: sgDesignerConfig,
+    threads: int,
+    verbosity: int,
+    debug: bool,
+) -> List[Guide]:
+    if not guides:
+        return guides
+    print_verbosity("Computing sgDesigner score", verbosity, VERBOSITYLVL[3])
+    start = time()  # sgdesigner score start time
+    # sgdesigner requires 20 nt guide + 3 nt PAM + 3 nt downstream
+    guides_seqs = _extract_guide_sequences_sgdesigner(guides)
+    # split guides in chunks
+    guides_seqs_chunks = calculate_chunks(guides_seqs, threads)
+    try:
+        sgdesigner_scores = _execute_sgdesigner(
+            guides_seqs_chunks,
+            config.conda,
+            config.env_name,
+            len(guides),
+            threads,
+            debug,
+        )
+    except Exception as e:
+        exception_handler(
+            CrisprHawkSgDesignerScoreError,
+            "sgDesigner score calculation failed",
+            os.EX_DATAERR,
+            debug,
+            e,
+        )
+    for i, score in enumerate(sgdesigner_scores):
+        guides[i].sgdesigner_score = score  # assign score to each guide
+    print_verbosity(
+        f"sgDesigner scores computed in {time() - start:.2f}s",
+        verbosity,
+        VERBOSITYLVL[3],
+    )
+    return guides
+
+
+def _scoring_guides_cas9(
+    guides_list: List[Guide],
+    cas_system: int,
+    scoring_envs: ScoringEnvs,
+    threads: int,
+    verbosity: int,
+    debug: bool,
+) -> List[Guide]:
+    # score each guide with azimuth score
+    guides_list = azimuth_score(guides_list, threads, verbosity, debug)
+    # score each guide with rs3 score
+    guides_list = rs3_score(guides_list, threads, verbosity, debug)
+    # score each guide with PLM-CRISPR score
+    guides_list = _plmcrispr_score(guides_list, cas_system, threads, verbosity, debug)
+    # score each guide with CFDon score
+    guides_list = cfdon_score(guides_list, verbosity, debug)
+    # score each guide with CRISPRon score
+    if scoring_envs.crispron_env:
+        guides_list = _crispron_score(
+            guides_list, scoring_envs.crispron_env, verbosity, debug
+        )
+    # score each guide with sgDesigner score
+    if scoring_envs.sgdesigner_env:
+        guides_list = _sgdesigner_score(
+            guides_list, scoring_envs.sgdesigner_env, threads, verbosity, debug
+        )
+    return guides_list
+
+
+def _scoring_guides_cpf1(
+    guides_list: List[Guide], threads: int, verbosity: int, debug: bool
+):
+    # score each guide with deepCpf1 score
+    return deepcpf1_score(guides_list, threads, verbosity, debug)
+
+
 def scoring_guides(
-    guides: Dict[Region, List[Guide]], pam: PAM, args: CrisprHawkSearchInputArgs
+    guides: Dict[Region, List[Guide]],
+    pam: PAM,
+    scoring_envs: ScoringEnvs,
+    args: CrisprHawkSearchInputArgs,
 ) -> Dict[Region, List[Guide]]:
-    """Scores CRISPR guides using efficiency and specificity metrics.
-
-    This function computes Azimuth, RS3, DeepCpf1, Elevation, CFDon, and out-of-frame
-    scores for each guide, updating the guide objects with the computed values.
-
-    Args:
-        guides: Dictionary mapping Region objects to lists of Guide objects.
-        pam: PAM object specifying the protospacer adjacent motif and Cas system.
-        args: CrisprHawkSearchInputArgs object containing scoring parameters.
-
-    Returns:
-        Dictionary mapping Region objects to lists of scored Guide objects.
-    """
     # score guides using azimuth, rs3, deepcpf1, elevation, and out-of-frame scores
     print_verbosity("Scoring guides", args.verbosity, VERBOSITYLVL[1])
     start = time()  # scoring start time
     for region, guides_list in guides.items():
         if pam.cas_system in [SPCAS9, XCAS9]:  # cas9 system pam
-            # score each guide with azimuth
-            guides_list = azimuth_score(
-                guides_list, args.threads, args.verbosity, args.debug
+            guides_list = _scoring_guides_cas9(
+                guides_list,
+                pam.cas_system,
+                scoring_envs,
+                args.threads,
+                args.verbosity,
+                args.debug,
             )
-            # score each guide with rs3
-            guides_list = rs3_score(
-                guides_list, args.threads, args.verbosity, args.debug
-            )
-            # score each guide with CFDon
-            guides_list = cfdon_score(guides_list, args.verbosity, args.debug)
-        if pam.cas_system == CPF1:  # cpf1 system pam
-            guides_list = deepcpf1_score(
+        elif pam.cas_system == CPF1:  # cpf1 system pam
+            guides_list = _scoring_guides_cpf1(
                 guides_list, args.threads, args.verbosity, args.debug
             )
         if args.compute_elevation and (
@@ -575,10 +741,6 @@ def scoring_guides(
         ):
             # elevation requires 23 bp long sequences, where last 3 bp are pam
             guides_list = elevationon_score(guides_list, args.verbosity, args.debug)
-        # compute out-of-frame score (skipped)
-        # guides_list = outofframe_score(
-        #     guides_list, args.guidelen, args.right, args.verbosity, args.debug
-        # )
         guides[region] = guides_list  # store scored guides
     print_verbosity(
         f"Scoring completed in {time() - start:.2f}s", args.verbosity, VERBOSITYLVL[2]

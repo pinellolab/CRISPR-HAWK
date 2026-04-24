@@ -399,28 +399,33 @@ class CrisprHawkSearchInputArgs:
         Returns:
             None
         """
-        if self._args.estimate_offtargets and platform.system() != OSSYSTEMS[0]:
+        # assume off-targets are disabled unless all checks pass
+        self._estimate_offtargets = False
+        self._crispritz_config = None
+        # exit early if estimation wasn't requested
+        if not self._args.estimate_offtargets:
+            self._validate_offtargets_annotations()
+            return
+        # OS Validation
+        supported_os = OSSYSTEMS[0]
+        if platform.system() != supported_os:
             warning(
-                f"Off-target estimation is only supported on {OSSYSTEMS[0]} "
-                "systems. Off-target estimation automatically disabled",
+                f"Off-target estimation is only supported on {supported_os} systems. "
+                "Off-target estimation automatically disabled",
                 1,
-            )  # always disply this warning
-            self._estimate_offtargets = False
-            self._crispritz_config = None
-            return  # skip off-targets estimation
-        if self._args.estimate_offtargets:
-            self._estimate_offtargets = self._args.estimate_offtargets
-            self._crispritz_config = CrispritzConfig()  # read crispritz config
-            if not self._crispritz_config.set_command() or not check_crispritz_env(
-                self._crispritz_config.env_name, self._crispritz_config.conda
-            ):  # check if mamba/conda and crispritz environment are available
-                self._estimate_offtargets = False
-                self._crispritz_config = None
-        else:
-            self._estimate_offtargets = False
-            self._crispritz_config = None
+            )
+            return
+        # environment & Config Validation
+        config = CrispritzConfig()
+        env_is_valid = config.conda and check_crispritz_env(
+            config.env_name, config.conda
+        )
+        if env_is_valid:
+            self._estimate_offtargets = True
+            self._crispritz_config = config
+        # final validation calls
         self._validate_offtargets_annotations()
-        if self._args.estimate_offtargets:
+        if self._estimate_offtargets:
             self._validate_offtargets_parameters()
 
     def _validate_candidate_guides(self) -> None:
@@ -825,142 +830,3 @@ class CrisprHawkPrepareDataInputArgs:
     @property
     def debug(self) -> bool:
         return self._args.debug
-
-
-class CrisprHawkCrispritzConfigInputArgs:
-    """Handles and validates parsed command-line arguments for CRISPR-HAWK Crispritz
-    configuration.
-
-    This class checks the consistency of input arguments for configuring Crispritz
-    and provides convenient access to validated argument values as properties.
-
-    Attributes:
-        _args (Namespace): The parsed arguments namespace.
-        _parser (CrisprHawkArgumentParser): The argument parser instance.
-    """
-
-    def __init__(self, args: Namespace, parser: CrisprHawkArgumentParser) -> None:
-        """Initialize CrisprHawkCrispritzConfigInputArgs with parsed arguments and
-        parser.
-
-        Stores the parsed arguments and parser, then checks argument consistency.
-
-        Args:
-            args (Namespace): The parsed arguments namespace.
-            parser (CrisprHawkArgumentParser): The argument parser instance.
-        """
-        self._args = args
-        self._parser = parser
-        self._check_consistency()  # check input args consistency
-
-    def _validate_targets_dir(self) -> None:
-        """Validates the existence of the CRISPRitz targets directory.
-
-        This function checks that the specified targets directory exists before
-        proceeding with configuration.
-
-        Returns:
-            None
-        """
-        if not self._args.targets_dir:
-            return  # no targets folder specified, use default
-        if not os.path.exists(self._args.targets_dir) and not os.path.isdir(
-            self._args.targets_dir
-        ):
-            self._parser.error(
-                f"Cannot find targets directory {self._args.targets_dir}"
-            )
-
-    def _validate_show_option(self) -> None:
-        """Validates the --show option for CRISPRitz configuration argument parsing.
-
-        This function checks that the --show option is not used in combination with
-        other input arguments.
-
-        Returns:
-            None
-        """
-        if (
-            self._args.env_name
-            or self._args.targets_dir
-            or self._args.reset
-            or self._args.validate
-        ) and self._args.show:
-            self._parser.error(
-                "--show options cannot be used with other input arguments"
-            )
-
-    def _validate_validate_option(self) -> None:
-        """Validates the --validate option for CRISPRitz configuration argument
-        parsing.
-
-        This function checks that the --validate option is not used in combination
-        with other input arguments.
-
-        Returns:
-            None
-        """
-        if (
-            self._args.env_name
-            or self._args.targets_dir
-            or self._args.reset
-            or self._args.show
-        ) and self._args.validate:
-            self._parser.error(
-                "--validate options cannot be used with other input arguments"
-            )
-
-    def _validate_reset_option(self) -> None:
-        """Validates the --reset option for CRISPRitz configuration argument parsing.
-
-        This function checks that the --reset option is not used in combination with
-        other input arguments.
-
-        Returns:
-            None
-        """
-        if (
-            self._args.env_name
-            or self._args.targets_dir
-            or self._args.show
-            or self._args.validate
-        ) and self._args.reset:
-            self._parser.error(
-                "--reset options cannot be used with other input arguments"
-            )
-
-    def _check_consistency(self) -> None:
-        """Checks the consistency and validity of all parsed input arguments for
-        CRISPRitz configuration.
-
-        This function runs all validation routines for the CRISPRitz targets directory
-        and configuration options, ensuring that the command-line arguments are correct
-        and compatible for CRISPRitz configuration management.
-
-        Returns:
-            None
-        """
-        self._validate_targets_dir()  # check crispritz config file
-        self._validate_show_option()  # check show option
-        self._validate_reset_option()  # check reset option
-        self._validate_validate_option()  # check validate option
-
-    @property
-    def env_name(self) -> str:
-        return self._args.env_name
-
-    @property
-    def targets_dir(self) -> str:
-        return self._args.targets_dir
-
-    @property
-    def show(self) -> bool:
-        return self._args.show
-
-    @property
-    def reset(self) -> bool:
-        return self._args.reset
-
-    @property
-    def validate(self) -> bool:
-        return self._args.validate

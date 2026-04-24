@@ -6,35 +6,32 @@ configuration management. It provides high-level functions that orchestrate the
 various steps of the CRISPR-HAWK analysis pipeline.
 """
 
+from .annotation import annotate_guides
+from .candidate_guides import candidate_guides_analysis
+from .converter import convert_gnomad_vcf
 from .crisprhawk_argparse import (
     CrisprHawkSearchInputArgs,
     CrisprHawkConverterInputArgs,
     CrisprHawkPrepareDataInputArgs,
-    CrisprHawkCrispritzConfigInputArgs,
 )
-from .config_crispritz import CrispritzConfig, config_crispritz
-from .region_constructor import construct_regions
-from .haplotypes import reconstruct_haplotypes
-from .haplotype import Haplotype
-from .region import Region
-from .utils import print_verbosity, VERBOSITYLVL
-from .search_guides import search
-from .annotation import annotate_guides
-from .scoring import scoring_guides
-from .search_offtargets import offtargets_search
-from .encoder import encode
-from .reports import report_guides
-from .graphical_reports import compute_graphical_reports
-from .converter import convert_gnomad_vcf
 from .crisprme_data import prepare_data_crisprme
-from .candidate_guides import candidate_guides_analysis
-from .bitset import Bitset
+from .encoder import encode
+from .graphical_reports import compute_graphical_reports
 from .guide import Guide
+from .haplotype import Haplotype
+from .haplotypes import reconstruct_haplotypes
 from .pam import PAM
+from .region import Region
+from .region_constructor import construct_regions
+from .reports import report_guides
+from .scoring import scoring_guides
+from .scoring_envs import ScoringEnvs
+from .search_guides import search
+from .search_offtargets import offtargets_search
+from .utils import print_verbosity, VERBOSITYLVL
 
 from typing import Dict, List
 from time import time
-import sys
 
 
 def encode_pam(pamseq: str, right: bool, verbosity: int, debug: bool) -> PAM:
@@ -66,20 +63,7 @@ def encode_pam(pamseq: str, right: bool, verbosity: int, debug: bool) -> PAM:
 
 def encode_haplotypes(
     haplotypes: Dict[Region, List[Haplotype]], args: CrisprHawkSearchInputArgs
-) -> Dict[Region, List[List[Bitset]]]:
-    """Encodes haplotype sequences as bitsets for efficient guide search.
-
-    This function converts each haplotype sequence into a bit-encoded
-    representation for all regions, enabling efficient downstream guide search
-    operations.
-
-    Args:
-        haplotypes: Dictionary mapping Region objects to lists of Haplotype objects.
-        args: CrisprHawkSearchInputArgs object containing encoding parameters.
-
-    Returns:
-        Dictionary mapping Region objects to lists of bit-encoded haplotypes.
-    """
+) -> Dict[Region, List[List[int]]]:
     # encode haplotypes in bit for efficient guide search
     print_verbosity("Encoding haplotypes in bits", args.verbosity, VERBOSITYLVL[1])
     start = time()  # encoding start time
@@ -100,25 +84,11 @@ def encode_haplotypes(
 def guides_search(
     pam: PAM,
     haplotypes: Dict[Region, List[Haplotype]],
-    haplotypes_bits: Dict[Region, List[List[Bitset]]],
+    haplotypes_bits: Dict[Region, List[List[int]]],
     variants_present: bool,
     phased: bool,
     args: CrisprHawkSearchInputArgs,
 ) -> Dict[Region, List[Guide]]:
-    """Annotates CRISPR guides with variant, functional, gene, and GC content
-    information.
-
-    This function processes each region's guides, adding variant, allele frequency,
-    reverse complement, GC content, and optional functional and gene annotations,
-    returning the updated guides.
-
-    Args:
-        guides: Dictionary mapping Region objects to lists of Guide objects.
-        args: CrisprHawkSearchInputArgs object containing annotation parameters.
-
-    Returns:
-        Dictionary mapping Region objects to lists of annotated Guide objects.
-    """
     # search guide candidates on encoded haplotypes
     print_verbosity("Searching guides on haplotypes", args.verbosity, VERBOSITYLVL[1])
     start = time()  # search start time
@@ -145,18 +115,9 @@ def guides_search(
     return guides
 
 
-def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
-    """Executes the main CRISPR-HAWK search workflow using the provided arguments.
-
-    This function orchestrates the guide search, annotation, scoring, off-target
-    estimation, report generation, and graphical report creation for the CRISPR-HAWK
-    pipeline.
-
-    Args:
-        args (CrisprHawkSearchInputArgs): The parsed and validated input arguments
-            for the search workflow.
-    """
-    # extract genomic regions defined in input bed file
+def crisprhawk_search(
+    args: CrisprHawkSearchInputArgs, scoring_envs: ScoringEnvs
+) -> None:
     regions = construct_regions(args.fastas, args.bedfile, args.verbosity, args.debug)
     # reconstruct haplotypes for each input region
     haplotypes, variants_present, phased = reconstruct_haplotypes(regions, args)
@@ -167,7 +128,7 @@ def crisprhawk_search(args: CrisprHawkSearchInputArgs) -> None:
         pam, haplotypes, haplotypes_bits, variants_present, phased, args
     )  # search guide candidates within input regions
     guides = annotate_guides(guides, args)  # annotate guide candidates
-    guides = scoring_guides(guides, pam, args)  # score guide candidates
+    guides = scoring_guides(guides, pam, scoring_envs, args)  # score guide candidates
     if args.estimate_offtargets:  # search off-targets for each guide candidate
         guides = offtargets_search(guides, pam, args)
     reports = report_guides(guides, pam, args)  # construct reports
@@ -213,27 +174,3 @@ def crisprhawk_prepare_data_crisprme(args: CrisprHawkPrepareDataInputArgs) -> No
             for CRISPRme data preparation.
     """
     prepare_data_crisprme(args.report, args.create_pam, args.outdir, args.debug)
-
-
-def crisprhawk_crispritz_config(args: CrisprHawkCrispritzConfigInputArgs) -> None:
-    """Configures CRISPRitz settings for CRISPR-HAWK using the provided arguments.
-
-    This function manages CRISPRitz configuration, including updating, displaying,
-    resetting, and validating the configuration file.
-
-    Args:
-        args (CrisprHawkCrispritzConfigInputArgs): The parsed and validated input
-            arguments for CRISPRitz configuration.
-    """
-    config = CrispritzConfig()  # load current config file
-    if args.env_name or args.targets_dir:  # change config data
-        config_crispritz(config, args.env_name, args.targets_dir)
-    if args.show:  # display config
-        sys.stdout.write(f"Current config:\n{config.show_config()}\n")
-    if args.reset:  # reset config file to default values
-        sys.stdout.write("Reverting CRISPRitz config file to default values\n")
-        config.reset_to_defaults()
-    if args.validate:  # validate current config file
-        sys.stdout.write("Validating CRISPRitz config file\n")
-        config.validate_config()
-        sys.stdout.write("CRISPRitz config file correctly validated\n")

@@ -10,17 +10,15 @@ editing applications.
 
 from .exception_handlers import exception_handler
 from .crisprhawk_error import (
-    CrisprHawkBitsetError,
     CrisprHawkIupacTableError,
     CrisprHawkCfdScoreError,
 )
 from .utils import print_verbosity, flatten_list, VERBOSITYLVL, IUPACTABLE
 from .guide import Guide, GUIDESEQPAD
-from .bitset import Bitset
 from .pam import PAM
 from .region_constructor import PADDING
 from .region import Region
-from .haplotype import Haplotype, HaplotypeIndel
+from .haplotype import Haplotype
 
 from collections import defaultdict
 
@@ -32,37 +30,20 @@ import os
 
 
 def match(
-    bitset1: List[Bitset], bitset2: List[Bitset], position: int, debug: bool
+    pam_bits: int, pam_len: int, haplotype: List[int], position: int, debug: bool
 ) -> bool:
-    """Performs a bitwise match between two Bitset objects at a given position.
-
-    This function checks if all corresponding bits match between two bitsets,
-    raising an exception if the operation fails.
-
-    Args:
-        bitset1: The first Bitset to compare.
-        bitset2: The second Bitset to compare.
-        position: The position in the sequence for error reporting.
-        debug: Whether to enable debug mode for error handling.
-
-    Returns:
-        bool: True if all bits match, False otherwise.
-
-    Raises:
-        CrisprHawkBitsetError: If the bitwise matching operation fails.
-    """
-    # bitwise matching operation for input bitsets
-    # assumes the two bitsets have the same length
-    try:
-        return all((ntbit & bitset2[i]).to_bool() for i, ntbit in enumerate(bitset1))
-    except ValueError as e:
-        exception_handler(
-            CrisprHawkBitsetError,  # type: ignore
-            f"PAM bitwise matching failed at position {position}",
-            os.EX_DATAERR,
-            debug,
-            e,
-        )
+    window = 0
+    for i in range(pam_len):
+        window = (window << 4) | haplotype[position + i]
+    # for each nibble: pam & hap must be nonzero
+    combined = pam_bits & window
+    # check each nibble of pam_bits is satisfied
+    for _ in range(pam_len):
+        if (pam_bits & 0xF) and not (combined & 0xF):
+            return False
+        pam_bits >>= 4
+        combined >>= 4
+    return True
 
 
 def compute_scan_start_stop(
@@ -104,30 +85,16 @@ def compute_scan_start_stop(
 
 
 def scan_haplotype(
-    pam: PAM, haplotype: List[Bitset], start: int, stop: int, debug: bool
+    pam: PAM, haplotype: List[int], start: int, stop: int, debug: bool
 ) -> Tuple[List[int], List[int]]:
-    """Scans a haplotype for PAM matches on both forward and reverse strands.
-
-    This function returns the positions of all matches for the PAM and its
-    reverse complement within the specified range.
-
-    Args:
-        pam: The PAM object containing bit representations for matching.
-        haplotype: The haplotype sequence as a list of Bitset objects.
-        start: The start position for scanning.
-        stop: The stop position for scanning.
-        debug: Whether to enable debug mode for error handling.
-
-    Returns:
-        Tuple[List[int], List[int]]: Lists of match positions for forward and
-            reverse strands.
-    """
     # lists storing hits for input pam on forward and reverse strands
     matches_fwd, matches_rev = [], []
+    pam_bits_fwd, pam_bits_rev = pam.bits, pam.bitsrc
+    pam_len = len(pam)
     for pos in range(start, stop):  # start scanning haplotype for guides
-        if match(pam.bits, haplotype[pos : (pos + len(pam))], pos, debug):
+        if match(pam_bits_fwd, pam_len, haplotype, pos, debug):
             matches_fwd.append(pos)  # hit on forward strand
-        if match(pam.bitsrc, haplotype[pos : (pos + len(pam))], pos, debug):
+        if match(pam_bits_rev, pam_len, haplotype, pos, debug):
             matches_rev.append(pos)  # hit on negative strand
     return matches_fwd, matches_rev
 
@@ -136,27 +103,10 @@ def pam_search(
     pam: PAM,
     region: Region,
     haplotypes: List[Haplotype],
-    haplotypes_bits: List[List[Bitset]],
+    haplotypes_bits: List[List[int]],
     verbosity: int,
     debug: bool,
 ) -> List[Tuple[List[int], List[int]]]:
-    """Searches for PAM occurrences in each haplotype within a genomic region.
-
-    This function scans all haplotypes for matches to the PAM and its reverse
-    complement, returning the positions of all matches.
-
-    Args:
-        pam: The PAM object containing bit representations for matching.
-        region: The genomic region to search within.
-        haplotypes: A list of Haplotype objects to scan.
-        haplotypes_bits: A list of bit-encoded haplotype sequences.
-        verbosity: The verbosity level for logging.
-        debug: Whether to enable debug mode for error handling.
-
-    Returns:
-        List[Tuple[List[int], List[int]]]: A list of tuples containing forward and
-            reverse strand match positions for each haplotype.
-    """
     pam_hits = []  # list of pam hits
     for i, hap in enumerate(haplotypes):
         print_verbosity(
@@ -213,27 +163,10 @@ def extract_guide_sequence(
 def _valid_guide(
     pamguide: str, pam: PAM, direction: int, right: bool, debug: bool
 ) -> bool:
-    """Checks if a guide sequence is valid for a given PAM and direction.
-
-    Encodes the guide as a PAM and verifies if it matches the PAM bits for the
-    specified strand direction.
-
-    Args:
-        pamguide (str): The guide sequence to validate.
-        pam (PAM): The PAM object to match against.
-        direction (int): The strand direction (0 for positive, 1 for negative).
-        right (bool): Whether the guide is on the right strand.
-        debug (bool): Whether to enable debug mode for error handling.
-
-    Returns:
-        bool: True if the guide is valid for the given PAM and direction, False
-            otherwise.
-    """
     p = PAM(pamguide, right, debug)
     p.encode(0)
-    if direction == 0:  # positive
-        return all((ntbit & pam.bits[i]).to_bool() for i, ntbit in enumerate(p.bits))
-    return all((ntbit & pam.bitsrc[i]).to_bool() for i, ntbit in enumerate(p.bits))
+    pam_ref = pam.bits if direction == 0 else pam.bitsrc
+    return match(pam_ref, len(pam), p.bits_list, 0, debug)
 
 
 # def _decode_iupac(
@@ -578,7 +511,7 @@ def search(
     pam: PAM,
     region: Region,
     haplotypes: List[Haplotype],
-    haplotypes_bits: List[List[Bitset]],
+    haplotypes_bits: List[List[int]],
     guidelen: int,
     right: bool,
     variants_present: bool,
@@ -586,26 +519,6 @@ def search(
     verbosity: int,
     debug: bool,
 ) -> List[Guide]:
-    """Searches for guide candidates in a genomic region across multiple haplotypes.
-
-    Identifies all valid guide sequences matching the PAM in the specified region
-    and haplotypes, returning a list of non-redundant Guide objects.
-
-    Args:
-        pam (PAM): The PAM object to search for.
-        region (Region): The genomic region to search within.
-        haplotypes (List[Haplotype]): List of Haplotype objects to scan.
-        haplotypes_bits (List[List[Bitset]]): Bit-encoded haplotype sequences.
-        guidelen (int): The length of the guide sequence.
-        right (bool): Whether to search on the right (forward) strand.
-        variants_present (bool): Whether variants are present in the haplotypes.
-        phased (bool): Whether the haplotypes are phased.
-        verbosity (int): Verbosity level for logging.
-        debug (bool): Whether to enable debug mode for error handling.
-
-    Returns:
-        List[Guide]: A list of non-redundant Guide objects found in the region.
-    """
     print_verbosity(
         f"Searching guide candidates in {region.coordinates}",
         verbosity,
