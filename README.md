@@ -246,64 +246,6 @@ You can confirm that CRISPRitz is correctly installed and functional by running:
 mamba run -n crispritz-crisprhawk crispritz.py
 ```
 
-If everything is working, the CRISPRitz help menu should appear, displaying available options and usage instructions.
-
-#### 1.5.2 Install CRISPRon (Optional On-target Scoring)
-
-[CRISPRon](https://github.com/RTH-tools/crispron) is a deep learning-based model for predicting SpCas9 guide RNA on-target efficiency. In CRISPR-HAWK, it can be used as an additional scoring module during `crisprhawk search`.
-
-> 📝 **Note**: CRISPRon scoring is optional. If the dedicated environment is not installed, CRISPR-HAWK will skip CRISPRon scoring and continue running the rest of the pipeline.
-
-**Installation Steps**:
-
-From the root of the cloned CRISPR-HAWK repository, create the dedicated environment using the provided YAML file:
-
-```bash
-conda create -y -c bioconda -c conda-forge --name crispron-crisprhawk --file crispron-crisprhawk.yml
-```
-
-> 💬 **Why use a separate environment?**
-<br>This avoids dependencies conflicts with the main CRISPR-HAWK installation and ensures better reproducibility of the CRISPRon scoring module. 
-
-> 📝 **Note**: Environment creation may take several minutes depending on your system and package solver.
-
-**Test your installation**
-
-You can verify that the environment was created successfully by running:
-
-```bash
-conda run -n crispron-crisprhawk python -c "print('CRISPRon environment correctly installed')"
-```
-
-If the command completes successfully, CRISPR-HAWK will be able to use the CRISPRon scoring module during guide search.
-
-#### 1.5.3 Install sgDesigner (Optional On-target Scoring)
-
-[sgDesigner](https://github.com/wang-lab/sgDesigner) is a machine learning-based tool for predicting SpCas9 guide RNAs efficiency. In CRISPR-HAWK, it can be used as an optional scoring module during `crisprhawk search` to complement the built-in guide prioritization framework.
-
-> 📝 **Note**: sgDesigner scoring is optional. If the dedicated environment is not installed, CRISPR-HAWK will skip sgDesigner scoring and continue running the rest of the pipeline.
-
-**Installation Steps**:
-
-Create a dedicated environment for sgDesigner:
-
-```bash
-conda create -y --name sgdesigner-crisprhawk python=3.7.0 numpy=1.15.2 scipy=1.1.0 scikit-learn=0.20.0 xgboost=0.80 joblib=0.13.2
-```
-
-> 💬 **Why use a separate environment?**
-<br>This prevents potential dependency conflicts with the main CRISPR-HAWK environment and preserves compatibility with the sgDesigner software requirements. 
-
-**Test your installation**
-
-You can confirm that the environment is available by running:
-
-```bash
-conda run -n sgdesigner-crisprhawk python -c "print('sgDesigner environment correctly installed')"
-```
-
-If the command completes successfully, CRISPR-HAWK will be able to include sgDesigner scoring during guide search.
-
 ## 2 Usage
 
 CRISPR-HAWK provides multiple functionalities designed to support variant- and haplotype-aware CRISPR guide design, gRNA efficiency evaluation, and integration with downstream analysis pipelines. Each command serves a distinct role in the workflow.
