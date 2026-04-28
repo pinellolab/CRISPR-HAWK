@@ -1,3 +1,4 @@
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/crisprhawk/README.html)
 [![GitHub Release Version](https://img.shields.io/github/v/release/pinellolab/CRISPR-HAWK)](https://github.com/pinellolab/CRISPR-HAWK/releases)
 [![Build Status](https://github.com/pinellolab/CRISPR-HAWK/actions/workflows/python-package.yml/badge.svg)](https://github.com/pinellolab/CRISPR-HAWK/actions/workflows/python-package.yml)
 ![license](https://img.shields.io/badge/license-AGPL--3.0-lightgrey)
@@ -21,8 +22,6 @@ CRISPR-HAWK is a comprehensive and scalable tool for designing guide RNAs (gRNAs
 <br>&nbsp;&nbsp;1.4 [Install CRISPR-HAWK from Source Code](#14-install-crispr-hawk-from-source-code)
 <br>&nbsp;&nbsp;1.5 [Install External Software Dependencies](#15-install-external-software-dependencies)
 <br>&nbsp;&nbsp;&nbsp;&nbsp;1.5.1 [Install CRISPRitz (for Off-target Estimation)](#151-install-crispritz-for-off-target-estimation)
-<br>&nbsp;&nbsp;&nbsp;&nbsp;1.5.2 [Install CRISPRon (Optional On-target Scoring)](#152-install-crispron-optional-on-target-scoring)
-<br>&nbsp;&nbsp;&nbsp;&nbsp;1.5.3 [Install sgDesigner (Optional On-target Scoring)](#153-install-sgdesigner-optional-on-target-scoring)
 <br>2 [Usage](#2-usage)
 <br>&nbsp;&nbsp;2.1 [General Syntax](#21-general-syntax)
 <br>&nbsp;&nbsp;2.2 [Search](#22-search)
@@ -138,7 +137,42 @@ CONDA_SUBDIR=osx-64 mamba create -n crisprhawk-env -c bioconda crisprhawk
 
 #### 1.1.2 Install CRISPR-HAWK
 
-TBA
+Once Conda or Mamba is installed and the Bioconda channels are properly configured (see [Section 1.1.1](#111-install-conda-or-mamba)), you can install CRISPR-HAWK in a dedicated environment.
+
+We strongly recommend creating a separate environment to ensure reproducibility and avoid dependency conflicts.
+
+**1. Create a new environment (recommended)**
+
+```bash
+mamba create -n crisprhawk-env python=3.8 -y
+mamba activate crisprhawk-env
+```
+
+> 💡 **Tip**: CRISPR-HAWK currently requires **Python 3.8** for full compatibility with all dependencies.
+
+**2. Install CRISPR-HAWK**
+
+```bash
+mamba install crisprhawk
+```
+
+This command will automatically resolve and install all required dependencies from Bioconda and conda-forge.
+
+> 💡 **Tip**: If you are using Conda instead of Mamba, simply replace `mamba` with `conda`.
+
+After installation, confirm that CRISPR-HAWK is correctly installed:
+
+```bash
+crisprhawk --help
+```
+
+If the command runs successfully and displays the help message, the installation is complete.
+
+To update to the latest version available on Bioconda:
+
+```bash
+mamba update crisprhawk
+```
 
 ### 1.2 Install CRISPR-HAWK from Docker
 
