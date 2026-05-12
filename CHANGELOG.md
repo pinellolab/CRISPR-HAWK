@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## v0.2.1 — 2026-05-12
+
+### Added
+* **Packaged External Scoring Resources**: Added bundled distribution support for CRISPRon and sgDesigner runtime assets, including `CRISPRon.sh`, `sgDesigner.pl`, and `format_features_25.pm`, ensuring portability across wheel and source installations.
+* **Expanded Documentation**: Added detailed installation and usage documentation covering PyPI, Conda/Mamba, developer installations, troubleshooting, and CRISPRitz interoperability workflows.
+* **Packaging Metadata**: Added explicit package-data handling for bundled external scoring resources and auxiliary model files.
+
+### Changed
+* **Packaging Infrastructure**: Refactored packaging configuration (`pyproject.toml`, `MANIFEST.in`) to properly distribute non-Python resources within wheels and source distributions.
+* **CRISPRon Integration**: Improved runtime handling for TensorFlow-based CRISPRon execution, including better compatibility with CPU-only and isolated Conda/Mamba environments.
+* **Environment Handling**: Improved execution of external scoring tools and subprocess management across heterogeneous compute environments and editable installs.
+* **Developer Tooling**: Refined project-wide configurations for pytest, black, flake8, mypy, and coverage reporting to improve maintainability and reproducibility.
+
+### Fixed
+* Fixed packaging issues where bundled scoring resources and auxiliary scripts were not reliably included in wheel distributions.
+* Improved handling of executable scoring resources across operating systems and installation methods.
+
+### Breaking Changes / Migration Notes
+* **Resource Access**: External scoring resources are now distributed as package-managed assets. Downstream extensions should avoid hardcoded source-tree paths and instead rely on package-resource APIs (`importlib.resources`) for locating bundled files.
+* **Executable Permissions**: Depending on the target environment, packaged executables such as `CRISPRon.sh` and `sgDesigner.pl` may require executable permissions to be restored at runtime.
+
+---
+
 ## v0.2.0 — 2026-04-28
 
 ### Added
