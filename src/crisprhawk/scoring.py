@@ -819,7 +819,7 @@ def scoring_guides(
     scoring_envs: ScoringEnvs,
     args: CrisprHawkSearchInputArgs,
 ) -> Dict[Region, List[Guide]]:
-    """Score all guides in each region with the appropriate models for the 
+    """Score all guides in each region with the appropriate models for the
     chosen Cas system.
 
     This function iterates over regions, applies Cas9- or Cpf1-specific scoring
@@ -829,7 +829,7 @@ def scoring_guides(
     Args:
         guides: Mapping from genomic regions to lists of Guide objects to score.
         pam: PAM object describing the Cas system and PAM sequence.
-        scoring_envs: ScoringEnvs instance providing optional CRISPRon and 
+        scoring_envs: ScoringEnvs instance providing optional CRISPRon and
             sgDesigner environments.
         args: Parsed command-line arguments controlling threading, verbosity,
             debug mode, and Elevation-on scoring.

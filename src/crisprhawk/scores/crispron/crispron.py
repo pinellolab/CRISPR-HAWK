@@ -51,15 +51,15 @@ def _load_crispron_scores(csv_path: str, expected_30mers: List[str]) -> List[flo
 
     Args:
         csv_path: Path to the CSV file containing CRISPRon output.
-        expected_30mers: List of 30mer guide sequences in the order they were 
+        expected_30mers: List of 30mer guide sequences in the order they were
             submitted.
 
     Returns:
-        A list of CRISPRon scores corresponding to each expected 30mer in input 
+        A list of CRISPRon scores corresponding to each expected 30mer in input
             order.
 
     Raises:
-        RuntimeError: If any expected guide is missing a CRISPRon score in the 
+        RuntimeError: If any expected guide is missing a CRISPRon score in the
             CSV file.
     """
     scores: List[float] = [float("nan")] * len(expected_30mers)
@@ -93,7 +93,7 @@ def _generate_crispron_tmp_data(tmpdir: str) -> Tuple[str, str]:
     for the guide FASTA file and the result directory.
 
     Args:
-        tmpdir: Path to the temporary base directory where CRISPRon data will 
+        tmpdir: Path to the temporary base directory where CRISPRon data will
             be created.
 
     Returns:
@@ -143,7 +143,7 @@ def compute_crispron_score(guides: List[str], conda: str, env_name: str) -> List
     crispron_root = os.path.abspath(os.path.dirname(__file__))
     crispron_bin = os.path.join(crispron_root, "bin", "CRISPRon.sh")
     # score guides with crispron
-    with tempfile.TemporaryDirectory(prefix="crispron_", dir=crispron_root) as tmpdir:           
+    with tempfile.TemporaryDirectory(prefix="crispron_", dir=crispron_root) as tmpdir:
         # generate guides fasta and output folder required by crispron's script
         crispron_fasta, crispron_tmpdir = _generate_crispron_tmp_data(
             os.path.abspath(tmpdir)

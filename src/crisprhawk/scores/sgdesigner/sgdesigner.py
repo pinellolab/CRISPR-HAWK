@@ -37,11 +37,11 @@ def _find_output_txt(sgdesigner_outdir: str) -> str:
 
 
 def _load_sgdesigner_scores(txt_path: str, expected_26mers: List[str]) -> List[float]:
-    """Load sgDesigner scores from a text result file and align them to expected 
+    """Load sgDesigner scores from a text result file and align them to expected
     guides.
 
     This function parses sgDesigner output lines, matches each score to the
-    corresponding submitted spacer sequence, and returns scores ordered by guide 
+    corresponding submitted spacer sequence, and returns scores ordered by guide
     index.
 
     Args:
@@ -49,11 +49,11 @@ def _load_sgdesigner_scores(txt_path: str, expected_26mers: List[str]) -> List[f
         expected_26mers: List of expected 26-nt guide sequences in submission order.
 
     Returns:
-        A list of sgDesigner scores corresponding to each expected guide in 
+        A list of sgDesigner scores corresponding to each expected guide in
             input order.
 
     Raises:
-        RuntimeError: If any expected guide is missing an sgDesigner score in the 
+        RuntimeError: If any expected guide is missing an sgDesigner score in the
             result file.
     """
     scores: List[float] = [float("nan")] * len(expected_26mers)
@@ -87,7 +87,7 @@ def _generate_sgdesigner_tmp_data(tmpdir: str) -> Tuple[str, str, str]:
     temporary working files will be stored for a single sgDesigner run.
 
     Args:
-        tmpdir: Path to the temporary base directory where sgDesigner data 
+        tmpdir: Path to the temporary base directory where sgDesigner data
             will be created.
 
     Returns:
