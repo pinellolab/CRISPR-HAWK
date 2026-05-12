@@ -10,8 +10,10 @@ recursive-include src/crisprhawk/scores/azimuth/tests *
 recursive-include src/crisprhawk/scores/azimuth *.csv
 recursive-include src/crisprhawk/scores/azimuth *.txt
 recursive-include src/crisprhawk/scores/cfdscore *.zip
+recursive-include src/crisprhawk/scores/crispron/bin *
 recursive-include src/crisprhawk/scores/deepCpf1 *.zip
 recursive-include src/crisprhawk/scores/elevation *.zip
+recursive-include src/crisprhawk/scores/sgdesigner *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 global-exclude *.pyc
