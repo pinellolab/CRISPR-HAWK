@@ -1,4 +1,7 @@
 #!/bin/bash
+
+export CUDA_VISIBLE_DEVICES=""
+
 BINDIR=`dirname $0`
 DATADIR=$BINDIR/../data
 CRISPRON_FASTA=$1
