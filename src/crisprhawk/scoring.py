@@ -570,6 +570,21 @@ def _plmcrispr_score(
 def _crispron_score(
     guides: List[Guide], config: CrisprOnConfig, verbosity: int, debug: bool
 ) -> List[Guide]:
+    """Compute CRISPRon scores for a list of guide RNAs.
+
+    This function prepares the required sequence context for each guide, invokes
+    the external CRISPRon tool via its configured environment, and assigns the
+    resulting on-target activity scores back to the guide objects.
+
+    Args:
+        guides: List of Guide objects to score.
+        config: CRISPRon configuration containing conda command and environment name.
+        verbosity: Verbosity level for logging progress messages.
+        debug: Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with CRISPRon scores assigned.
+    """
     if not guides:
         return guides
     print_verbosity("Computing CRISPRon score", verbosity, VERBOSITYLVL[3])
@@ -597,6 +612,22 @@ def _crispron_score(
 def _sgdesigner(
     guides_chunk: Tuple[int, List[str]], conda: str, env_name: str
 ) -> Tuple[int, List[float]]:
+    """Compute sgDesigner scores for a chunk of guide RNA sequences.
+
+    This function is intended for parallel execution and returns the starting
+    index of the chunk together with the list of sgDesigner scores for the
+    provided guide sequences.
+
+    Args:
+        guides_chunk (Tuple[int, List[str]]): A tuple containing the start
+            index and the list of guide sequences in the chunk.
+        conda (str): Path to the conda or mamba executable used to invoke sgDesigner.
+        env_name (str): Name of the conda environment in which sgDesigner is installed.
+
+    Returns:
+        Tuple[int, List[float]]: The start index and the list of sgDesigner scores
+            corresponding to the input guide sequences.
+    """
     start_idx, guides = guides_chunk
     scores = sgdesigner(guides, conda, env_name)
     return start_idx, scores
@@ -610,6 +641,28 @@ def _execute_sgdesigner(
     threads: int,
     debug: bool,
 ) -> List[float]:
+    """Execute sgDesigner scoring in parallel for chunks of guide RNA sequences.
+
+    This function distributes chunks of guide sequences across multiple worker
+    processes, collects their sgDesigner scores, and returns a score list
+    aligned to the original guide order.
+
+    Args:
+        guide_chunks: List of tuples, each containing a start index and a list
+            of guide sequences for that chunk.
+        conda: Path to the conda or mamba executable used to invoke sgDesigner.
+        env_name: Name of the conda environment in which sgDesigner is installed.
+        size: Total number of guides being scored.
+        threads: Number of worker processes to use for parallel execution.
+        debug: Flag to enable debug mode for error handling.
+
+    Returns:
+        List[float]: The sgDesigner scores corresponding to each original guide
+            sequence in order.
+
+    Raises:
+        CrisprHawkSgDesignerScoreError: If sgDesigner scoring fails for any chunk.
+    """
     sgdesigner_scores = [np.nan] * size
     with ProcessPoolExecutor(max_workers=threads) as executor:
         future_to_chunk = {
@@ -642,6 +695,22 @@ def _sgdesigner_score(
     verbosity: int,
     debug: bool,
 ) -> List[Guide]:
+    """Compute sgDesigner scores for a list of guide RNAs.
+
+    This function prepares the required sequence context for each guide, runs
+    sgDesigner in parallel via its configured environment, and assigns the
+    resulting on-target activity scores back to the guide objects.
+
+    Args:
+        guides: List of Guide objects to score.
+        config: sgDesigner configuration containing conda command and environment name.
+        threads: Number of worker processes to use for parallel execution.
+        verbosity: Verbosity level for logging progress messages.
+        debug: Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with sgDesigner scores assigned.
+    """
     if not guides:
         return guides
     print_verbosity("Computing sgDesigner score", verbosity, VERBOSITYLVL[3])
@@ -685,6 +754,23 @@ def _scoring_guides_cas9(
     verbosity: int,
     debug: bool,
 ) -> List[Guide]:
+    """Score Cas9 guides with all supported efficiency and specificity metrics.
+
+    This function orchestrates the computation of Azimuth, RS3, PLM-CRISPR, CFDon,
+    CRISPRon, and sgDesigner scores for a list of Cas9 guides, using the provided
+    scoring environments and threading configuration.
+
+    Args:
+        guides_list: List of Guide objects representing Cas9 guides to score.
+        cas_system: Identifier for the Cas9 system used to select PLM-CRISPR models.
+        scoring_envs: ScoringEnvs instance providing optional CRISPRon and sgDesigner environments.
+        threads: Number of worker processes or threads to use for parallel scoring.
+        verbosity: Verbosity level controlling progress and logging output.
+        debug: Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with all applicable Cas9 scores assigned.
+    """
     # score each guide with azimuth score
     guides_list = azimuth_score(guides_list, threads, verbosity, debug)
     # score each guide with rs3 score
@@ -708,7 +794,21 @@ def _scoring_guides_cas9(
 
 def _scoring_guides_cpf1(
     guides_list: List[Guide], threads: int, verbosity: int, debug: bool
-):
+) -> List[Guide]:
+    """Score Cpf1 guides with all supported efficiency metrics.
+
+    This function orchestrates the computation of DeepCpf1 scores for a list of
+    Cpf1 guides using the provided threading and logging configuration.
+
+    Args:
+        guides_list: List of Guide objects representing Cpf1 guides to score.
+        threads: Number of worker processes or threads to use for parallel scoring.
+        verbosity: Verbosity level controlling progress and logging output.
+        debug: Flag to enable debug mode for error handling.
+
+    Returns:
+        List[Guide]: The list of guides with DeepCpf1 scores assigned.
+    """
     # score each guide with deepCpf1 score
     return deepcpf1_score(guides_list, threads, verbosity, debug)
 
@@ -719,6 +819,25 @@ def scoring_guides(
     scoring_envs: ScoringEnvs,
     args: CrisprHawkSearchInputArgs,
 ) -> Dict[Region, List[Guide]]:
+    """Score all guides in each region with the appropriate models for the 
+    chosen Cas system.
+
+    This function iterates over regions, applies Cas9- or Cpf1-specific scoring
+    pipelines, optionally computes Elevation-on scores, and returns the guides
+    annotated with all available efficiency and specificity metrics.
+
+    Args:
+        guides: Mapping from genomic regions to lists of Guide objects to score.
+        pam: PAM object describing the Cas system and PAM sequence.
+        scoring_envs: ScoringEnvs instance providing optional CRISPRon and 
+            sgDesigner environments.
+        args: Parsed command-line arguments controlling threading, verbosity,
+            debug mode, and Elevation-on scoring.
+
+    Returns:
+        Dict[Region, List[Guide]]: The input mapping with each region's guides
+            updated to include computed scores.
+    """
     # score guides using azimuth, rs3, deepcpf1, elevation, and out-of-frame scores
     print_verbosity("Scoring guides", args.verbosity, VERBOSITYLVL[1])
     start = time()  # scoring start time

@@ -1,4 +1,9 @@
-""" """
+"""Configuration helpers for the sgDesigner scoring tool.
+
+This module manages sgDesigner-specific settings, including conda environments
+and output directories, and provides utilities to validate and prepare the
+sgDesigner runtime environment.
+"""
 
 from .config import Config
 from .config_utils import CONFIG, set_command, create_mamba_env
@@ -68,6 +73,16 @@ class sgDesignerConfig:
         )
 
     def validate(self) -> None:
+        """Validate that the sgDesigner configuration is complete and usable.
+
+        This method checks that both the environment name and output directory
+        are set, and raises a configuration error if any required value is
+        missing.
+
+        Raises:
+            CrisprHawkSgDesignerError: If the sgDesigner configuration is
+                incomplete or invalid.
+        """
         # ensure environment and outdir are configured
         if not self._config.validate():
             exception_handler(
@@ -91,6 +106,19 @@ class sgDesignerConfig:
 
 
 def check_sgdesigner_env(env_name: str, conda: str) -> bool:
+    """Check whether the sgDesigner execution environment is available and usable.
+
+    This function verifies that the sgDesigner executable exists and that the
+    specified conda environment can run a simple Python command.
+
+    Args:
+        env_name: Name of the conda environment to test.
+        conda: Path to the conda or mamba executable used to invoke the environment.
+
+    Returns:
+        bool: True if the sgDesigner executable is present and the environment
+            can be activated, otherwise False.
+    """
     sgdesigner_dir = os.path.join(
         os.path.abspath(os.path.dirname(__file__)), "scores", "sgdesigner"
     )
@@ -119,6 +147,18 @@ def check_sgdesigner_env(env_name: str, conda: str) -> bool:
 
 
 def prepare_sgdesigner_env() -> Optional[sgDesignerConfig]:
+    """Prepare and validate the sgDesigner execution environment.
+
+    This function ensures that the sgDesigner scoring tool is supported on the
+    current platform, verifies or creates the required conda environment, and
+    returns a configuration object if sgDesigner can be used.
+
+    Returns:
+        Optional[sgDesignerConfig]: An sgDesignerConfig instance when the
+            environment is ready for use, or None if sgDesigner cannot be
+            prepared (for example on unsupported systems or when environment
+            creation fails).
+    """
     if platform.system() != OSSYSTEMS[0]:  # if system is not Linux
         warning(
             f"sgDesigner scoring is only supported on {OSSYSTEMS[0]} "

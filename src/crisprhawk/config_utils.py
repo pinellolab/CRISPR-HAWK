@@ -1,4 +1,9 @@
-""" """
+"""Utility functions for configuring CRISPR-HAWK environments and models.
+
+This module provides helpers to locate configuration files, manage conda/mamba
+environments, and download and prepare scoring model data required by
+CRISPR-HAWK.
+"""
 
 from .exception_handlers import exception_handler
 from .utils import OSSYSTEMS, TOOLNAME, remove_file_silent, warning, rename_file
@@ -13,10 +18,9 @@ import urllib.request
 import urllib.error
 import zipfile
 
+
 # ==============================================================================
-#
 # Define constant variables (config files)
-#
 # ==============================================================================
 
 # config file location
@@ -74,9 +78,7 @@ _CHUNK_SIZE = 1024 * 256  # 256 KiB read chunks
 
 
 # ==============================================================================
-#
 # Define utilities functions (config files)
-#
 # ==============================================================================
 
 
@@ -96,6 +98,16 @@ def command_exists(command: str) -> bool:
 
 
 def set_command() -> str:
+    """Select the preferred package manager command for CRISPR-HAWK.
+
+    This function checks for the availability of mamba and conda in the system
+    PATH and returns the most suitable executable name to use, or an empty
+    string if neither is found.
+
+    Returns:
+        str: The command name to use ('mamba', 'conda', or an empty string
+            if neither are available).
+    """
     if command_exists(MAMBA):
         return MAMBA
     return CONDA if command_exists(CONDA) else ""
@@ -107,6 +119,20 @@ def create_mamba_env(
     packages: Optional[List[str]] = None,
     python_version: str = "3.8",
 ) -> bool:
+    """Create a new conda or mamba environment for CRISPR-HAWK tools.
+
+    This function invokes the specified package manager to create an environment
+    with a given Python version and an optional list of additional packages.
+
+    Args:
+        conda: The command to invoke (typically 'mamba' or 'conda').
+        env_name: Name of the environment to create.
+        packages: Optional list of additional packages to install in the environment.
+        python_version: Python version string to use for the environment.
+
+    Returns:
+        bool: True if the environment creation command succeeded, otherwise False.
+    """
     cmd = [conda, "create", "-y", "-n", env_name, f"python={python_version}"]
     if packages:
         cmd.extend(packages)
@@ -115,15 +141,45 @@ def create_mamba_env(
 
 
 def _scores_dir() -> str:
+    """Return the absolute path to the CRISPR-HAWK scores directory.
+
+    This helper resolves the scores subdirectory relative to the current
+    module location for use when locating or installing model data.
+
+    Returns:
+        str: Absolute path to the 'scores' directory.
+    """
     return os.path.join(os.path.abspath(os.path.dirname(__file__)), "scores")
 
 
 def _sentinel_present(destdir: str, sentinel: str) -> bool:
+    """Check whether a sentinel file or directory exists in a destination folder.
+
+    This helper is used to determine if model data has already been installed
+    by looking for a specific marker path inside the target directory.
+
+    Args:
+        destdir: Base directory in which to search for the sentinel.
+        sentinel: File or directory name that signals the presence of model data.
+
+    Returns:
+        bool: True if the sentinel path exists as a file or directory, otherwise False.
+    """
     full = os.path.join(destdir, sentinel)
     return os.path.isdir(full) or os.path.isfile(full)
 
 
 def _download_with_progress(url: str, dest_path: str, label: str) -> None:
+    """Download a file from a URL while reporting progress to stderr.
+
+    This helper streams data in chunks, writes them to disk, and prints
+    approximate download progress based on the reported content length.
+
+    Args:
+        url: The URL from which to download the file.
+        dest_path: Local filesystem path where the downloaded file will be saved.
+        label: Human-readable label used in progress messages.
+    """
     req = urllib.request.Request(url, headers={"User-Agent": "crisprhawk/1.0"})
     with urllib.request.urlopen(req, timeout=_CONNECT_TIMEOUT) as response:
         total = response.headers.get("Content-Length")
@@ -143,6 +199,16 @@ def _download_with_progress(url: str, dest_path: str, label: str) -> None:
 
 
 def _download_with_retry(url: str, dest_path: str, label: str) -> None:
+    """Download a file with automatic retries and error handling.
+
+    This helper repeatedly attempts to download a file, applying a backoff
+    delay between failures and raising a fatal error if all attempts fail.
+
+    Args:
+        url: The URL from which to download the file.
+        dest_path: Local filesystem path where the downloaded file will be saved.
+        label: Human-readable label used in log and warning messages.
+    """
     delay = _RETRY_BACKOFF
     exc: Exception = RuntimeError("No attempts made")
     for attempt in range(1, _MAX_RETRIES + 1):
@@ -181,6 +247,16 @@ def _download_with_retry(url: str, dest_path: str, label: str) -> None:
 
 
 def _extract_zip(zip_path: str, destdir: str, label: str) -> None:
+    """Extract a ZIP archive containing model data into the target directory.
+
+    This helper unpacks the archive, logs progress, and cleans up the ZIP file
+    even if extraction fails so that future runs start from a clean state.
+
+    Args:
+        zip_path: Path to the ZIP file to extract.
+        destdir: Destination directory where the archive contents will be unpacked.
+        label: Human-readable label used in log and error messages.
+    """
     sys.stderr.write(f"Extracting {label}...\n")
     try:
         with zipfile.ZipFile(zip_path, mode="r") as zf:
@@ -201,6 +277,18 @@ def _extract_zip(zip_path: str, destdir: str, label: str) -> None:
 
 
 def _ensure_model(scoresdir: str, url: str, subdir: str, sentinel: str) -> None:
+    """Ensure that scoring model data for a given submodule are available.
+
+    This helper checks for existing model files, downloads and extracts them
+    if necessary, and validates that the expected sentinel resource is present.
+
+    Args:
+        scoresdir: Base directory where all scoring model subdirectories reside.
+        url: Remote URL from which to download the model archive if needed.
+        subdir: Name of the scoring model subdirectory to inspect and populate.
+        sentinel: File or directory name used to confirm that the model data
+            have been correctly installed.
+    """
     destdir = os.path.join(scoresdir, subdir)
     # the sub-folder itself must exist it contains __init__.py etc.
     if not os.path.isdir(destdir):
@@ -236,6 +324,12 @@ def _ensure_model(scoresdir: str, url: str, subdir: str, sentinel: str) -> None:
 
 
 def prepare_scoring_models() -> None:
+    """Ensure that all CRISPR-HAWK scoring models are downloaded and ready to use.
+
+    This function verifies the presence of model data for each supported scoring
+    module and automatically downloads and installs any missing resources.
+
+    """
     scores_dir = _scores_dir()  # retrieve scores location
     if not os.path.isdir(scores_dir):
         exception_handler(
