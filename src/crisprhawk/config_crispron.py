@@ -1,4 +1,9 @@
-""" """
+"""Configuration helpers for the CRISPRon scoring tool.
+
+This module manages CRISPRon-specific settings, including conda environments
+and output directories, and provides utilities to validate and prepare the
+CRISPRon runtime environment.
+"""
 
 from .config import Config
 from .config_utils import CONFIG, set_command, create_mamba_env
@@ -84,6 +89,16 @@ class CrisprOnConfig:
         )
 
     def validate(self) -> None:
+        """Validate that the CRISPRon configuration is complete and usable.
+
+        This method checks that both the environment name and output directory
+        are set, and raises a configuration error if any required value is
+        missing.
+
+        Raises:
+            CrisprHawkCrisprOnConfigError: If the CRISPRon configuration is
+                incomplete or invalid.
+        """
         # ensure environment and outdir are configured
         if not self._config.validate():
             exception_handler(
@@ -148,6 +163,17 @@ def check_crispron_env(env_name: str, conda: str) -> bool:
 
 
 def prepare_crispron_env() -> Optional[CrisprOnConfig]:
+    """Prepare and validate the CRISPRon execution environment.
+
+    This function ensures that the CRISPRon scoring tool is supported on the
+    current platform, verifies or creates the required conda environment, and
+    returns a configuration object if CRISPRon can be used.
+
+    Returns:
+        Optional[CrisprOnConfig]: A CrisprOnConfig instance when the environment
+            is ready for use, or None if CRISPRon cannot be prepared (for example
+            on unsupported systems or when environment creation fails).
+    """
     if platform.system() != OSSYSTEMS[0]:  # if system is not Linux
         warning(
             f"CRISPRon scoring is only supported on {OSSYSTEMS[0]} "

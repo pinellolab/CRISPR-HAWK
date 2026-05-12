@@ -179,8 +179,40 @@ def plmcrispr(guides: List[str], cas_system: int) -> List[float]:
 
 
 def crispron(guides: List[str], conda: str, env_name: str) -> List[float]:
+    """Compute CRISPRon scores for a list of guide sequences.
+
+    This function is a thin wrapper around the CRISPRon scoring implementation
+    and returns one on-target activity score per input guide.
+
+    Args:
+        guides (List[str]): A list of guide sequences to be scored by CRISPRon.
+        conda (str): Path to the conda executable used to invoke the CRISPRon
+            environment.
+        env_name (str): Name of the conda environment in which CRISPRon is
+            installed.
+
+    Returns:
+        List[float]: The CRISPRon scores corresponding to each guide in the
+            input list.
+    """
     return compute_crispron_score(guides, conda, env_name)
 
 
 def sgdesigner(guides: List[str], conda: str, env_name: str) -> List[float]:
+    """Compute sgDesigner scores for a list of guide sequences.
+
+    This function is a thin wrapper around the sgDesigner scoring implementation
+    and returns one on-target activity score per input guide.
+
+    Args:
+        guides (List[str]): A list of guide sequences to be scored by sgDesigner.
+        conda (str): Path to the conda executable used to invoke the sgDesigner
+            environment.
+        env_name (str): Name of the conda environment in which sgDesigner is
+            installed.
+
+    Returns:
+        List[float]: The sgDesigner scores corresponding to each guide in the
+            input list.
+    """
     return compute_sgdesigner_score(guides, conda, env_name)
