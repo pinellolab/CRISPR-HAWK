@@ -27,6 +27,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## v0.2.2 — 2026-05-15
+
+### Fixed
+* **Critical CRISPRon Scoring Bug**: Fixed a critical issue preventing proper CRISPRon scoring execution on supported systems. Unsupported operating systems are now detected early and handled gracefully, with scoring automatically disabled instead of triggering downstream execution failures.
+* **CRISPRon Runtime Stability**: Removed a duplicated get_30mers_from_fa invocation inside CRISPRon.sh that caused redundant preprocessing and unnecessary repeated execution during CRISPRon scoring workflows.
+* **Cross-Platform Scoring Handling**: Improved handling of CRISPRon and sgDesigner execution on unsupported operating systems by returning early with clearer warnings indicating that scoring is disabled rather than failing later in execution.
+* **CI/TestPyPI Version Consistency**: Updated GitHub Actions release workflow so TestPyPI development builds are automatically patched to 0.2.2.dev${GITHUB_RUN_NUMBER}, ensuring generated CI artifacts correctly match the release series.
+* **Code Cleanup**: Removed an unused typing import from sgdesigner.py.
+
+### Changed
+* **Documentation & Maintainability**: Expanded module/class docstrings and improved code readability in scoring_envs.py, including minor style refinements and clearer assignment-expression handling.
+
+### Breaking Changes / Migration Notes
+* No breaking API changes were introduced in this release.
+* On unsupported operating systems, CRISPRon and sgDesigner scoring are now explicitly skipped with warning messages instead of attempting partial execution.
+
+---
+
 ## v0.2.0 — 2026-04-28
 
 ### Added
