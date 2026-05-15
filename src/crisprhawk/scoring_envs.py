@@ -1,4 +1,8 @@
-""" """
+"""Manage CRISPR scoring environments and configuration backends.
+
+This module provides a unified interface for preparing and accessing
+CRISPR scoring configuration environments such as CrisprOn and sgDesigner.
+"""
 
 from .config_crispron import CrisprOnConfig, prepare_crispron_env
 from .config_sgdesigner import sgDesignerConfig, prepare_sgdesigner_env
@@ -7,6 +11,9 @@ from typing import Optional
 
 
 class ScoringEnvs:
+    """Container for CRISPR scoring environments. This class manages configuration
+    objects for different scoring backends and ensures they are of the correct type.
+    """
 
     def __init__(self) -> None:
         self._crispron = None
@@ -34,8 +41,8 @@ class ScoringEnvs:
 def prepare_scoring_envs() -> ScoringEnvs:
     # prepare scoring environments
     scoring_envs = ScoringEnvs()
-    if crispron_env := prepare_crispron_env():  # crispron
+    if (crispron_env := prepare_crispron_env()):  # crispron
         scoring_envs.crispron_env = crispron_env
-    if sgdesigner_env := prepare_sgdesigner_env():  # sgdesigner
+    if (sgdesigner_env := prepare_sgdesigner_env()):  # sgdesigner
         scoring_envs.sgdesigner_env = sgdesigner_env
     return scoring_envs

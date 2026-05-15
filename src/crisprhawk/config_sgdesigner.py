@@ -162,9 +162,10 @@ def prepare_sgdesigner_env() -> Optional[sgDesignerConfig]:
     if platform.system() != OSSYSTEMS[0]:  # if system is not Linux
         warning(
             f"sgDesigner scoring is only supported on {OSSYSTEMS[0]} "
-            "systems. Off-target estimation automatically disabled",
+            "systems. sgDesigner scoring automatically disabled",
             1,
         )  # always disply this warning
+        return None
     config = sgDesignerConfig()  # loads config.json
     # look for crispron environment, if not available create it
     if not check_sgdesigner_env(config.env_name, config.conda):

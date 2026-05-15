@@ -28,8 +28,6 @@ RNAfold --version || exit 1
 echo "$PYTHON_BIN. $BINDIR/get_30mers_from_fa.py"
 $PYTHON_BIN $BINDIR/get_30mers_from_fa.py  -f ${CRISPRON_FASTA} -m $OUTDIR/30mers.fa -g $OUTDIR/23mers.fa || exit 1
 
-$BINDIR/get_30mers_from_fa.py  -f ${CRISPRON_FASTA} -m $OUTDIR/30mers.fa -g $OUTDIR/23mers.fa || exit 1
-
 if [[ ! -s $OUTDIR/30mers.fa ]]; then
 	echo failed to get target sequences 1>&2
 	exit 1

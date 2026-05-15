@@ -177,9 +177,10 @@ def prepare_crispron_env() -> Optional[CrisprOnConfig]:
     if platform.system() != OSSYSTEMS[0]:  # if system is not Linux
         warning(
             f"CRISPRon scoring is only supported on {OSSYSTEMS[0]} "
-            "systems. Off-target estimation automatically disabled",
+            "systems. CRISPRon scoring automatically disabled",
             1,
         )  # always disply this warning
+        return None
     config = CrisprOnConfig()  # loads config.json
     # look for crispron environment, if not available create it
     if not check_crispron_env(config.env_name, config.conda):

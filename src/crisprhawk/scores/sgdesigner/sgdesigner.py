@@ -6,7 +6,7 @@ and parses its output to return per-guide scoring results.
 
 from ...utils import create_folder
 
-from typing import List, Tuple, Dict
+from typing import List, Tuple
 
 import os
 import subprocess
